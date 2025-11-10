@@ -1,122 +1,156 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'ui/theme.dart';
+import 'ui/screens/auth_screen.dart';
+import 'ui/screens/account/account_screen.dart';
+import 'ui/screens/account/edit_profile_screen.dart';
+import 'ui/screens/account/edit_nickname.dart';
+import 'ui/screens/account/edit_gender.dart';
+import 'ui/screens/account/edit_dob.dart';
+import 'ui/screens/account/edit_height.dart';
+import 'ui/screens/account/setup_goal_intro.dart';
+import 'ui/screens/account/setup_goal/choose_goal.dart';
+import 'ui/screens/account/setup_goal/weight_picker.dart';
+import 'ui/screens/account/setup_goal/activity_level.dart';
+import 'ui/screens/account/setup_goal/summary.dart';
+import 'ui/screens/account/settings_screen.dart';
+import 'ui/screens/account/edit_email.dart';
+import 'ui/screens/account/terms_screen.dart';
+import 'ui/screens/account/privacy_screen.dart';
+import 'ui/screens/account/report_screen.dart';
+import 'ui/screens/account/share_journey_screen.dart';
+import 'ui/screens/account/community_screen.dart';
+import 'ui/screens/account/weekly_goal_screen.dart';
+import 'ui/screens/account/activity_detail_screen.dart';
+import 'providers/profile_provider.dart';
+import 'providers/foods_provider.dart';
+import 'providers/health_connect_provider.dart';
+import 'providers/compare_journey_provider.dart';
+import 'services/firebase_service.dart';
+import 'services/profile_service.dart';
 
-void main() {
-  runApp(const MyApp());
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Firebase unconditionally (we want to use Firebase only).
+  await FirebaseService.initFirebase();
+
+  // Optionally run a smoke test in debug builds to verify connectivity.
+  // This will sign in anonymously (if needed), write a small document and
+  // upload a tiny blob to Storage and print results to the debug console.
+  // We don't await this in release modes to avoid blocking startup.
+  const bool runSmoke = bool.fromEnvironment(
+    'RUN_FIREBASE_SMOKE',
+    defaultValue: true,
+  );
+  if (runSmoke) {
+    // run but don't block the UI startup for long; keep it awaited here so the
+    // first-run developer sees the logs in the terminal.
+    await FirebaseService.runSmokeTest();
+  }
+
+  // Ensure we have an authenticated UID. If not, sign in anonymously.
+  String uid;
+  try {
+    final user = FirebaseService.auth.currentUser;
+    if (user != null) {
+      uid = user.uid;
+    } else {
+      final cred = await FirebaseService.auth.signInAnonymously();
+      uid = cred.user?.uid ?? 'firebase-anon';
+    }
+  } catch (e) {
+    // Fallback to a deterministic uid to avoid crashes; though in a properly
+    // configured project this shouldn't happen.
+    debugPrint('Auth check/sign-in failed: $e');
+    uid = 'firebase-anon-fallback';
+  }
+
+  final profileService = await ProfileService.create();
+  // firebaseAvailable flag is now always true in this startup flow
+  final firebaseAvailable = true;
+
+  runApp(
+    MyApp(
+      profileService: profileService,
+      uid: uid,
+      firebaseAvailable: firebaseAvailable,
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final ProfileService profileService;
+  final String uid;
+  final bool firebaseAvailable;
 
-  // This widget is the root of your application.
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-      ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
-    );
-  }
-}
-
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
-
-  @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
-  }
+  const MyApp({
+    super.key,
+    required this.profileService,
+    required this.uid,
+    required this.firebaseAvailable,
+  });
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
-    return Scaffold(
-      appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-      ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text('You have pushed the button this many times:'),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-          ],
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider<ProfileProvider>(
+          create: (_) {
+            final prov = ProfileProvider(uid: uid, service: profileService);
+            prov.load();
+            return prov;
+          },
         ),
+        ChangeNotifierProvider(
+          create: (_) {
+            final p = FoodsProvider();
+            // seed sample foods so UI has reasonable defaults when running locally
+            p.seedSampleData();
+            return p;
+          },
+        ),
+        ChangeNotifierProvider(create: (_) => HealthConnectProvider()),
+        ChangeNotifierProvider(create: (_) => CompareJourneyProvider()),
+      ],
+      child: MaterialApp(
+        title: 'Calories App',
+        theme: AppTheme.lightTheme(),
+        initialRoute: '/login',
+        routes: {
+          '/login': (context) => const AuthScreen(),
+          '/account': (context) => const AccountScreen(),
+          '/edit_profile': (context) => const EditProfileScreen(),
+          '/edit_nickname': (context) => const EditNicknameScreen(),
+          '/edit_gender': (context) => const EditGenderScreen(),
+          '/edit_dob': (context) => const EditDobScreen(),
+          '/edit_height': (context) => const EditHeightScreen(),
+          '/settings': (context) => const SettingsScreen(),
+          '/edit_email': (context) => const EditEmailScreen(),
+          '/terms': (context) => const TermsScreen(),
+          '/privacy': (context) => const PrivacyScreen(),
+          '/report/nutrition': (context) =>
+              const ReportScreen(title: 'Dinh dưỡng'),
+          '/report/workout': (context) =>
+              const ReportScreen(title: 'Tập luyện'),
+          '/report/steps': (context) => const ReportScreen(title: 'Số bước'),
+          '/report/weight': (context) => const ReportScreen(title: 'Cân nặng'),
+          '/report/share': (context) => const ShareJourneyScreen(),
+          '/community': (context) => const CommunityScreen(),
+          '/weekly_goal': (context) => const WeeklyGoalScreen(),
+          '/activity_detail': (context) => const ActivityDetailScreen(),
+          '/setup_goal': (context) => const SetupGoalIntroScreen(),
+          '/setup_goal/choose_goal': (context) => const ChooseGoalScreen(),
+          '/setup_goal/weight': (context) => const WeightPickerScreen(),
+          '/setup_goal/activity': (context) => const ActivityLevelScreen(),
+          '/setup_goal/summary': (context) => const SetupSummaryScreen(),
+          '/about': (context) => Scaffold(
+            appBar: AppBar(title: const Text('About')),
+            body: const Center(child: Text('About placeholder')),
+          ),
+        },
+        debugShowCheckedModeBanner: false,
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
 }

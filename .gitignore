@@ -43,3 +43,33 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Firebase configuration files (do not commit)
+android/app/google-services.json
+serviceAccountKey.json
+*.serviceAccount.json
+
+# Firebase / Google service files (do not commit)
+/android/app/google-services.json
+/ios/GoogleService-Info.plist
+# Optional: generated Firebase options file (contains client keys)
+lib/firebase_options.dart
+
+# Service account / credentials
+serviceAccountKey.json
+*.serviceAccount.json
+*.key.json
+
+# Firebase emulator & debug logs
+firebase-debug.log
+firestore-debug.log
+storage-debug.log
+
+# Environment / secret files
+.env
+.env.*
+.secrets
+
+# Local IDE/workspace settings that shouldn't be committed
+.vscode/
+.idea/

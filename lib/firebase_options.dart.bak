@@ -1,0 +1,19 @@
+// Stub firebase_options.dart
+// This file is a placeholder so the project compiles when the generated
+// `firebase_options.dart` (from `flutterfire configure`) is not present.
+// Replace this file by running `flutterfire configure` which will generate
+// a proper `firebase_options.dart` containing DefaultFirebaseOptions.
+
+class DefaultFirebaseOptions {
+  /// Accessing this will throw to indicate the real generated file is missing.
+  static get currentPlatform {
+    throw UnsupportedError(
+      'No firebase_options.dart found. Run `flutterfire configure` and add the generated file to `lib/`.',
+    );
+  }
+}
+
+/// Import helper used by `firebase_service.dart`. The function intentionally
+/// does nothing in the stub—it's used to make runtime attempts to call the
+/// generated symbol fail-fast and be catchable.
+void importFirebaseOptions() {}
