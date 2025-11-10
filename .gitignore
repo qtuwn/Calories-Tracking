@@ -73,3 +73,56 @@ storage-debug.log
 # Local IDE/workspace settings that shouldn't be committed
 .vscode/
 .idea/
+
+# Local environment
+/local.properties
+**/local.properties
+key.properties
+android/key.properties
+
+# Keystore files
+*.jks
+*.keystore
+*.p12
+*.pfx
+
+# Gradle and build caches
+.gradle/
+**/.gradle/
+*/build/
+
+# iOS/CocoaPods
+ios/Pods/
+**/Pods/
+**/Runner.xcworkspace/
+# Optionally ignore Xcode user files
+*.xcuserstate
+xcuserdata/
+
+# Generated plugin registrant / generated files
+**/generated_plugin_registrant.dart
+**/generated/
+
+# Visual Studio / Windows
+.vs/
+*.suo
+*.user
+*.userosscache
+*.VC.db
+Thumbs.db
+
+# Misc OS
+ehthumbs.db
+Desktop.ini
+
+# Secret / credentials
+*.key
+*.pem
+*.p12
+*.pfx
+*.keystore
+*.jks
+*.env
+.env.*
+.secrets
+*.secret
