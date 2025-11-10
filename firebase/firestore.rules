@@ -1,0 +1,92 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // -------------------------
+    // User accounts & profiles
+    // -------------------------
+    // Documents under users/{userId} and any nested subcollections are
+    // readable/writable only by the authenticated owner.
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+
+      // Any subcollections under users/{userId}/... inherit same restriction.
+      match /{subPath=**} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+
+    // -------------------------
+    // Food catalog (public read, admin writes)
+    // -------------------------
+    // Food items are publicly readable (search/filter) but creating/updating
+    // or deleting items requires an admin claim set on the user's token.
+    match /foods/{foodId} {
+      allow read: if true;
+      allow create, update, delete: if request.auth != null && request.auth.token.admin == true;
+    }
+
+    // -------------------------
+    // Recipes
+    // -------------------------
+    // - Any authenticated user may create a recipe.
+    // - Only the recipe author or an admin may update/delete.
+    // - Reading is allowed for approved recipes, or for the author/admin.
+    match /recipes/{recipeId} {
+      allow create: if request.auth != null;
+
+      allow update, delete: if request.auth != null && (
+        // Allow the original author to modify/delete
+        resource.data.authorId == request.auth.uid
+        // Or allow admins
+        || request.auth.token.admin == true
+      );
+
+      allow read: if (
+        // Publicly readable if approved
+        resource.data.isApproved == true
+        // Author can always read their own recipe
+        || (request.auth != null && resource.data.authorId == request.auth.uid)
+        // Admins can read everything
+        || (request.auth != null && request.auth.token.admin == true)
+      );
+    }
+
+    // -------------------------
+    // Diaries: per-user entries
+    // -------------------------
+    // Each user's diary entries are private to that user.
+    match /diaries/{userId}/entries/{entryId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // -------------------------
+    // Notifications (per-user inbox)
+    // -------------------------
+    // Notifications are stored under notifications/{userId}/messages/{msgId}
+    // Users can read their notifications. Creation may be performed by the
+    // owner (self-notify) or by an admin/system account.
+    match /notifications/{userId}/messages/{msgId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+
+      allow create: if request.auth != null && (
+        // Owner can create their own notification (optional UX)
+        request.auth.uid == userId
+        // Admins/system processes with admin claim can create notifications
+        || request.auth.token.admin == true
+      );
+
+      allow delete: if request.auth != null && (
+        request.auth.uid == userId || request.auth.token.admin == true
+      );
+    }
+
+    // -------------------------
+    // Generic deny: everything else requires explicit rules
+    // -------------------------
+    match /{document=**} {
+      allow read: if false;
+      allow write: if false;
+    }
+  }
+}

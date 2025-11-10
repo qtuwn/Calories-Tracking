@@ -1,0 +1,31 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Avatars: only the owner can read/write their own avatar files under
+    // avatars/{uid}/...
+    match /avatars/{userId}/{allPaths=**} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Food images: public read so app can show images in catalog; writes
+    // require admin claim to avoid arbitrary users uploading catalogue images.
+    match /food_images/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.token.admin == true;
+    }
+
+    // Recipe images: public read; writes restricted to admins (or adjust to
+    // allow authors via custom metadata if you set it on upload).
+    match /recipe_images/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.token.admin == true;
+    }
+
+    // Generic documents: deny by default. Add other folders explicitly if needed.
+    match /{allPaths=**} {
+      allow read: if false;
+      allow write: if false;
+    }
+  }
+}
