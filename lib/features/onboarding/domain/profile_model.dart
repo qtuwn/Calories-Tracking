@@ -267,6 +267,64 @@ class ProfileModel {
     return map;
   }
 
+  /// Get human-readable gender label in Vietnamese
+  String get genderLabel {
+    switch (gender?.toLowerCase()) {
+      case 'male':
+        return 'Nam';
+      case 'female':
+        return 'Nữ';
+      case 'other':
+        return 'Khác';
+      default:
+        return gender ?? '-';
+    }
+  }
+
+  /// Get human-readable activity level label in Vietnamese
+  String get activityLevelLabel {
+    switch (activityLevel?.toLowerCase()) {
+      case 'sedentary':
+        return 'Không tập luyện/Ít vận động';
+      case 'light':
+        return 'Vận động nhẹ nhàng';
+      case 'moderate':
+        return 'Chăm chỉ luyện tập';
+      case 'very_active':
+        return 'Rất năng động / Cực kỳ năng động';
+      default:
+        return activityLevel ?? '-';
+    }
+  }
+
+  /// Get human-readable goal type label in Vietnamese
+  String get goalTypeLabel {
+    switch (goalType?.toLowerCase()) {
+      case 'lose':
+        return 'Giảm cân';
+      case 'maintain':
+        return 'Duy trì';
+      case 'gain':
+        return 'Tăng cân';
+      default:
+        return goalType ?? '-';
+    }
+  }
+
+  /// Get formatted birth date string (dd/MM/yyyy)
+  String get birthDateString {
+    if (dobIso == null) return '-';
+    try {
+      final date = DateTime.parse(dobIso!);
+      final day = date.day.toString().padLeft(2, '0');
+      final month = date.month.toString().padLeft(2, '0');
+      final year = date.year.toString();
+      return '$day/$month/$year';
+    } catch (_) {
+      return dobIso ?? '-';
+    }
+  }
+
   /// Create a copy of this ProfileModel with updated fields
   ProfileModel copyWith({
     String? nickname,

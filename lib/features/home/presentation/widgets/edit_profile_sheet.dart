@@ -46,6 +46,7 @@ class _EditProfileSheetState extends ConsumerState<EditProfileSheet> {
   final _formKey = GlobalKey<FormState>();
   
   // Form controllers
+  late TextEditingController _nameController;
   late TextEditingController _ageController;
   late TextEditingController _heightController;
   late TextEditingController _currentWeightController;
@@ -90,6 +91,10 @@ class _EditProfileSheetState extends ConsumerState<EditProfileSheet> {
     super.initState();
     
     // Initialize controllers with current profile values
+    // Use nickname from profile, or fallback to empty string
+    _nameController = TextEditingController(
+      text: widget.profile.nickname ?? '',
+    );
     _ageController = TextEditingController(
       text: widget.profile.age?.toString() ?? '',
     );
@@ -136,6 +141,7 @@ class _EditProfileSheetState extends ConsumerState<EditProfileSheet> {
 
   @override
   void dispose() {
+    _nameController.dispose();
     _ageController.dispose();
     _heightController.dispose();
     _currentWeightController.dispose();
@@ -166,6 +172,7 @@ class _EditProfileSheetState extends ConsumerState<EditProfileSheet> {
       }
 
       // Parse form values
+      final name = _nameController.text.trim();
       final age = int.parse(_ageController.text.trim());
       final heightCm = int.parse(_heightController.text.trim());
       final currentWeight = double.parse(_currentWeightController.text.trim());
@@ -188,6 +195,7 @@ class _EditProfileSheetState extends ConsumerState<EditProfileSheet> {
       // Create updated profile
       final heightM = heightCm / 100.0;
       final updatedProfile = widget.profile.copyWith(
+        nickname: name,
         age: age,
         heightCm: heightCm,
         height: heightM,
@@ -201,14 +209,17 @@ class _EditProfileSheetState extends ConsumerState<EditProfileSheet> {
         bmi: bmi,
       );
 
-      // Update via repository
+      // Update via repository (updates both profile nickname and user document displayName)
       final repository = ProfileRepository();
       await repository.updateCurrentProfileFromModel(uid, updatedProfile);
+      await repository.updateUserDisplayName(uid, name);
 
       if (mounted) {
         // Invalidate providers to trigger refresh
         ref.invalidate(currentUserProfileDataProvider(uid));
         ref.invalidate(currentUserProfileProvider);
+        // Also invalidate the UserProfile provider to refresh displayName
+        ref.invalidate(currentProfileProvider(uid));
         
         Navigator.of(context).pop(true);
         
@@ -268,6 +279,40 @@ class _EditProfileSheetState extends ConsumerState<EditProfileSheet> {
                   ],
                 ),
                 const SizedBox(height: 24),
+
+                // Name field
+                Text(
+                  'Họ tên *',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+                const SizedBox(height: 8),
+                TextFormField(
+                  controller: _nameController,
+                  keyboardType: TextInputType.name,
+                  textCapitalization: TextCapitalization.words,
+                  decoration: InputDecoration(
+                    hintText: 'Ví dụ: Nguyễn Văn A',
+                    filled: true,
+                    fillColor: Colors.grey[50],
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Vui lòng nhập họ tên';
+                    }
+                    final trimmed = value.trim();
+                    if (trimmed.length < 2) {
+                      return 'Họ tên phải có ít nhất 2 ký tự';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
 
                 // Gender dropdown
                 Text(

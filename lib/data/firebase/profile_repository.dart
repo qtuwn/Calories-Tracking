@@ -551,4 +551,37 @@ class ProfileRepository {
       rethrow;
     }
   }
+
+  /// Update the user document's displayName field
+  /// 
+  /// This updates the displayName in users/{uid} document.
+  /// This is separate from the profile nickname field.
+  /// 
+  /// [uid] - User ID
+  /// [displayName] - New display name (will be trimmed)
+  Future<void> updateUserDisplayName(String uid, String displayName) async {
+    debugPrint(
+      '[ProfileRepository] 🔵 Updating displayName for uid=$uid',
+    );
+
+    try {
+      final trimmedName = displayName.trim();
+      
+      // Update the user document
+      await _firestore.collection('users').doc(uid).set({
+        'displayName': trimmedName,
+      }, SetOptions(merge: true));
+
+      debugPrint(
+        '[ProfileRepository] ✅ Successfully updated displayName for uid=$uid',
+      );
+    } catch (e, stackTrace) {
+      debugPrint(
+        '[ProfileRepository] 🔥 updateUserDisplayName FAILED for uid=$uid',
+      );
+      debugPrint('[ProfileRepository] Error: $e');
+      debugPrint('[ProfileRepository] Stack trace: $stackTrace');
+      rethrow;
+    }
+  }
 }

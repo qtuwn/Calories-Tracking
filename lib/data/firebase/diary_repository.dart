@@ -255,5 +255,104 @@ class DiaryRepository {
       rethrow;
     }
   }
+
+  /// Get diary entries for a date range (for statistics/analytics)
+  /// 
+  /// Returns all entries (food and exercise) between startDate and endDate (inclusive).
+  /// Used for computing weekly/monthly statistics.
+  Future<List<DiaryEntry>> getDiaryEntriesForDateRange({
+    required String uid,
+    required DateTime startDate,
+    required DateTime endDate,
+  }) async {
+    final startDateStr = DateUtils.normalizeToIsoString(startDate);
+    final endDateStr = DateUtils.normalizeToIsoString(endDate);
+    
+    try {
+      debugPrint('[DiaryRepository] Getting diary entries for uid=$uid, range=$startDateStr to $endDateStr');
+      
+      final snapshot = await _firestore
+          .collection('users')
+          .doc(uid)
+          .collection('diaryEntries')
+          .where('date', isGreaterThanOrEqualTo: startDateStr)
+          .where('date', isLessThanOrEqualTo: endDateStr)
+          .orderBy('date', descending: false)
+          .orderBy('createdAt', descending: false)
+          .get();
+      
+      final entries = snapshot.docs
+          .map((doc) {
+            try {
+              return DiaryEntry.fromDoc(doc);
+            } catch (e) {
+              debugPrint('[DiaryRepository] ⚠️ Error parsing entry ${doc.id}: $e');
+              return null;
+            }
+          })
+          .whereType<DiaryEntry>()
+          .toList();
+      
+      debugPrint('[DiaryRepository] Found ${entries.length} entries for date range');
+      
+      return entries;
+    } catch (e) {
+      debugPrint('[DiaryRepository] Error getting diary entries for date range: $e');
+      rethrow;
+    }
+  }
+
+  /// Watch diary entries for a date range (stream)
+  /// 
+  /// Returns a stream of all entries between startDate and endDate (inclusive).
+  /// Automatically updates when entries are added/updated/deleted.
+  Stream<List<DiaryEntry>> watchDiaryEntriesForDateRange({
+    required String uid,
+    required DateTime startDate,
+    required DateTime endDate,
+  }) {
+    final startDateStr = DateUtils.normalizeToIsoString(startDate);
+    final endDateStr = DateUtils.normalizeToIsoString(endDate);
+    
+    debugPrint('[DiaryRepository] 🔵 Watching diary entries for uid=$uid, range=$startDateStr to $endDateStr');
+    
+    return _firestore
+        .collection('users')
+        .doc(uid)
+        .collection('diaryEntries')
+        .where('date', isGreaterThanOrEqualTo: startDateStr)
+        .where('date', isLessThanOrEqualTo: endDateStr)
+        .orderBy('date', descending: false)
+        .orderBy('createdAt', descending: false)
+        .snapshots()
+        .map((snapshot) {
+          try {
+            final entries = snapshot.docs
+                .map((doc) {
+                  try {
+                    return DiaryEntry.fromDoc(doc);
+                  } catch (e) {
+                    debugPrint('[DiaryRepository] ⚠️ Error parsing entry ${doc.id}: $e');
+                    return null;
+                  }
+                })
+                .whereType<DiaryEntry>()
+                .toList();
+            
+            debugPrint('[DiaryRepository] 📊 Found ${entries.length} entries in date range');
+            
+            return entries;
+          } catch (e, stackTrace) {
+            debugPrint('[DiaryRepository] 🔥 Error processing snapshot: $e');
+            debugPrint('[DiaryRepository] Stack trace: $stackTrace');
+            return <DiaryEntry>[];
+          }
+        })
+        .handleError((error, stackTrace) {
+          debugPrint('[DiaryRepository] 🔥 Error watching diary entries: $error');
+          debugPrint('[DiaryRepository] Stack trace: $stackTrace');
+          return <DiaryEntry>[];
+        });
+  }
 }
 
