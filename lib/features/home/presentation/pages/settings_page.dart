@@ -8,6 +8,8 @@ import 'package:calories_app/features/onboarding/presentation/controllers/onboar
 import 'package:calories_app/features/foods/ui/food_admin_page.dart';
 import 'package:calories_app/features/exercise/ui/exercise_admin_list_screen.dart';
 import 'package:calories_app/features/admin/ui/admin_dashboard_screen.dart';
+import 'package:calories_app/features/home/presentation/pages/personal_info_screen.dart';
+import 'package:calories_app/features/home/presentation/pages/goals_screen.dart';
 
 /// Settings page with clean WAO-style design
 class SettingsPage extends ConsumerWidget {
@@ -299,69 +301,9 @@ class SettingsPage extends ConsumerWidget {
   }
 
   void _navigateToPersonalInfo(BuildContext context, WidgetRef ref) {
-    final user = FirebaseAuth.instance.currentUser;
-    final profileDataAsync = user != null
-        ? ref.read(currentUserProfileDataProvider(user.uid))
-        : null;
-
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => Scaffold(
-          appBar: AppBar(title: const Text('Thông tin cá nhân')),
-          body: profileDataAsync == null
-              ? const Center(child: CircularProgressIndicator())
-              : profileDataAsync.when(
-                  data: (profile) {
-                    if (profile == null) {
-                      return const Center(child: Text('Không có thông tin'));
-                    }
-                    return ListView(
-                      padding: const EdgeInsets.all(16),
-                      children: [
-                        _buildInfoTile('Tên', profile.nickname ?? '-'),
-                        _buildInfoTile('Email', user?.email ?? '-'),
-                        _buildInfoTile('Tuổi', profile.age?.toString() ?? '-'),
-                        _buildInfoTile('Giới tính', profile.gender ?? '-'),
-                        _buildInfoTile(
-                          'Cân nặng',
-                          profile.weightKg != null
-                              ? '${profile.weightKg!.toStringAsFixed(1)} kg'
-                              : '-',
-                        ),
-                        _buildInfoTile(
-                          'Chiều cao',
-                          profile.heightCm != null
-                              ? '${profile.heightCm} cm'
-                              : '-',
-                        ),
-                        _buildInfoTile(
-                          'BMI',
-                          profile.bmi != null
-                              ? profile.bmi!.toStringAsFixed(1)
-                              : '-',
-                        ),
-                        _buildInfoTile(
-                          'Mức độ hoạt động',
-                          profile.activityLevel ?? '-',
-                        ),
-                      ],
-                    );
-                  },
-                  loading: () =>
-                      const Center(child: CircularProgressIndicator()),
-                  error: (error, _) => Center(child: Text('Lỗi: $error')),
-                ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInfoTile(String label, String value) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        title: Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Text(value),
+        builder: (context) => const PersonalInfoScreen(),
       ),
     );
   }
@@ -369,34 +311,7 @@ class SettingsPage extends ConsumerWidget {
   void _navigateToGoals(BuildContext context, WidgetRef ref) {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => Scaffold(
-          appBar: AppBar(title: const Text('Mục tiêu của tôi')),
-          body: const Center(
-            child: Padding(
-              padding: EdgeInsets.all(24.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.track_changes_outlined,
-                    size: 64,
-                    color: Colors.grey,
-                  ),
-                  SizedBox(height: 16),
-                  Text(
-                    'Mục tiêu của tôi',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    'Tính năng này đang được phát triển.',
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
+        builder: (context) => const GoalsScreen(),
       ),
     );
   }

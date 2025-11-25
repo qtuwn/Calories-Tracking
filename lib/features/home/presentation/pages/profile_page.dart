@@ -8,6 +8,10 @@ import 'package:calories_app/features/onboarding/domain/profile_model.dart';
 import 'package:calories_app/data/firebase/profile_repository.dart';
 import 'package:calories_app/features/home/presentation/controllers/avatar_upload_controller.dart';
 import 'package:calories_app/features/home/presentation/pages/settings_page.dart';
+import 'package:calories_app/features/home/presentation/pages/reports/nutrition_report_screen.dart';
+import 'package:calories_app/features/home/presentation/pages/reports/workout_report_screen.dart';
+import 'package:calories_app/features/home/presentation/pages/reports/steps_report_screen.dart';
+import 'package:calories_app/features/home/presentation/pages/reports/weight_report_screen.dart';
 import 'package:calories_app/features/home/presentation/widgets/edit_profile_sheet.dart';
 import 'package:calories_app/features/home/presentation/widgets/customize_nutrition_sheet.dart';
 
@@ -643,6 +647,9 @@ class AccountPage extends ConsumerWidget {
     );
   }
 
+  /// Build a report icon button that navigates to the corresponding report screen.
+  /// 
+  /// Navigation pattern: Uses Navigator.push with MaterialPageRoute (consistent with Settings navigation).
   Widget _buildReportIconButton(BuildContext context, {
     required IconData icon,
     required String label,
@@ -650,10 +657,36 @@ class AccountPage extends ConsumerWidget {
   }) {
     return GestureDetector(
       onTap: () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Tính năng $label sẽ được cập nhật sau'),
-            duration: const Duration(seconds: 2),
+        // Navigate to the corresponding report screen based on label
+        Widget reportScreen;
+        switch (label) {
+          case 'Dinh dưỡng':
+            reportScreen = const NutritionReportScreen();
+            break;
+          case 'Tập luyện':
+            reportScreen = const WorkoutReportScreen();
+            break;
+          case 'Số bước':
+            reportScreen = const StepsReportScreen();
+            break;
+          case 'Cân nặng':
+            reportScreen = const WeightReportScreen();
+            break;
+          default:
+            // Fallback: show snackbar if label doesn't match
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Tính năng $label sẽ được cập nhật sau'),
+                duration: const Duration(seconds: 2),
+              ),
+            );
+            return;
+        }
+
+        // Navigate to the report screen
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => reportScreen,
           ),
         );
       },
