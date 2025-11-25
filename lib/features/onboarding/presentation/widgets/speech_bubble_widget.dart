@@ -6,11 +6,7 @@ class SpeechBubbleWidget extends StatelessWidget {
   final String text;
   final double? width;
 
-  const SpeechBubbleWidget({
-    super.key,
-    required this.text,
-    this.width,
-  });
+  const SpeechBubbleWidget({super.key, required this.text, this.width});
 
   @override
   Widget build(BuildContext context) {
@@ -32,9 +28,9 @@ class SpeechBubbleWidget extends StatelessWidget {
                   child: Text(
                     text,
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: AppColors.nearBlack,
-                          height: 1.5,
-                        ),
+                      color: AppColors.nearBlack,
+                      height: 1.5,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                 ),
@@ -55,7 +51,7 @@ class _SpeechBubblePainter extends CustomPainter {
       ..style = PaintingStyle.fill;
 
     final borderPaint = Paint()
-      ..color = AppColors.charmingGreen.withOpacity(0.3)
+      ..color = AppColors.charmingGreen.withValues(alpha: 0.3)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2;
 
@@ -83,4 +79,3 @@ class _SpeechBubblePainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
-

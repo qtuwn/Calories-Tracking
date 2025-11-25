@@ -27,6 +27,6 @@ class IntroStatusNotifier extends AsyncNotifier<bool> {
   }
 }
 
-final introStatusProvider =
-    AsyncNotifierProvider<IntroStatusNotifier, bool>(IntroStatusNotifier.new);
-
+final introStatusProvider = AsyncNotifierProvider<IntroStatusNotifier, bool>(
+  IntroStatusNotifier.new,
+);

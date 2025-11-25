@@ -48,14 +48,10 @@ class _LoadingScreen extends StatelessWidget {
           children: [
             const CircularProgressIndicator(),
             const SizedBox(height: 24),
-            Text(
-              'Đang tải...',
-              style: Theme.of(context).textTheme.bodyLarge,
-            ),
+            Text('Đang tải...', style: Theme.of(context).textTheme.bodyLarge),
           ],
         ),
       ),
     );
   }
 }
-

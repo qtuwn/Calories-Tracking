@@ -49,7 +49,9 @@ class _CalculatingScreenState extends ConsumerState<CalculatingScreen> {
 
     // Calculate all nutrition values
     await Future.delayed(const Duration(milliseconds: 500));
-    if (!mounted) return;
+    if (!mounted) {
+      return;
+    }
 
     try {
       final model = ref.read(onboardingControllerProvider);
@@ -71,9 +73,7 @@ class _CalculatingScreenState extends ConsumerState<CalculatingScreen> {
       // Navigate to result summary step
       if (mounted) {
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (_) => const ResultSummaryStepScreen(),
-          ),
+          MaterialPageRoute(builder: (_) => const ResultSummaryStepScreen()),
         );
       }
     } catch (e) {
@@ -105,7 +105,9 @@ class _CalculatingScreenState extends ConsumerState<CalculatingScreen> {
                 height: 80,
                 child: CircularProgressIndicator(
                   strokeWidth: 4,
-                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.mintGreen),
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    AppColors.mintGreen,
+                  ),
                 ),
               ),
               const SizedBox(height: 48),
@@ -216,42 +218,38 @@ class _CalculationStepRowState extends State<_CalculationStepRow>
               color: widget.isCompleted
                   ? AppColors.mintGreen
                   : widget.isCurrent
-                      ? AppColors.mintGreen.withOpacity(0.3)
-                      : AppColors.charmingGreen.withOpacity(0.3),
+                  ? AppColors.mintGreen.withValues(alpha: 0.3)
+                  : AppColors.charmingGreen.withValues(alpha: 0.3),
             ),
             child: widget.isCompleted
-                ? const Icon(
-                    Icons.check,
-                    size: 20,
-                    color: Colors.white,
-                  )
+                ? const Icon(Icons.check, size: 20, color: Colors.white)
                 : widget.isCurrent
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            AppColors.mintGreen,
-                          ),
-                        ),
-                      )
-                    : null,
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        AppColors.mintGreen,
+                      ),
+                    ),
+                  )
+                : null,
           ),
           const SizedBox(width: 16),
-          
+
           // Label
           Expanded(
             child: Text(
               widget.label,
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: widget.isPending
-                        ? AppColors.mediumGray
-                        : AppColors.nearBlack,
-                    fontWeight: widget.isCurrent || widget.isCompleted
-                        ? FontWeight.w600
-                        : FontWeight.normal,
-                  ),
+                color: widget.isPending
+                    ? AppColors.mediumGray
+                    : AppColors.nearBlack,
+                fontWeight: widget.isCurrent || widget.isCompleted
+                    ? FontWeight.w600
+                    : FontWeight.normal,
+              ),
             ),
           ),
         ],
@@ -259,4 +257,3 @@ class _CalculationStepRowState extends State<_CalculationStepRow>
     );
   }
 }
-

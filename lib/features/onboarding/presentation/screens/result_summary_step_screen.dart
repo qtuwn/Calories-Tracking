@@ -13,10 +13,12 @@ class ResultSummaryStepScreen extends ConsumerStatefulWidget {
   const ResultSummaryStepScreen({super.key});
 
   @override
-  ConsumerState<ResultSummaryStepScreen> createState() => _ResultSummaryStepScreenState();
+  ConsumerState<ResultSummaryStepScreen> createState() =>
+      _ResultSummaryStepScreenState();
 }
 
-class _ResultSummaryStepScreenState extends ConsumerState<ResultSummaryStepScreen> {
+class _ResultSummaryStepScreenState
+    extends ConsumerState<ResultSummaryStepScreen> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(onboardingControllerProvider);
@@ -25,9 +27,7 @@ class _ResultSummaryStepScreenState extends ConsumerState<ResultSummaryStepScree
     if (resultMap == null) {
       return Scaffold(
         backgroundColor: AppColors.palePink,
-        body: const Center(
-          child: Text('Không có dữ liệu kết quả'),
-        ),
+        body: const Center(child: Text('Không có dữ liệu kết quả')),
       );
     }
 
@@ -58,16 +58,16 @@ class _ResultSummaryStepScreenState extends ConsumerState<ResultSummaryStepScree
               Text(
                 'Kết quả tính toán',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      color: AppColors.nearBlack,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  color: AppColors.nearBlack,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 8),
               Text(
                 'Dựa trên thông tin bạn đã cung cấp',
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: AppColors.mediumGray,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyLarge?.copyWith(color: AppColors.mediumGray),
               ),
               const SizedBox(height: 32),
 
@@ -115,15 +115,17 @@ class _ResultSummaryStepScreenState extends ConsumerState<ResultSummaryStepScree
                     foregroundColor: AppColors.nearBlack,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+                      borderRadius: BorderRadius.circular(
+                        AppTheme.radiusMedium,
+                      ),
                     ),
                   ),
                   child: Text(
                     'Hoàn thành',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: AppColors.nearBlack,
-                          fontWeight: FontWeight.w600,
-                        ),
+                      color: AppColors.nearBlack,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ),
@@ -159,12 +161,13 @@ class _TDEECard extends StatelessWidget {
                 Text(
                   'TDEE/ngày',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: AppColors.nearBlack,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    color: AppColors.nearBlack,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 _InfoTooltip(
-                  message: 'TDEE (Total Daily Energy Expenditure) là tổng năng lượng bạn đốt cháy mỗi ngày, bao gồm cả hoạt động thể chất.\n\nCông thức: TDEE = BMR × Hệ số hoạt động',
+                  message:
+                      'TDEE (Total Daily Energy Expenditure) là tổng năng lượng bạn đốt cháy mỗi ngày, bao gồm cả hoạt động thể chất.\n\nCông thức: TDEE = BMR × Hệ số hoạt động',
                 ),
               ],
             ),
@@ -172,17 +175,17 @@ class _TDEECard extends StatelessWidget {
             Text(
               tdee.toStringAsFixed(0),
               style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                    color: AppColors.nearBlack,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 48,
-                  ),
+                color: AppColors.nearBlack,
+                fontWeight: FontWeight.bold,
+                fontSize: 48,
+              ),
             ),
             const SizedBox(height: 4),
             Text(
               'kcal',
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: AppColors.nearBlack.withOpacity(0.7),
-                  ),
+                color: AppColors.nearBlack.withValues(alpha: 0.7),
+              ),
             ),
           ],
         ),
@@ -244,16 +247,16 @@ class _DeficitSurplusCard extends StatelessWidget {
                 Text(
                   title,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: AppColors.nearBlack,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    color: AppColors.nearBlack,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 _InfoTooltip(
                   message: isMaintain
                       ? 'Để duy trì cân nặng, bạn cần ăn đúng bằng TDEE mỗi ngày.\n\nCalo mục tiêu = TDEE'
                       : isDeficit
-                          ? 'Thâm hụt calo là lượng calo bạn ăn ít hơn TDEE để giảm cân.\n\nCông thức: Thâm hụt = TDEE - Calo mục tiêu\n\n~7700 kcal thâm hụt = giảm 1 kg'
-                          : 'Dư thừa calo là lượng calo bạn ăn nhiều hơn TDEE để tăng cân.\n\nCông thức: Dư thừa = Calo mục tiêu - TDEE\n\n~7700 kcal dư thừa = tăng 1 kg',
+                      ? 'Thâm hụt calo là lượng calo bạn ăn ít hơn TDEE để giảm cân.\n\nCông thức: Thâm hụt = TDEE - Calo mục tiêu\n\n~7700 kcal thâm hụt = giảm 1 kg'
+                      : 'Dư thừa calo là lượng calo bạn ăn nhiều hơn TDEE để tăng cân.\n\nCông thức: Dư thừa = Calo mục tiêu - TDEE\n\n~7700 kcal dư thừa = tăng 1 kg',
                 ),
               ],
             ),
@@ -264,10 +267,10 @@ class _DeficitSurplusCard extends StatelessWidget {
                 Text(
                   valueText,
                   style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                        color: AppColors.nearBlack,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 48,
-                      ),
+                    color: AppColors.nearBlack,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 48,
+                  ),
                 ),
                 const SizedBox(width: 8),
                 Padding(
@@ -275,8 +278,8 @@ class _DeficitSurplusCard extends StatelessWidget {
                   child: Text(
                     'kcal',
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: AppColors.nearBlack.withOpacity(0.7),
-                        ),
+                      color: AppColors.nearBlack.withValues(alpha: 0.7),
+                    ),
                   ),
                 ),
               ],
@@ -284,7 +287,7 @@ class _DeficitSurplusCard extends StatelessWidget {
             if (!isMaintain) ...[
               const SizedBox(height: 12),
               Divider(
-                color: AppColors.nearBlack.withOpacity(0.2),
+                color: AppColors.nearBlack.withValues(alpha: 0.2),
                 thickness: 1,
               ),
               const SizedBox(height: 12),
@@ -294,15 +297,15 @@ class _DeficitSurplusCard extends StatelessWidget {
                   Text(
                     'TDEE',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppColors.nearBlack.withOpacity(0.7),
-                        ),
+                      color: AppColors.nearBlack.withValues(alpha: 0.7),
+                    ),
                   ),
                   Text(
                     '${tdee.toStringAsFixed(0)} kcal',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppColors.nearBlack,
-                          fontWeight: FontWeight.w600,
-                        ),
+                      color: AppColors.nearBlack,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ],
               ),
@@ -313,15 +316,15 @@ class _DeficitSurplusCard extends StatelessWidget {
                   Text(
                     'Calo mục tiêu',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppColors.nearBlack.withOpacity(0.7),
-                        ),
+                      color: AppColors.nearBlack.withValues(alpha: 0.7),
+                    ),
                   ),
                   Text(
                     '${targetKcal.toStringAsFixed(0)} kcal',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppColors.nearBlack,
-                          fontWeight: FontWeight.w600,
-                        ),
+                      color: AppColors.nearBlack,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ],
               ),
@@ -363,12 +366,13 @@ class _GoalDateCard extends StatelessWidget {
                 Text(
                   'Ngày dự kiến đạt mục tiêu',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: AppColors.nearBlack,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    color: AppColors.nearBlack,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 _InfoTooltip(
-                  message: 'Ngày dự kiến đạt mục tiêu được tính dựa trên:\n\n• Chênh lệch cân nặng hiện tại và mục tiêu\n• Tốc độ thay đổi cân nặng hàng tuần\n\nCông thức: Số tuần = |Cân nặng mục tiêu - Cân nặng hiện tại| / Tốc độ thay đổi (kg/tuần)',
+                  message:
+                      'Ngày dự kiến đạt mục tiêu được tính dựa trên:\n\n• Chênh lệch cân nặng hiện tại và mục tiêu\n• Tốc độ thay đổi cân nặng hàng tuần\n\nCông thức: Số tuần = |Cân nặng mục tiêu - Cân nặng hiện tại| / Tốc độ thay đổi (kg/tuần)',
                 ),
               ],
             ),
@@ -376,10 +380,10 @@ class _GoalDateCard extends StatelessWidget {
             Text(
               formattedDate,
               style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                    color: AppColors.nearBlack,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 32,
-                  ),
+                color: AppColors.nearBlack,
+                fontWeight: FontWeight.bold,
+                fontSize: 32,
+              ),
             ),
             const SizedBox(height: 8),
             Text(
@@ -387,8 +391,8 @@ class _GoalDateCard extends StatelessWidget {
                   ? 'Còn khoảng $weeksUntilGoal tuần'
                   : 'Đã đạt mục tiêu',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.nearBlack.withOpacity(0.7),
-                  ),
+                color: AppColors.nearBlack.withValues(alpha: 0.7),
+              ),
             ),
           ],
         ),
@@ -408,12 +412,12 @@ class _InfoTooltip extends StatelessWidget {
       message: message,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.nearBlack.withOpacity(0.9),
+        color: AppColors.nearBlack.withValues(alpha: 0.9),
         borderRadius: BorderRadius.circular(AppTheme.radiusSmall),
       ),
-      textStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: AppColors.white,
-          ),
+      textStyle: Theme.of(
+        context,
+      ).textTheme.bodySmall?.copyWith(color: AppColors.white),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
@@ -436,17 +440,17 @@ class _InfoTooltip extends StatelessWidget {
                     Text(
                       'Thông tin',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            color: AppColors.nearBlack,
-                            fontWeight: FontWeight.w600,
-                          ),
+                        color: AppColors.nearBlack,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ],
                 ),
                 content: Text(
                   message,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppColors.nearBlack,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(color: AppColors.nearBlack),
                 ),
                 actions: [
                   TextButton(
@@ -454,9 +458,9 @@ class _InfoTooltip extends StatelessWidget {
                     child: Text(
                       'Đóng',
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                            color: AppColors.mintGreen,
-                            fontWeight: FontWeight.w600,
-                          ),
+                        color: AppColors.mintGreen,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ],
@@ -469,12 +473,12 @@ class _InfoTooltip extends StatelessWidget {
             height: 24,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: AppColors.nearBlack.withOpacity(0.1),
+              color: AppColors.nearBlack.withValues(alpha: 0.1),
             ),
             child: Icon(
               Icons.info_outline,
               size: 16,
-              color: AppColors.nearBlack.withOpacity(0.7),
+              color: AppColors.nearBlack.withValues(alpha: 0.7),
             ),
           ),
         ),
@@ -482,4 +486,3 @@ class _InfoTooltip extends StatelessWidget {
     );
   }
 }
-

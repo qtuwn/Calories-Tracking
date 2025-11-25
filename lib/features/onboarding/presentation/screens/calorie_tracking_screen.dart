@@ -15,7 +15,7 @@ class CalorieTrackingScreen extends StatelessWidget {
           end: Alignment.bottomCenter,
           colors: [
             OnboardingTheme.backgroundColor,
-            OnboardingTheme.backgroundColor.withOpacity(0.8),
+            OnboardingTheme.backgroundColor.withValues(alpha: 0.8),
           ],
         ),
       ),
@@ -26,10 +26,7 @@ class CalorieTrackingScreen extends StatelessWidget {
             children: [
               const SizedBox(height: 40),
               // App Name
-              Text(
-                'Ăn Khoẻ',
-                style: OnboardingTheme.appNameStyle,
-              ),
+              Text('Ăn Khoẻ', style: OnboardingTheme.appNameStyle),
               const SizedBox(height: 40),
               // Mascot with laptop
               SizedBox(
@@ -41,25 +38,18 @@ class CalorieTrackingScreen extends StatelessWidget {
                       child: Container(
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
-                          color: OnboardingTheme.secondaryColor.withOpacity(0.3),
+                          color: OnboardingTheme.secondaryColor.withValues(
+                            alpha: 0.3,
+                          ),
                           shape: BoxShape.circle,
                         ),
                         child: const MascotLaptopWidget(size: 200),
                       ),
                     ),
                     // Food labels
-                    FoodLabel(
-                      text: 'cơm tấm',
-                      position: const Offset(20, 80),
-                    ),
-                    FoodLabel(
-                      text: 'phở gà',
-                      position: const Offset(200, 40),
-                    ),
-                    FoodLabel(
-                      text: 'bún bò',
-                      position: const Offset(180, 220),
-                    ),
+                    FoodLabel(text: 'cơm tấm', position: const Offset(20, 80)),
+                    FoodLabel(text: 'phở gà', position: const Offset(200, 40)),
+                    FoodLabel(text: 'bún bò', position: const Offset(180, 220)),
                   ],
                 ),
               ),
@@ -84,5 +74,3 @@ class CalorieTrackingScreen extends StatelessWidget {
     );
   }
 }
-
-

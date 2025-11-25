@@ -34,9 +34,7 @@ class SplashScreen extends ConsumerWidget {
               if (userStatus.onboardingCompleted) {
                 // User has completed onboarding -> go to Home
                 Navigator.of(context).pushReplacement(
-                  MaterialPageRoute(
-                    builder: (_) => const HomeScreen(),
-                  ),
+                  MaterialPageRoute(builder: (_) => const HomeScreen()),
                 );
               } else {
                 // User needs onboarding -> go to WelcomeScreen
@@ -84,9 +82,9 @@ class SplashScreen extends ConsumerWidget {
             const SizedBox(height: 24),
             Text(
               'Ăn Khỏe',
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
           ],
         ),
@@ -94,4 +92,3 @@ class SplashScreen extends ConsumerWidget {
     );
   }
 }
-

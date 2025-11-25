@@ -3,14 +3,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import 'package:calories_app/core/theme/theme.dart';
-import '../providers/home_dashboard_providers.dart';
+import '../providers/diary_provider.dart';
 
 class HomeHeaderSection extends ConsumerWidget {
   const HomeHeaderSection({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final selectedDate = ref.watch(homeSelectedDateProvider);
+    // Use the same selected date as the Diary tab for consistency
+    final diaryState = ref.watch(diaryProvider);
+    final selectedDate = diaryState.selectedDate;
     final weekDays = _generateWeekDays(selectedDate);
 
     final dateLabel = DateFormat('EEEE, dd/MM', 'vi')
@@ -56,8 +58,10 @@ class HomeHeaderSection extends ConsumerWidget {
               final day = date.day;
 
               return GestureDetector(
-                onTap: () =>
-                    ref.read(homeSelectedDateProvider.notifier).select(date),
+                onTap: () {
+                  // Sync date selection with Diary tab
+                  ref.read(diaryProvider.notifier).setSelectedDate(date);
+                },
                 child: SizedBox(
                   height: 60,
                   child: AnimatedContainer(
@@ -68,12 +72,12 @@ class HomeHeaderSection extends ConsumerWidget {
                     ),
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? AppColors.mintGreen.withOpacity(0.9)
+                          ? AppColors.mintGreen.withValues(alpha: 0.9)
                           : Colors.white,
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
+                          color: Colors.black.withValues(alpha: 0.05),
                           blurRadius: 8,
                           offset: const Offset(0, 4),
                         ),
@@ -81,7 +85,7 @@ class HomeHeaderSection extends ConsumerWidget {
                       border: Border.all(
                         color: isSelected
                             ? AppColors.mintGreen
-                            : AppColors.charmingGreen.withOpacity(0.4),
+                            : AppColors.charmingGreen.withValues(alpha: 0.4),
                       ),
                     ),
                     child: Column(

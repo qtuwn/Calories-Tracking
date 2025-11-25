@@ -11,12 +11,9 @@ mixin OnboardingAnalyticsMixin<T extends StatefulWidget> on State<T> {
   void initStepTracking(String stepName) {
     _currentStepName = stepName;
     _stepStartTime = DateTime.now();
-    
+
     // Log step viewed (duration is 0 for first view)
-    OnboardingLogger.logStepViewed(
-      stepName: stepName,
-      durationMs: 0,
-    );
+    OnboardingLogger.logStepViewed(stepName: stepName, durationMs: 0);
   }
 
   /// Track step completion and log duration
@@ -25,7 +22,7 @@ mixin OnboardingAnalyticsMixin<T extends StatefulWidget> on State<T> {
     if (_stepStartTime != null && _currentStepName != null) {
       final duration = DateTime.now().difference(_stepStartTime!);
       final durationMs = duration.inMilliseconds;
-      
+
       // Log step viewed for next step with duration
       await OnboardingLogger.logStepViewed(
         stepName: nextStepName,
@@ -40,7 +37,7 @@ mixin OnboardingAnalyticsMixin<T extends StatefulWidget> on State<T> {
     if (_stepStartTime != null && _currentStepName != null) {
       final duration = DateTime.now().difference(_stepStartTime!);
       final durationMs = duration.inMilliseconds;
-      
+
       await OnboardingLogger.logOnboardingCompleted(
         stepName: _currentStepName!,
         durationMs: durationMs,
@@ -55,7 +52,7 @@ mixin OnboardingAnalyticsMixin<T extends StatefulWidget> on State<T> {
     if (_stepStartTime != null && _currentStepName != null) {
       final duration = DateTime.now().difference(_stepStartTime!);
       final durationMs = duration.inMilliseconds;
-      
+
       await OnboardingLogger.logOnboardingAbandoned(
         stepName: _currentStepName!,
         durationMs: durationMs,
@@ -63,4 +60,3 @@ mixin OnboardingAnalyticsMixin<T extends StatefulWidget> on State<T> {
     }
   }
 }
-

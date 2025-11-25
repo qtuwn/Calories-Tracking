@@ -9,15 +9,19 @@ class OnboardingModel {
   final double? height;
   final int? heightCm; // Height in centimeters (120-220)
   final double? weight;
-  final double? weightKg; // Weight in kilograms (35-200) - DEPRECATED: use weightHalfKg
-  final int? weightHalfKg; // Weight in half-kilogram units (70-400, representing 35.0-200.0 kg)
+  final double?
+  weightKg; // Weight in kilograms (35-200) - DEPRECATED: use weightHalfKg
+  final int?
+  weightHalfKg; // Weight in half-kilogram units (70-400, representing 35.0-200.0 kg)
   final double? bmi; // Body Mass Index
   final String? goalType; // lose|maintain|gain
-  final double? targetWeight; // Target weight in kilograms - DEPRECATED: use targetWeightHalfKg
+  final double?
+  targetWeight; // Target weight in kilograms - DEPRECATED: use targetWeightHalfKg
   final int? targetWeightHalfKg; // Target weight in half-kilogram units
   final double? weeklyDeltaKg; // Weekly weight change goal (0.25-1.0 kg/week)
   final String? activityLevel;
-  final double? activityMultiplier; // BMR multiplier (1.2, 1.375, 1.55, 1.725, 1.9)
+  final double?
+  activityMultiplier; // BMR multiplier (1.2, 1.375, 1.55, 1.725, 1.9)
   final double? bmr;
   final double? tdee;
   final double? targetKcal;
@@ -134,12 +138,17 @@ class OnboardingModel {
       gender != null && (gender == 'male' || gender == 'female');
 
   bool get _isAgeValid {
-    if (age == null) return false;
-    if (age! < 10 || age! > 100) return false;
+    if (age == null) {
+      return false;
+    }
+    if (age! < 10 || age! > 100) {
+      return false;
+    }
     return dobIso != null && dobIso!.isNotEmpty;
   }
 
-  bool get _isHeightValid => heightCm != null && heightCm! >= 120 && heightCm! <= 220;
+  bool get _isHeightValid =>
+      heightCm != null && heightCm! >= 120 && heightCm! <= 220;
 
   bool get _isWeightValid {
     final weight = weightKgComputed;
@@ -147,7 +156,8 @@ class OnboardingModel {
   }
 
   bool get _isGoalTypeValid =>
-      goalType != null && (goalType == 'lose' || goalType == 'maintain' || goalType == 'gain');
+      goalType != null &&
+      (goalType == 'lose' || goalType == 'maintain' || goalType == 'gain');
 
   bool get _isTargetWeightValid {
     final target = targetWeightComputed;
@@ -173,7 +183,9 @@ class OnboardingModel {
       return true;
     }
     // For lose/gain, weekly delta must be set and in valid range
-    return weeklyDeltaKg != null && weeklyDeltaKg! >= 0.25 && weeklyDeltaKg! <= 1.0;
+    return weeklyDeltaKg != null &&
+        weeklyDeltaKg! >= 0.25 &&
+        weeklyDeltaKg! <= 1.0;
   }
 
   bool get _isBodyMetricsValid {
@@ -204,18 +216,42 @@ class OnboardingModel {
 
   /// Get current progress step (0-6)
   int get currentStep {
-    if (!_isNicknameValid) return 0;
-    if (!_isGenderValid) return 1;
-    if (!_isAgeValid) return 2;
-    if (!_isHeightValid) return 3;
-    if (!_isWeightValid) return 4;
-    if (!_isBodyMetricsValid) return 5;
-    if (!_isGoalTypeValid) return 6;
-    if (!_isTargetWeightValid) return 7;
-    if (!_isWeeklyDeltaValid) return 8;
-    if (!_isActivityValid) return 9;
-    if (!_isTargetValid) return 10;
-    if (!_isMacroValid) return 11;
+    if (!_isNicknameValid) {
+      return 0;
+    }
+    if (!_isGenderValid) {
+      return 1;
+    }
+    if (!_isAgeValid) {
+      return 2;
+    }
+    if (!_isHeightValid) {
+      return 3;
+    }
+    if (!_isWeightValid) {
+      return 4;
+    }
+    if (!_isBodyMetricsValid) {
+      return 5;
+    }
+    if (!_isGoalTypeValid) {
+      return 6;
+    }
+    if (!_isTargetWeightValid) {
+      return 7;
+    }
+    if (!_isWeeklyDeltaValid) {
+      return 8;
+    }
+    if (!_isActivityValid) {
+      return 9;
+    }
+    if (!_isTargetValid) {
+      return 10;
+    }
+    if (!_isMacroValid) {
+      return 11;
+    }
     return totalSteps; // All steps complete
   }
 
@@ -257,4 +293,3 @@ class OnboardingModel {
     }
   }
 }
-

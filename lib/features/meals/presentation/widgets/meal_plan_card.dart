@@ -21,12 +21,12 @@ class MealPlanCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 16,
             offset: const Offset(0, 8),
           ),
         ],
-        border: Border.all(color: plan.accent.withOpacity(0.25)),
+        border: Border.all(color: plan.accent.withValues(alpha: 0.25)),
       ),
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -44,16 +44,16 @@ class MealPlanCard extends StatelessWidget {
                     Text(
                       plan.title,
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.nearBlack,
-                          ),
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.nearBlack,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       plan.description,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: AppColors.mediumGray,
-                          ),
+                        color: AppColors.mediumGray,
+                      ),
                     ),
                   ],
                 ),
@@ -68,8 +68,9 @@ class MealPlanCard extends StatelessWidget {
                 .map(
                   (tag) => Chip(
                     label: Text(tag),
-                    backgroundColor: plan.accent.withOpacity(0.18),
-                    labelStyle: Theme.of(context).textTheme.labelMedium?.copyWith(
+                    backgroundColor: plan.accent.withValues(alpha: 0.18),
+                    labelStyle: Theme.of(context).textTheme.labelMedium
+                        ?.copyWith(
                           color: AppColors.nearBlack,
                           fontWeight: FontWeight.w600,
                         ),
@@ -125,7 +126,7 @@ class MealPlanCard extends StatelessWidget {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () {
-                  // TODO: Navigate to meal plan detail screen.
+                  // Meal plan detail screen navigation not yet implemented
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: plan.accent,
@@ -138,8 +139,8 @@ class MealPlanCard extends StatelessWidget {
                 child: Text(
                   'Xem chi tiết & bắt đầu',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ),
@@ -162,17 +163,14 @@ class _PlanBadge extends StatelessWidget {
       height: 48,
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [
-            color,
-            AppColors.white,
-          ],
+          colors: [color, AppColors.white],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         shape: BoxShape.circle,
         boxShadow: [
           BoxShadow(
-            color: color.withOpacity(0.4),
+            color: color.withValues(alpha: 0.4),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -204,7 +202,7 @@ class _MacroStat extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.12),
+          color: color.withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(14),
         ),
         child: Column(
@@ -212,17 +210,17 @@ class _MacroStat extends StatelessWidget {
           children: [
             Text(
               label,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.mediumGray,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: AppColors.mediumGray),
             ),
             const SizedBox(height: 4),
             Text(
               value,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.nearBlack,
-                  ),
+                fontWeight: FontWeight.w700,
+                color: AppColors.nearBlack,
+              ),
             ),
           ],
         ),
@@ -232,10 +230,7 @@ class _MacroStat extends StatelessWidget {
 }
 
 class _InfoPill extends StatelessWidget {
-  const _InfoPill({
-    required this.icon,
-    required this.label,
-  });
+  const _InfoPill({required this.icon, required this.label});
 
   final IconData icon;
   final String label;
@@ -246,26 +241,22 @@ class _InfoPill extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
-          color: AppColors.charmingGreen.withOpacity(0.25),
+          color: AppColors.charmingGreen.withValues(alpha: 0.25),
           borderRadius: BorderRadius.circular(14),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              icon,
-              size: 18,
-              color: AppColors.nearBlack,
-            ),
+            Icon(icon, size: 18, color: AppColors.nearBlack),
             const SizedBox(width: 6),
             Flexible(
               child: Text(
                 label,
                 style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.nearBlack,
-                    ),
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.nearBlack,
+                ),
               ),
             ),
           ],
@@ -274,4 +265,3 @@ class _InfoPill extends StatelessWidget {
     );
   }
 }
-

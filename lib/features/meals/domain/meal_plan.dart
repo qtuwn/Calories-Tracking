@@ -39,4 +39,3 @@ class MealCategory {
   final IconData icon;
   final Color accent;
 }
-

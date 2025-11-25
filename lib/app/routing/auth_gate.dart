@@ -45,9 +45,9 @@ class _LoadingScreen extends StatelessWidget {
             const SizedBox(height: 24),
             Text(
               'Ăn Khỏe',
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
           ],
         ),
@@ -55,4 +55,3 @@ class _LoadingScreen extends StatelessWidget {
     );
   }
 }
-

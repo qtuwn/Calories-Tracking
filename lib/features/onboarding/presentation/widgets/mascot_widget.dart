@@ -4,11 +4,7 @@ class MascotWidget extends StatelessWidget {
   final double size;
   final Color? color;
 
-  const MascotWidget({
-    super.key,
-    this.size = 200,
-    this.color,
-  });
+  const MascotWidget({super.key, this.size = 200, this.color});
 
   @override
   Widget build(BuildContext context) {
@@ -34,7 +30,7 @@ class _MascotPainter extends CustomPainter {
     final strokePaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 3
-      ..color = Colors.white.withOpacity(0.3);
+      ..color = Colors.white.withValues(alpha: 0.3);
 
     final centerX = size.width / 2;
     final centerY = size.height / 2;
@@ -54,11 +50,7 @@ class _MascotPainter extends CustomPainter {
     // Head (circle)
     final headRadius = size.width * 0.3;
     canvas.drawCircle(Offset(centerX, centerY - 30), headRadius, paint);
-    canvas.drawCircle(
-      Offset(centerX, centerY - 30),
-      headRadius,
-      strokePaint,
-    );
+    canvas.drawCircle(Offset(centerX, centerY - 30), headRadius, strokePaint);
 
     // Ears
     final earPath = Path()
@@ -80,28 +72,12 @@ class _MascotPainter extends CustomPainter {
 
     // Eyes
     final eyePaint = Paint()..color = Colors.white;
-    canvas.drawCircle(
-      Offset(centerX - 15, centerY - 40),
-      8,
-      eyePaint,
-    );
-    canvas.drawCircle(
-      Offset(centerX + 15, centerY - 40),
-      8,
-      eyePaint,
-    );
+    canvas.drawCircle(Offset(centerX - 15, centerY - 40), 8, eyePaint);
+    canvas.drawCircle(Offset(centerX + 15, centerY - 40), 8, eyePaint);
 
     final eyeDotPaint = Paint()..color = Colors.black;
-    canvas.drawCircle(
-      Offset(centerX - 15, centerY - 40),
-      4,
-      eyeDotPaint,
-    );
-    canvas.drawCircle(
-      Offset(centerX + 15, centerY - 40),
-      4,
-      eyeDotPaint,
-    );
+    canvas.drawCircle(Offset(centerX - 15, centerY - 40), 4, eyeDotPaint);
+    canvas.drawCircle(Offset(centerX + 15, centerY - 40), 4, eyeDotPaint);
 
     // Eyebrows
     final eyebrowPaint = Paint()
@@ -162,5 +138,3 @@ class _MascotPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
-
-

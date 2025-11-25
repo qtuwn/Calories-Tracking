@@ -11,7 +11,8 @@ class WeeklyDeltaStepScreen extends ConsumerStatefulWidget {
   const WeeklyDeltaStepScreen({super.key});
 
   @override
-  ConsumerState<WeeklyDeltaStepScreen> createState() => _WeeklyDeltaStepScreenState();
+  ConsumerState<WeeklyDeltaStepScreen> createState() =>
+      _WeeklyDeltaStepScreenState();
 }
 
 class _WeeklyDeltaStepScreenState extends ConsumerState<WeeklyDeltaStepScreen> {
@@ -26,7 +27,9 @@ class _WeeklyDeltaStepScreenState extends ConsumerState<WeeklyDeltaStepScreen> {
     final onboardingState = ref.read(onboardingControllerProvider);
     _weeklyDelta = onboardingState.weeklyDeltaKg ?? 0.5;
     // Save initial value
-    ref.read(onboardingControllerProvider.notifier).updateWeeklyDelta(_weeklyDelta);
+    ref
+        .read(onboardingControllerProvider.notifier)
+        .updateWeeklyDelta(_weeklyDelta);
   }
 
   void _onDeltaChanged(double value) {
@@ -38,11 +41,13 @@ class _WeeklyDeltaStepScreenState extends ConsumerState<WeeklyDeltaStepScreen> {
 
   double _calculateDailyDeltaKcal() {
     final goalType = ref.read(onboardingControllerProvider).goalType;
-    if (goalType == null) return 0;
-    
+    if (goalType == null) {
+      return 0;
+    }
+
     // dailyDeltaKcal = weeklyDeltaKg * 7700 / 7
     final dailyDelta = _weeklyDelta * 7700 / 7;
-    
+
     // Negative if losing weight
     return goalType == 'lose' ? -dailyDelta : dailyDelta;
   }
@@ -61,11 +66,9 @@ class _WeeklyDeltaStepScreenState extends ConsumerState<WeeklyDeltaStepScreen> {
 
   void _onContinuePressed() {
     // Navigate to activity level step
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => const ActivityLevelStepScreen(),
-      ),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const ActivityLevelStepScreen()));
   }
 
   @override
@@ -109,9 +112,7 @@ class _WeeklyDeltaStepScreenState extends ConsumerState<WeeklyDeltaStepScreen> {
               ),
               const SizedBox(height: 24),
 
-              ProgressIndicatorWidget(
-                progress: 8 / OnboardingModel.totalSteps,
-              ),
+              ProgressIndicatorWidget(progress: 8 / OnboardingModel.totalSteps),
               const SizedBox(height: 32),
 
               // Value display
@@ -122,7 +123,7 @@ class _WeeklyDeltaStepScreenState extends ConsumerState<WeeklyDeltaStepScreen> {
                     vertical: 24,
                   ),
                   decoration: BoxDecoration(
-                    color: AppColors.charmingGreen.withOpacity(0.3),
+                    color: AppColors.charmingGreen.withValues(alpha: 0.3),
                     borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
                   ),
                   child: Column(
@@ -145,7 +146,8 @@ class _WeeklyDeltaStepScreenState extends ConsumerState<WeeklyDeltaStepScreen> {
                             padding: const EdgeInsets.only(bottom: 16),
                             child: Text(
                               'kg/tuần',
-                              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                              style: Theme.of(context).textTheme.bodyLarge
+                                  ?.copyWith(
                                     color: AppColors.mediumGray,
                                     fontWeight: FontWeight.w600,
                                   ),
@@ -161,8 +163,10 @@ class _WeeklyDeltaStepScreenState extends ConsumerState<WeeklyDeltaStepScreen> {
                             vertical: 6,
                           ),
                           decoration: BoxDecoration(
-                            color: AppColors.mintGreen.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(AppTheme.radiusSmall),
+                            color: AppColors.mintGreen.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(
+                              AppTheme.radiusSmall,
+                            ),
                             border: Border.all(
                               color: AppColors.mintGreen,
                               width: 1.5,
@@ -191,7 +195,7 @@ class _WeeklyDeltaStepScreenState extends ConsumerState<WeeklyDeltaStepScreen> {
                   color: AppColors.white,
                   borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
                   border: Border.all(
-                    color: AppColors.charmingGreen.withOpacity(0.3),
+                    color: AppColors.charmingGreen.withValues(alpha: 0.3),
                     width: 1,
                   ),
                 ),
@@ -207,8 +211,8 @@ class _WeeklyDeltaStepScreenState extends ConsumerState<WeeklyDeltaStepScreen> {
                       child: Text(
                         '~7700 kcal cho 1 kg. Tốc độ ${_weeklyDelta.toStringAsFixed(2)} kg/tuần = ${dailyDeltaKcal.abs().toStringAsFixed(0)} kcal/ngày',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: AppColors.mediumGray,
-                            ),
+                          color: AppColors.mediumGray,
+                        ),
                       ),
                     ),
                   ],
@@ -227,7 +231,7 @@ class _WeeklyDeltaStepScreenState extends ConsumerState<WeeklyDeltaStepScreen> {
                   borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: Colors.black.withValues(alpha: 0.05),
                       blurRadius: 16,
                       offset: const Offset(0, 8),
                     ),
@@ -242,7 +246,9 @@ class _WeeklyDeltaStepScreenState extends ConsumerState<WeeklyDeltaStepScreen> {
                       divisions: ((_maxDelta - _minDelta) / _step).toInt(),
                       label: '${_weeklyDelta.toStringAsFixed(2)} kg/tuần',
                       activeColor: AppColors.mintGreen,
-                      inactiveColor: AppColors.charmingGreen.withOpacity(0.3),
+                      inactiveColor: AppColors.charmingGreen.withValues(
+                        alpha: 0.3,
+                      ),
                       onChanged: _onDeltaChanged,
                     ),
                     const SizedBox(height: 8),
@@ -261,7 +267,9 @@ class _WeeklyDeltaStepScreenState extends ConsumerState<WeeklyDeltaStepScreen> {
                                   vertical: 2,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: AppColors.mintGreen.withOpacity(0.2),
+                                  color: AppColors.mintGreen.withValues(
+                                    alpha: 0.2,
+                                  ),
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: Text(
@@ -273,7 +281,8 @@ class _WeeklyDeltaStepScreenState extends ConsumerState<WeeklyDeltaStepScreen> {
                                   ),
                                 ),
                               ),
-                            if (!isRecommended || isSelected) const SizedBox(height: 16),
+                            if (!isRecommended || isSelected)
+                              const SizedBox(height: 16),
                             Text(
                               value.toStringAsFixed(2),
                               style: TextStyle(
@@ -307,15 +316,17 @@ class _WeeklyDeltaStepScreenState extends ConsumerState<WeeklyDeltaStepScreen> {
                     foregroundColor: AppColors.nearBlack,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+                      borderRadius: BorderRadius.circular(
+                        AppTheme.radiusMedium,
+                      ),
                     ),
                   ),
                   child: Text(
                     'Tiếp tục',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: AppColors.nearBlack,
-                          fontWeight: FontWeight.w600,
-                        ),
+                      color: AppColors.nearBlack,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ),
@@ -327,4 +338,3 @@ class _WeeklyDeltaStepScreenState extends ConsumerState<WeeklyDeltaStepScreen> {
     );
   }
 }
-

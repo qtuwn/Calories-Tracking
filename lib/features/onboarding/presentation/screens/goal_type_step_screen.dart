@@ -34,14 +34,14 @@ class _GoalTypeStepScreenState extends ConsumerState<GoalTypeStepScreen> {
   }
 
   void _onContinue() {
-    if (_selectedGoalType == null) return;
+    if (_selectedGoalType == null) {
+      return;
+    }
 
     // Navigate to target weight step
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => const TargetWeightStepScreen(),
-      ),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const TargetWeightStepScreen()));
   }
 
   @override
@@ -75,9 +75,7 @@ class _GoalTypeStepScreenState extends ConsumerState<GoalTypeStepScreen> {
               ),
               const SizedBox(height: 24),
 
-              ProgressIndicatorWidget(
-                progress: 6 / OnboardingModel.totalSteps,
-              ),
+              ProgressIndicatorWidget(progress: 6 / OnboardingModel.totalSteps),
               const SizedBox(height: 32),
 
               // Goal type cards
@@ -126,15 +124,17 @@ class _GoalTypeStepScreenState extends ConsumerState<GoalTypeStepScreen> {
                     foregroundColor: AppColors.nearBlack,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+                      borderRadius: BorderRadius.circular(
+                        AppTheme.radiusMedium,
+                      ),
                     ),
                   ),
                   child: Text(
                     'Tiếp tục',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: AppColors.nearBlack,
-                          fontWeight: FontWeight.w600,
-                        ),
+                      color: AppColors.nearBlack,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ),
@@ -165,10 +165,7 @@ class _GoalTypeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final gradient = LinearGradient(
-      colors: [
-        AppColors.mintGreen.withOpacity(0.9),
-        AppColors.mintGreen,
-      ],
+      colors: [AppColors.mintGreen.withValues(alpha: 0.9), AppColors.mintGreen],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     );
@@ -181,14 +178,12 @@ class _GoalTypeCard extends StatelessWidget {
         color: isSelected ? null : AppColors.white,
         borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
         border: Border.all(
-          color: isSelected
-              ? Colors.transparent
-              : AppColors.charmingGreen,
+          color: isSelected ? Colors.transparent : AppColors.charmingGreen,
           width: 2,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isSelected ? 0.12 : 0.05),
+            color: Colors.black.withValues(alpha: isSelected ? 0.12 : 0.05),
             blurRadius: 16,
             offset: const Offset(0, 8),
           ),
@@ -208,8 +203,8 @@ class _GoalTypeCard extends StatelessWidget {
                   height: 56,
                   decoration: BoxDecoration(
                     color: isSelected
-                        ? AppColors.nearBlack.withOpacity(0.2)
-                        : AppColors.mintGreen.withOpacity(0.2),
+                        ? AppColors.nearBlack.withValues(alpha: 0.2)
+                        : AppColors.mintGreen.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
                   ),
                   child: Icon(
@@ -228,20 +223,20 @@ class _GoalTypeCard extends StatelessWidget {
                       Text(
                         title,
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              color: isSelected
-                                  ? AppColors.nearBlack
-                                  : AppColors.nearBlack,
-                              fontWeight: FontWeight.w600,
-                            ),
+                          color: isSelected
+                              ? AppColors.nearBlack
+                              : AppColors.nearBlack,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         description,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: isSelected
-                                  ? AppColors.nearBlack.withOpacity(0.8)
-                                  : AppColors.mediumGray,
-                            ),
+                          color: isSelected
+                              ? AppColors.nearBlack.withValues(alpha: 0.8)
+                              : AppColors.mediumGray,
+                        ),
                       ),
                     ],
                   ),
@@ -260,4 +255,3 @@ class _GoalTypeCard extends StatelessWidget {
     );
   }
 }
-
