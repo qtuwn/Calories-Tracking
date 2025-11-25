@@ -14,5 +14,12 @@ abstract class HealthRepository {
   /// Get total active energy burned (kcal) for today.
   /// Returns 0.0 if no data is available or if there's an error.
   Future<double> getTodayActiveCalories();
+
+  /// Get total steps for a date range (from startDate to endDate, inclusive).
+  /// Returns 0 if no data is available or if there's an error.
+  Future<int> getStepsForDateRange({
+    required DateTime startDate,
+    required DateTime endDate,
+  });
 }
 
