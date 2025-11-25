@@ -14,7 +14,7 @@ class IntroScreen extends StatelessWidget {
           end: Alignment.bottomCenter,
           colors: [
             OnboardingTheme.backgroundColor,
-            OnboardingTheme.backgroundColor.withOpacity(0.8),
+            OnboardingTheme.backgroundColor.withValues(alpha: 0.8),
           ],
         ),
       ),
@@ -25,10 +25,7 @@ class IntroScreen extends StatelessWidget {
             children: [
               const SizedBox(height: 40),
               // App Name
-              Text(
-                'Ăn Khoẻ',
-                style: OnboardingTheme.appNameStyle,
-              ),
+              Text('Ăn Khoẻ', style: OnboardingTheme.appNameStyle),
               const SizedBox(height: 60),
               // Mascot with badge
               Stack(
@@ -42,7 +39,9 @@ class IntroScreen extends StatelessWidget {
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: OnboardingTheme.primaryColor.withOpacity(0.3),
+                          color: OnboardingTheme.primaryColor.withValues(
+                            alpha: 0.3,
+                          ),
                           blurRadius: 40,
                           spreadRadius: 10,
                         ),
@@ -60,13 +59,10 @@ class IntroScreen extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: const Color(0xFF32CD32),
                         shape: BoxShape.circle,
-                        border: Border.all(
-                          color: Colors.white,
-                          width: 4,
-                        ),
+                        border: Border.all(color: Colors.white, width: 4),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.2),
+                            color: Colors.black.withValues(alpha: 0.2),
                             blurRadius: 8,
                             offset: const Offset(0, 2),
                           ),
@@ -106,5 +102,3 @@ class IntroScreen extends StatelessWidget {
     );
   }
 }
-
-

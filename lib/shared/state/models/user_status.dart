@@ -3,15 +3,12 @@ class UserStatus {
   final bool hasProfile;
   final bool onboardingCompleted;
 
-  UserStatus({
-    required this.hasProfile,
-    required this.onboardingCompleted,
-  });
+  UserStatus({required this.hasProfile, required this.onboardingCompleted});
 
   /// User is ready to use the app (has completed onboarding)
   bool get isReady => onboardingCompleted;
 
   /// User needs to complete onboarding
-  bool get needsOnboarding => hasProfile == false || onboardingCompleted == false;
+  bool get needsOnboarding =>
+      hasProfile == false || onboardingCompleted == false;
 }
-

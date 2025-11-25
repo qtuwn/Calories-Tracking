@@ -31,7 +31,7 @@ class _MealsRootPageState extends ConsumerState<MealsRootPage> {
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: _MealsHeader(
                   onSearchTap: () {
-                    // TODO: Navigate to meal plan search page.
+                    // Meal plan search page navigation not yet implemented
                   },
                 ),
               ),
@@ -87,13 +87,15 @@ class _MealsRootPageState extends ConsumerState<MealsRootPage> {
                       showStartButton: false,
                       actionButtonBuilder: (context) => OutlinedButton.icon(
                         onPressed: () {
-                          // TODO: Navigate to create meal plan flow.
+                          // Create meal plan flow navigation not yet implemented
                         },
                         icon: const Icon(Icons.add),
                         label: const Text('Tạo thực đơn mới'),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: AppColors.nearBlack,
-                          side: const BorderSide(color: AppColors.charmingGreen),
+                          side: const BorderSide(
+                            color: AppColors.charmingGreen,
+                          ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
                           ),
@@ -129,17 +131,17 @@ class _MealsHeader extends StatelessWidget {
       children: [
         Text(
           greeting,
-          style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                color: AppColors.mediumGray,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.labelLarge?.copyWith(color: AppColors.mediumGray),
         ),
         const SizedBox(height: 4),
         Text(
           'Thực đơn hôm nay',
           style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-                color: AppColors.nearBlack,
-              ),
+            fontWeight: FontWeight.w700,
+            color: AppColors.nearBlack,
+          ),
         ),
         const SizedBox(height: 16),
         GestureDetector(
@@ -151,7 +153,7 @@ class _MealsHeader extends StatelessWidget {
               borderRadius: BorderRadius.circular(18),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withValues(alpha: 0.05),
                   blurRadius: 12,
                   offset: const Offset(0, 6),
                 ),
@@ -162,27 +164,21 @@ class _MealsHeader extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: AppColors.mintGreen.withOpacity(0.25),
+                    color: AppColors.mintGreen.withValues(alpha: 0.25),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(
-                    Icons.search,
-                    color: AppColors.nearBlack,
-                  ),
+                  child: const Icon(Icons.search, color: AppColors.nearBlack),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
                   child: Text(
                     'Tìm thực đơn theo mục tiêu hoặc món ăn bạn thích...',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppColors.mediumGray,
-                        ),
+                      color: AppColors.mediumGray,
+                    ),
                   ),
                 ),
-                const Icon(
-                  Icons.tune,
-                  color: AppColors.nearBlack,
-                ),
+                const Icon(Icons.tune, color: AppColors.nearBlack),
               ],
             ),
           ),
@@ -193,8 +189,12 @@ class _MealsHeader extends StatelessWidget {
 
   String _greetingText() {
     final hour = DateTime.now().hour;
-    if (hour < 11) return 'Chào buổi sáng';
-    if (hour < 17) return 'Buổi chiều năng động';
+    if (hour < 11) {
+      return 'Chào buổi sáng';
+    }
+    if (hour < 17) {
+      return 'Buổi chiều năng động';
+    }
     return 'Buổi tối thư giãn';
   }
 }
@@ -229,10 +229,7 @@ class _MealPlanListView extends ConsumerWidget {
       separatorBuilder: (_, __) => const SizedBox(height: 16),
       itemBuilder: (context, index) {
         final plan = plans[index];
-        return MealPlanCard(
-          plan: plan,
-          showStartButton: showStartButton,
-        );
+        return MealPlanCard(plan: plan, showStartButton: showStartButton);
       },
     );
   }
@@ -264,8 +261,8 @@ class _ExploreMealsView extends ConsumerWidget {
                 Text(
                   'Chọn mục tiêu dinh dưỡng',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 SizedBox(
@@ -290,8 +287,8 @@ class _ExploreMealsView extends ConsumerWidget {
                 Text(
                   'Thực đơn đề xuất',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ],
             ),
@@ -314,10 +311,7 @@ class _ExploreMealsView extends ConsumerWidget {
 }
 
 class _EmptyState extends StatelessWidget {
-  const _EmptyState({
-    required this.message,
-    this.action,
-  });
+  const _EmptyState({required this.message, this.action});
 
   final String message;
   final Widget? action;
@@ -334,7 +328,7 @@ class _EmptyState extends StatelessWidget {
               width: 88,
               height: 88,
               decoration: BoxDecoration(
-                color: AppColors.mintGreen.withOpacity(0.25),
+                color: AppColors.mintGreen.withValues(alpha: 0.25),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
@@ -347,18 +341,14 @@ class _EmptyState extends StatelessWidget {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: AppColors.mediumGray,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyLarge?.copyWith(color: AppColors.mediumGray),
             ),
-            if (action != null) ...[
-              const SizedBox(height: 20),
-              action!,
-            ],
+            if (action != null) ...[const SizedBox(height: 20), action!],
           ],
         ),
       ),
     );
   }
 }
-

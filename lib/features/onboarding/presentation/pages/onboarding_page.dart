@@ -47,7 +47,9 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
     } catch (e, stackTrace) {
       debugPrint('Failed to persist intro flag: $e\n$stackTrace');
     }
-    if (!mounted) return;
+    if (!mounted) {
+      return;
+    }
     // Navigate to Auth (Sign in / Sign up) - use pushNamedAndRemoveUntil to clear stack
     Navigator.of(context).pushNamedAndRemoveUntil(
       '/login',
@@ -77,13 +79,16 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
             left: 0,
             right: 0,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 30),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 24.0,
+                vertical: 30,
+              ),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    OnboardingTheme.backgroundColor.withOpacity(0),
+                    OnboardingTheme.backgroundColor.withValues(alpha: 0),
                     OnboardingTheme.backgroundColor,
                   ],
                 ),
@@ -96,7 +101,9 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                     count: _screens.length,
                     effect: ExpandingDotsEffect(
                       activeDotColor: OnboardingTheme.primaryColor,
-                      dotColor: OnboardingTheme.secondaryColor.withOpacity(0.5),
+                      dotColor: OnboardingTheme.secondaryColor.withValues(
+                        alpha: 0.5,
+                      ),
                       dotHeight: 8,
                       dotWidth: 8,
                       expansionFactor: 3,
@@ -134,5 +141,3 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
     );
   }
 }
-
-

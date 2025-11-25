@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:calories_app/core/utils/units/weight_units.dart';
+import 'package:calories_app/core/utils/bmi_calculator.dart';
 import 'package:calories_app/features/onboarding/data/services/onboarding_persistence_service.dart';
 import 'package:calories_app/features/onboarding/domain/onboarding_model.dart';
 
@@ -68,27 +69,45 @@ class OnboardingController extends Notifier<OnboardingModel> {
 
   /// Update weight in kilograms and calculate BMI
   /// Accepts double but stores as half-kg internally
+  /// Uses shared BmiCalculator utility for consistency
   void updateWeight(double weightKg) {
     // Convert to half-kg and clamp
     final weightHalfKg = WeightUnits.clampAndConvert(weightKg);
-    
-    // Calculate BMI if height is available
+
+    // Calculate BMI if height is available using shared utility
     double? bmi;
     final weightKgComputed = WeightUnits.fromHalfKg(weightHalfKg);
     if (state.heightCm != null) {
-      final heightInMeters = state.heightCm! / 100.0;
-      bmi = weightKgComputed / (heightInMeters * heightInMeters);
+      try {
+        bmi = BmiCalculator.calculate(
+          weightKg: weightKgComputed,
+          heightCm: state.heightCm!,
+        );
+      } catch (e) {
+        // Invalid input, bmi remains null
+        debugPrint('[OnboardingController] ⚠️ Could not calculate BMI: $e');
+      }
     } else if (state.height != null) {
-      bmi = weightKgComputed / (state.height! * state.height!);
+      try {
+        bmi = BmiCalculator.calculateFromMeters(
+          weightKg: weightKgComputed,
+          heightM: state.height!,
+        );
+      } catch (e) {
+        // Invalid input, bmi remains null
+        debugPrint('[OnboardingController] ⚠️ Could not calculate BMI: $e');
+      }
     }
 
     // Store as half-kg internally, keep weightKg for backward compatibility during migration
-    _updateState(state.copyWith(
-      weightHalfKg: weightHalfKg,
-      weightKg: weightKgComputed, // Keep for backward compatibility
-      weight: weightKgComputed,
-      bmi: bmi,
-    ));
+    _updateState(
+      state.copyWith(
+        weightHalfKg: weightHalfKg,
+        weightKg: weightKgComputed, // Keep for backward compatibility
+        weight: weightKgComputed,
+        bmi: bmi,
+      ),
+    );
   }
 
   /// Update height and weight
@@ -107,12 +126,14 @@ class OnboardingController extends Notifier<OnboardingModel> {
     // Convert to half-kg and clamp
     final targetWeightHalfKg = WeightUnits.clampAndConvert(targetWeight);
     final targetWeightComputed = WeightUnits.fromHalfKg(targetWeightHalfKg);
-    
+
     // Store as half-kg internally, keep targetWeight for backward compatibility
-    _updateState(state.copyWith(
-      targetWeightHalfKg: targetWeightHalfKg,
-      targetWeight: targetWeightComputed, // Keep for backward compatibility
-    ));
+    _updateState(
+      state.copyWith(
+        targetWeightHalfKg: targetWeightHalfKg,
+        targetWeight: targetWeightComputed, // Keep for backward compatibility
+      ),
+    );
   }
 
   /// Update weekly delta (weight change per week)
@@ -122,20 +143,21 @@ class OnboardingController extends Notifier<OnboardingModel> {
 
   /// Update activity level and multiplier
   void updateActivityLevel(String activityLevel, double multiplier) {
-    _updateState(state.copyWith(
-      activityLevel: activityLevel,
-      activityMultiplier: multiplier,
-    ));
+    _updateState(
+      state.copyWith(
+        activityLevel: activityLevel,
+        activityMultiplier: multiplier,
+      ),
+    );
   }
 
   /// Update date of birth and compute age
   void updateDob(DateTime dob) {
     final normalizedDob = DateTime(dob.year, dob.month, dob.day);
     final age = _calculateAge(normalizedDob);
-    _updateState(state.copyWith(
-      dobIso: normalizedDob.toIso8601String(),
-      age: age,
-    ));
+    _updateState(
+      state.copyWith(dobIso: normalizedDob.toIso8601String(), age: age),
+    );
   }
 
   /// Update target calories
@@ -154,17 +176,18 @@ class OnboardingController extends Notifier<OnboardingModel> {
     required double carbPercent,
     required double fatPercent,
   }) {
-    _updateState(state.copyWith(
-      proteinPercent: proteinPercent,
-      carbPercent: carbPercent,
-      fatPercent: fatPercent,
-    ));
+    _updateState(
+      state.copyWith(
+        proteinPercent: proteinPercent,
+        carbPercent: carbPercent,
+        fatPercent: fatPercent,
+      ),
+    );
   }
 
   /// Calculate BMR using Mifflin-St Jeor Equation
   void calculateBMR() {
-    if (state.age == null ||
-        state.gender == null) {
+    if (state.age == null || state.gender == null) {
       return;
     }
 
@@ -206,7 +229,7 @@ class OnboardingController extends Notifier<OnboardingModel> {
     }
 
     final bmr = state.bmr!;
-    
+
     // Use activityMultiplier if available, otherwise calculate from activityLevel
     double multiplier;
     if (state.activityMultiplier != null) {
@@ -294,7 +317,8 @@ class OnboardingController extends Notifier<OnboardingModel> {
     final today = DateTime.now();
     int age = today.year - dob.year;
     final hasNotHadBirthday =
-        today.month < dob.month || (today.month == dob.month && today.day < dob.day);
+        today.month < dob.month ||
+        (today.month == dob.month && today.day < dob.day);
     if (hasNotHadBirthday) {
       age--;
     }
@@ -305,6 +329,5 @@ class OnboardingController extends Notifier<OnboardingModel> {
 /// Onboarding controller provider (Riverpod v3)
 final onboardingControllerProvider =
     NotifierProvider<OnboardingController, OnboardingModel>(() {
-  return OnboardingController();
-});
-
+      return OnboardingController();
+    });

@@ -12,37 +12,35 @@ class OnboardingTheme {
 
   // Typography
   static TextStyle get headingStyle => GoogleFonts.poppins(
-        fontSize: 28,
-        fontWeight: FontWeight.bold,
-        color: textColor,
-        letterSpacing: -0.5,
-      );
+    fontSize: 28,
+    fontWeight: FontWeight.bold,
+    color: textColor,
+    letterSpacing: -0.5,
+  );
 
   static TextStyle get subheadingStyle => GoogleFonts.poppins(
-        fontSize: 16,
-        fontWeight: FontWeight.w400,
-        color: lightTextColor,
-        height: 1.5,
-      );
+    fontSize: 16,
+    fontWeight: FontWeight.w400,
+    color: lightTextColor,
+    height: 1.5,
+  );
 
   static TextStyle get buttonTextStyle => GoogleFonts.poppins(
-        fontSize: 18,
-        fontWeight: FontWeight.w600,
-        color: whiteColor,
-        letterSpacing: 0.5,
-      );
+    fontSize: 18,
+    fontWeight: FontWeight.w600,
+    color: whiteColor,
+    letterSpacing: 0.5,
+  );
 
   static TextStyle get appNameStyle => GoogleFonts.poppins(
-        fontSize: 32,
-        fontWeight: FontWeight.bold,
-        color: textColor,
-        letterSpacing: -0.5,
-      );
+    fontSize: 32,
+    fontWeight: FontWeight.bold,
+    color: textColor,
+    letterSpacing: -0.5,
+  );
 
   // Border Radius
   static const double borderRadius = 24.0;
   static const double buttonBorderRadius = 24.0;
   static const double cardBorderRadius = 20.0;
 }
-
-

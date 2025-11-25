@@ -11,10 +11,12 @@ class ActivityLevelStepScreen extends ConsumerStatefulWidget {
   const ActivityLevelStepScreen({super.key});
 
   @override
-  ConsumerState<ActivityLevelStepScreen> createState() => _ActivityLevelStepScreenState();
+  ConsumerState<ActivityLevelStepScreen> createState() =>
+      _ActivityLevelStepScreenState();
 }
 
-class _ActivityLevelStepScreenState extends ConsumerState<ActivityLevelStepScreen> {
+class _ActivityLevelStepScreenState
+    extends ConsumerState<ActivityLevelStepScreen> {
   String? _selectedActivityLevel;
   int? _expandedIndex;
 
@@ -53,7 +55,11 @@ class _ActivityLevelStepScreenState extends ConsumerState<ActivityLevelStepScree
       icon: Icons.sports_gymnastics,
       stepsPerDay: '> 12,500 bước',
       description: 'Tập thể dục rất nặng, lao động thể chất',
-      exampleJobs: ['Vận động viên chuyên nghiệp', 'Công nhân nông nghiệp', 'Thợ mỏ'],
+      exampleJobs: [
+        'Vận động viên chuyên nghiệp',
+        'Công nhân nông nghiệp',
+        'Thợ mỏ',
+      ],
     ),
   ];
 
@@ -71,16 +77,17 @@ class _ActivityLevelStepScreenState extends ConsumerState<ActivityLevelStepScree
       // Only one level can be selected
       _selectedActivityLevel = data.key;
       // Auto-expand the selected card
-      final selectedIndex = _activityLevels.indexWhere((item) => item.key == data.key);
+      final selectedIndex = _activityLevels.indexWhere(
+        (item) => item.key == data.key,
+      );
       if (selectedIndex != -1) {
         _expandedIndex = selectedIndex;
       }
     });
     // Update multiplier in controller
-    ref.read(onboardingControllerProvider.notifier).updateActivityLevel(
-          data.key,
-          data.multiplier,
-        );
+    ref
+        .read(onboardingControllerProvider.notifier)
+        .updateActivityLevel(data.key, data.multiplier);
   }
 
   void _toggleExpand(int index) {
@@ -94,14 +101,14 @@ class _ActivityLevelStepScreenState extends ConsumerState<ActivityLevelStepScree
   }
 
   void _onContinuePressed() {
-    if (_selectedActivityLevel == null) return;
+    if (_selectedActivityLevel == null) {
+      return;
+    }
 
     // Navigate to calculating screen
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => const CalculatingScreen(),
-      ),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const CalculatingScreen()));
   }
 
   @override
@@ -135,9 +142,7 @@ class _ActivityLevelStepScreenState extends ConsumerState<ActivityLevelStepScree
               ),
               const SizedBox(height: 24),
 
-              ProgressIndicatorWidget(
-                progress: 9 / OnboardingModel.totalSteps,
-              ),
+              ProgressIndicatorWidget(progress: 9 / OnboardingModel.totalSteps),
               const SizedBox(height: 32),
 
               // Activity level list
@@ -170,7 +175,9 @@ class _ActivityLevelStepScreenState extends ConsumerState<ActivityLevelStepScree
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton(
-                  onPressed: _selectedActivityLevel != null ? _onContinuePressed : null,
+                  onPressed: _selectedActivityLevel != null
+                      ? _onContinuePressed
+                      : null,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _selectedActivityLevel != null
                         ? AppColors.mintGreen
@@ -178,15 +185,17 @@ class _ActivityLevelStepScreenState extends ConsumerState<ActivityLevelStepScree
                     foregroundColor: AppColors.nearBlack,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+                      borderRadius: BorderRadius.circular(
+                        AppTheme.radiusMedium,
+                      ),
                     ),
                   ),
                   child: Text(
                     'Tiếp tục',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: AppColors.nearBlack,
-                          fontWeight: FontWeight.w600,
-                        ),
+                      color: AppColors.nearBlack,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ),
@@ -237,10 +246,7 @@ class _ActivityLevelCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final gradient = LinearGradient(
-      colors: [
-        AppColors.mintGreen.withOpacity(0.9),
-        AppColors.mintGreen,
-      ],
+      colors: [AppColors.mintGreen.withValues(alpha: 0.9), AppColors.mintGreen],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     );
@@ -253,14 +259,12 @@ class _ActivityLevelCard extends StatelessWidget {
         color: isSelected ? null : AppColors.white,
         borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
         border: Border.all(
-          color: isSelected
-              ? AppColors.mintGreen
-              : AppColors.charmingGreen,
+          color: isSelected ? AppColors.mintGreen : AppColors.charmingGreen,
           width: isSelected ? 3 : 2,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isSelected ? 0.12 : 0.05),
+            color: Colors.black.withValues(alpha: isSelected ? 0.12 : 0.05),
             blurRadius: 16,
             offset: const Offset(0, 8),
           ),
@@ -284,8 +288,8 @@ class _ActivityLevelCard extends StatelessWidget {
                       height: 48,
                       decoration: BoxDecoration(
                         color: isSelected
-                            ? AppColors.mintGreen.withOpacity(0.2)
-                            : AppColors.charmingGreen.withOpacity(0.1),
+                            ? AppColors.mintGreen.withValues(alpha: 0.2)
+                            : AppColors.charmingGreen.withValues(alpha: 0.1),
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
@@ -297,7 +301,7 @@ class _ActivityLevelCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 16),
-                    
+
                     // Title and description
                     Expanded(
                       child: Column(
@@ -305,7 +309,8 @@ class _ActivityLevelCard extends StatelessWidget {
                         children: [
                           Text(
                             data.title,
-                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            style: Theme.of(context).textTheme.titleLarge
+                                ?.copyWith(
                                   color: isSelected
                                       ? AppColors.nearBlack
                                       : AppColors.nearBlack,
@@ -315,25 +320,26 @@ class _ActivityLevelCard extends StatelessWidget {
                           const SizedBox(height: 4),
                           Text(
                             data.description,
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(
                                   color: isSelected
-                                      ? AppColors.nearBlack.withOpacity(0.8)
+                                      ? AppColors.nearBlack.withValues(
+                                          alpha: 0.8,
+                                        )
                                       : AppColors.mediumGray,
                                 ),
                           ),
                         ],
                       ),
                     ),
-                    
+
                     // Expand button
                     GestureDetector(
                       onTap: () {
                         onExpand();
                       },
                       child: Icon(
-                        isExpanded
-                            ? Icons.expand_less
-                            : Icons.expand_more,
+                        isExpanded ? Icons.expand_less : Icons.expand_more,
                         color: isSelected
                             ? AppColors.nearBlack
                             : AppColors.mediumGray,
@@ -342,7 +348,7 @@ class _ActivityLevelCard extends StatelessWidget {
                   ],
                 ),
               ),
-              
+
               // Expanded description
               if (isExpanded)
                 AnimatedContainer(
@@ -354,11 +360,11 @@ class _ActivityLevelCard extends StatelessWidget {
                     children: [
                       Divider(
                         color: isSelected
-                            ? AppColors.nearBlack.withOpacity(0.2)
-                            : AppColors.charmingGreen.withOpacity(0.3),
+                            ? AppColors.nearBlack.withValues(alpha: 0.2)
+                            : AppColors.charmingGreen.withValues(alpha: 0.3),
                       ),
                       const SizedBox(height: 16),
-                      
+
                       // Steps per day
                       Row(
                         children: [
@@ -372,7 +378,8 @@ class _ActivityLevelCard extends StatelessWidget {
                           const SizedBox(width: 8),
                           Text(
                             data.stepsPerDay,
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(
                                   color: isSelected
                                       ? AppColors.nearBlack
                                       : AppColors.nearBlack,
@@ -382,16 +389,16 @@ class _ActivityLevelCard extends StatelessWidget {
                         ],
                       ),
                       const SizedBox(height: 16),
-                      
+
                       // Example jobs
                       Text(
                         'Ví dụ nghề nghiệp:',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: isSelected
-                                  ? AppColors.nearBlack.withOpacity(0.7)
-                                  : AppColors.mediumGray,
-                              fontWeight: FontWeight.w600,
-                            ),
+                          color: isSelected
+                              ? AppColors.nearBlack.withValues(alpha: 0.7)
+                              : AppColors.mediumGray,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                       const SizedBox(height: 8),
                       Wrap(
@@ -405,13 +412,18 @@ class _ActivityLevelCard extends StatelessWidget {
                             ),
                             decoration: BoxDecoration(
                               color: isSelected
-                                  ? AppColors.nearBlack.withOpacity(0.1)
-                                  : AppColors.charmingGreen.withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(AppTheme.radiusSmall),
+                                  ? AppColors.nearBlack.withValues(alpha: 0.1)
+                                  : AppColors.charmingGreen.withValues(
+                                      alpha: 0.2,
+                                    ),
+                              borderRadius: BorderRadius.circular(
+                                AppTheme.radiusSmall,
+                              ),
                             ),
                             child: Text(
                               job,
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(
                                     color: isSelected
                                         ? AppColors.nearBlack
                                         : AppColors.nearBlack,
@@ -430,4 +442,3 @@ class _ActivityLevelCard extends StatelessWidget {
     );
   }
 }
-

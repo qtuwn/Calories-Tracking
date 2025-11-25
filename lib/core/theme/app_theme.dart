@@ -19,7 +19,7 @@ class AppTheme {
   static ThemeData get themeData {
     return ThemeData(
       useMaterial3: true,
-      
+
       // Color Scheme
       colorScheme: ColorScheme.light(
         primary: AppColors.mintGreen,
@@ -31,7 +31,7 @@ class AppTheme {
         onSurface: AppColors.nearBlack,
         onError: AppColors.white,
         outline: AppColors.charmingGreen,
-        outlineVariant: AppColors.charmingGreen.withOpacity(0.5),
+        outlineVariant: AppColors.charmingGreen.withValues(alpha: 0.5),
       ),
 
       // Scaffold
@@ -48,9 +48,7 @@ class AppTheme {
           color: AppColors.nearBlack,
           letterSpacing: -0.5,
         ),
-        iconTheme: const IconThemeData(
-          color: AppColors.nearBlack,
-        ),
+        iconTheme: const IconThemeData(color: AppColors.nearBlack),
       ),
 
       // Card
@@ -60,10 +58,7 @@ class AppTheme {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(radiusMedium),
         ),
-        margin: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 8,
-        ),
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       ),
 
       // Elevated Button
@@ -108,10 +103,7 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(radiusSmall),
           ),
-          textStyle: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-          ),
+          textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
         ),
       ),
 
@@ -133,31 +125,19 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(radiusMedium),
-          borderSide: const BorderSide(
-            color: AppColors.mintGreen,
-            width: 2,
-          ),
+          borderSide: const BorderSide(color: AppColors.mintGreen, width: 2),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(radiusMedium),
-          borderSide: const BorderSide(
-            color: AppColors.error,
-            width: 1,
-          ),
+          borderSide: const BorderSide(color: AppColors.error, width: 1),
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(radiusMedium),
-          borderSide: const BorderSide(
-            color: AppColors.error,
-            width: 2,
-          ),
+          borderSide: const BorderSide(color: AppColors.error, width: 2),
         ),
-        labelStyle: const TextStyle(
-          color: AppColors.mediumGray,
-          fontSize: 14,
-        ),
+        labelStyle: const TextStyle(color: AppColors.mediumGray, fontSize: 14),
         hintStyle: TextStyle(
-          color: AppColors.mediumGray.withOpacity(0.6),
+          color: AppColors.mediumGray.withValues(alpha: 0.6),
           fontSize: 14,
         ),
       ),
@@ -258,12 +238,9 @@ class AppTheme {
 
       // Chip
       chipTheme: ChipThemeData(
-        backgroundColor: AppColors.charmingGreen.withOpacity(0.3),
+        backgroundColor: AppColors.charmingGreen.withValues(alpha: 0.3),
         selectedColor: AppColors.mintGreen,
-        labelStyle: const TextStyle(
-          color: AppColors.nearBlack,
-          fontSize: 14,
-        ),
+        labelStyle: const TextStyle(color: AppColors.nearBlack, fontSize: 14),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(radiusSmall),
         ),
@@ -277,10 +254,7 @@ class AppTheme {
       ),
 
       // Icon Theme
-      iconTheme: const IconThemeData(
-        color: AppColors.nearBlack,
-        size: 24,
-      ),
+      iconTheme: const IconThemeData(color: AppColors.nearBlack, size: 24),
 
       // Progress Indicator
       progressIndicatorTheme: const ProgressIndicatorThemeData(
@@ -289,57 +263,55 @@ class AppTheme {
 
       // Checkbox
       checkboxTheme: CheckboxThemeData(
-        fillColor: WidgetStateProperty.resolveWith<Color?>(
-          (Set<WidgetState> states) {
-            if (states.contains(WidgetState.selected)) {
-              return AppColors.mintGreen;
-            }
-            return null;
-          },
-        ),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(4),
-        ),
+        fillColor: WidgetStateProperty.resolveWith<Color?>((
+          Set<WidgetState> states,
+        ) {
+          if (states.contains(WidgetState.selected)) {
+            return AppColors.mintGreen;
+          }
+          return null;
+        }),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
       ),
 
       // Radio
       radioTheme: RadioThemeData(
-        fillColor: WidgetStateProperty.resolveWith<Color?>(
-          (Set<WidgetState> states) {
-            if (states.contains(WidgetState.selected)) {
-              return AppColors.mintGreen;
-            }
-            return AppColors.charmingGreen;
-          },
-        ),
+        fillColor: WidgetStateProperty.resolveWith<Color?>((
+          Set<WidgetState> states,
+        ) {
+          if (states.contains(WidgetState.selected)) {
+            return AppColors.mintGreen;
+          }
+          return AppColors.charmingGreen;
+        }),
       ),
 
       // Switch
       switchTheme: SwitchThemeData(
-        thumbColor: WidgetStateProperty.resolveWith<Color?>(
-          (Set<WidgetState> states) {
-            if (states.contains(WidgetState.selected)) {
-              return AppColors.mintGreen;
-            }
-            return AppColors.mediumGray;
-          },
-        ),
-        trackColor: WidgetStateProperty.resolveWith<Color?>(
-          (Set<WidgetState> states) {
-            if (states.contains(WidgetState.selected)) {
-              return AppColors.mintGreen.withOpacity(0.5);
-            }
-            return AppColors.charmingGreen.withOpacity(0.3);
-          },
-        ),
+        thumbColor: WidgetStateProperty.resolveWith<Color?>((
+          Set<WidgetState> states,
+        ) {
+          if (states.contains(WidgetState.selected)) {
+            return AppColors.mintGreen;
+          }
+          return AppColors.mediumGray;
+        }),
+        trackColor: WidgetStateProperty.resolveWith<Color?>((
+          Set<WidgetState> states,
+        ) {
+          if (states.contains(WidgetState.selected)) {
+            return AppColors.mintGreen.withValues(alpha: 0.5);
+          }
+          return AppColors.charmingGreen.withValues(alpha: 0.3);
+        }),
       ),
 
       // Slider
       sliderTheme: SliderThemeData(
         activeTrackColor: AppColors.mintGreen,
-        inactiveTrackColor: AppColors.charmingGreen.withOpacity(0.3),
+        inactiveTrackColor: AppColors.charmingGreen.withValues(alpha: 0.3),
         thumbColor: AppColors.mintGreen,
-        overlayColor: AppColors.mintGreen.withOpacity(0.2),
+        overlayColor: AppColors.mintGreen.withValues(alpha: 0.2),
       ),
 
       // Page Transitions
@@ -370,4 +342,3 @@ class AppTheme {
     );
   }
 }
-

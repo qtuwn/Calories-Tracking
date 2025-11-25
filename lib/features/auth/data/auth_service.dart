@@ -13,10 +13,12 @@ class AuthService {
 
   // Sign in with Google
   // [forceAccountSelection]: If true, always shows account chooser even if user is already signed in
-  Future<UserCredential?> signInWithGoogle({bool forceAccountSelection = false}) async {
+  Future<UserCredential?> signInWithGoogle({
+    bool forceAccountSelection = false,
+  }) async {
     try {
       GoogleSignInAccount? googleUser;
-      
+
       if (forceAccountSelection) {
         // Force account selection by signing out first, then showing chooser
         await _googleSignIn.signOut();
@@ -89,6 +91,16 @@ class AuthService {
     }
   }
 
+  // Sign in anonymously
+  // Used during onboarding when user hasn't signed in yet
+  Future<UserCredential> signInAnonymously() async {
+    try {
+      return await _auth.signInAnonymously();
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   // Sign out
   // Disconnects from Google account and signs out from both Google and Firebase
   Future<void> signOut() async {
@@ -98,12 +110,8 @@ class AuthService {
     } catch (e) {
       // Ignore disconnect errors (e.g., if already disconnected)
     }
-    
+
     // Then sign out from Google and Firebase
-    await Future.wait([
-      _auth.signOut(),
-      _googleSignIn.signOut(),
-    ]);
+    await Future.wait([_auth.signOut(), _googleSignIn.signOut()]);
   }
 }
-
