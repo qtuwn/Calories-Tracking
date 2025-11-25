@@ -139,4 +139,3 @@ final mealCategoriesProvider = Provider<List<MealCategory>>((ref) {
     ),
   ];
 });
-

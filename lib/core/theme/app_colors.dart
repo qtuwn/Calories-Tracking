@@ -46,4 +46,3 @@ class MintPieColors {
   // Private constructor to prevent instantiation
   MintPieColors._();
 }
-

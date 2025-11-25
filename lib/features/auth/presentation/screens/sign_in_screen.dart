@@ -34,7 +34,9 @@ class _SignInScreenState extends State<SignInScreen> {
   Future<void> _handleGoogleSignIn({bool forceAccountSelection = false}) async {
     setState(() => _isLoading = true);
     try {
-      await _authService.signInWithGoogle(forceAccountSelection: forceAccountSelection);
+      await _authService.signInWithGoogle(
+        forceAccountSelection: forceAccountSelection,
+      );
       // Auth state change will trigger AuthPage to show ProfileGate
       // No need to navigate manually
     } catch (e) {
@@ -54,7 +56,9 @@ class _SignInScreenState extends State<SignInScreen> {
   }
 
   Future<void> _handleEmailSignIn() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
 
     setState(() => _isLoading = true);
     try {
@@ -112,19 +116,22 @@ class _SignInScreenState extends State<SignInScreen> {
 
                 // Google Sign In Button (Primary - Fast Login)
                 _GoogleSignInButton(
-                  onPressed: _isLoading ? null : () => _handleGoogleSignIn(forceAccountSelection: false),
+                  onPressed: _isLoading
+                      ? null
+                      : () => _handleGoogleSignIn(forceAccountSelection: false),
                 ),
                 const SizedBox(height: AuthTheme.spacingSmall),
-                
+
                 // Secondary button for account chooser
                 Center(
                   child: TextButton(
-                    onPressed: _isLoading ? null : () => _handleGoogleSignIn(forceAccountSelection: true),
+                    onPressed: _isLoading
+                        ? null
+                        : () =>
+                              _handleGoogleSignIn(forceAccountSelection: true),
                     child: Text(
                       'Đăng nhập bằng tài khoản khác',
-                      style: AuthTheme.linkTextStyle.copyWith(
-                        fontSize: 14,
-                      ),
+                      style: AuthTheme.linkTextStyle.copyWith(fontSize: 14),
                     ),
                   ),
                 ),
@@ -138,10 +145,7 @@ class _SignInScreenState extends State<SignInScreen> {
                       padding: const EdgeInsets.symmetric(
                         horizontal: AuthTheme.spacingMedium,
                       ),
-                      child: Text(
-                        'hoặc',
-                        style: AuthTheme.bodyStyle,
-                      ),
+                      child: Text('hoặc', style: AuthTheme.bodyStyle),
                     ),
                     Expanded(child: Divider(color: AuthTheme.charmingGreen)),
                   ],
@@ -223,16 +227,10 @@ class _SignInScreenState extends State<SignInScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(
-                      'Chưa có tài khoản? ',
-                      style: AuthTheme.bodyStyle,
-                    ),
+                    Text('Chưa có tài khoản? ', style: AuthTheme.bodyStyle),
                     TextButton(
                       onPressed: widget.onSignUpPressed,
-                      child: Text(
-                        'Đăng ký',
-                        style: AuthTheme.linkTextStyle,
-                      ),
+                      child: Text('Đăng ký', style: AuthTheme.linkTextStyle),
                     ),
                   ],
                 ),
@@ -345,10 +343,7 @@ class _PrimaryButton extends StatelessWidget {
               else
                 Icon(icon, color: Colors.white),
               if (!isLoading) const SizedBox(width: AuthTheme.spacingMedium),
-              Text(
-                text,
-                style: AuthTheme.buttonTextStyle,
-              ),
+              Text(text, style: AuthTheme.buttonTextStyle),
             ],
           ),
         ),
@@ -405,7 +400,7 @@ class _CustomTextField extends StatelessWidget {
             decoration: InputDecoration(
               hintText: hint,
               hintStyle: AuthTheme.bodyStyle.copyWith(
-                color: AuthTheme.mediumGray.withOpacity(0.6),
+                color: AuthTheme.mediumGray.withValues(alpha: 0.6),
               ),
               prefixIcon: Icon(prefixIcon, color: AuthTheme.mintGreen),
               suffixIcon: suffixIcon,
@@ -420,13 +415,10 @@ class _CustomTextField extends StatelessWidget {
                 vertical: AuthTheme.spacingMedium,
               ),
             ),
-            style: AuthTheme.bodyStyle.copyWith(
-              color: AuthTheme.nearBlack,
-            ),
+            style: AuthTheme.bodyStyle.copyWith(color: AuthTheme.nearBlack),
           ),
         ),
       ],
     );
   }
 }
-

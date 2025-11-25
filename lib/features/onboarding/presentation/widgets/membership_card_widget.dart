@@ -24,7 +24,7 @@ class MembershipCardWidget extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: OnboardingTheme.primaryColor.withOpacity(0.3),
+              color: OnboardingTheme.primaryColor.withValues(alpha: 0.3),
               blurRadius: 20,
               spreadRadius: 5,
               offset: const Offset(0, 10),
@@ -61,10 +61,7 @@ class MembershipCardWidget extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: const Color(0xFF9B59B6),
                       shape: BoxShape.circle,
-                      border: Border.all(
-                        color: Colors.white,
-                        width: 3,
-                      ),
+                      border: Border.all(color: Colors.white, width: 3),
                     ),
                     child: const Icon(
                       Icons.pets,
@@ -128,4 +125,3 @@ class MembershipCardWidget extends StatelessWidget {
     );
   }
 }
-

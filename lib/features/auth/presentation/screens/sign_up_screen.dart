@@ -5,10 +5,7 @@ import 'package:calories_app/features/auth/presentation/theme/auth_theme.dart';
 class SignUpScreen extends StatefulWidget {
   final VoidCallback? onSignInPressed;
 
-  const SignUpScreen({
-    super.key,
-    this.onSignInPressed,
-  });
+  const SignUpScreen({super.key, this.onSignInPressed});
 
   @override
   State<SignUpScreen> createState() => _SignUpScreenState();
@@ -33,7 +30,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
   }
 
   Future<void> _handleSignUp() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
 
     setState(() => _isLoading = true);
     try {
@@ -180,16 +179,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(
-                      'Đã có tài khoản? ',
-                      style: AuthTheme.bodyStyle,
-                    ),
+                    Text('Đã có tài khoản? ', style: AuthTheme.bodyStyle),
                     TextButton(
                       onPressed: widget.onSignInPressed,
-                      child: Text(
-                        'Đăng nhập',
-                        style: AuthTheme.linkTextStyle,
-                      ),
+                      child: Text('Đăng nhập', style: AuthTheme.linkTextStyle),
                     ),
                   ],
                 ),
@@ -251,7 +244,7 @@ class _CustomTextField extends StatelessWidget {
             decoration: InputDecoration(
               hintText: hint,
               hintStyle: AuthTheme.bodyStyle.copyWith(
-                color: AuthTheme.mediumGray.withOpacity(0.6),
+                color: AuthTheme.mediumGray.withValues(alpha: 0.6),
               ),
               prefixIcon: Icon(prefixIcon, color: AuthTheme.mintGreen),
               suffixIcon: suffixIcon,
@@ -266,9 +259,7 @@ class _CustomTextField extends StatelessWidget {
                 vertical: AuthTheme.spacingMedium,
               ),
             ),
-            style: AuthTheme.bodyStyle.copyWith(
-              color: AuthTheme.nearBlack,
-            ),
+            style: AuthTheme.bodyStyle.copyWith(color: AuthTheme.nearBlack),
           ),
         ),
       ],
@@ -320,10 +311,7 @@ class _PrimaryButton extends StatelessWidget {
               else
                 Icon(icon, color: Colors.white),
               if (!isLoading) const SizedBox(width: AuthTheme.spacingMedium),
-              Text(
-                text,
-                style: AuthTheme.buttonTextStyle,
-              ),
+              Text(text, style: AuthTheme.buttonTextStyle),
             ],
           ),
         ),
@@ -331,4 +319,3 @@ class _PrimaryButton extends StatelessWidget {
     );
   }
 }
-

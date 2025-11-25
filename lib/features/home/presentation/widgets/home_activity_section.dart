@@ -2,22 +2,52 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:calories_app/core/theme/theme.dart';
+import 'package:calories_app/features/activity/data/activity_providers.dart';
+import 'package:calories_app/features/exercise/ui/exercise_list_screen.dart';
+import 'package:calories_app/features/home/domain/workout_type.dart';
+import 'package:calories_app/features/home/presentation/widgets/workout_activity_chip.dart';
+import 'package:calories_app/features/home/presentation/widgets/workout_quick_log_sheet.dart';
 import '../providers/home_dashboard_providers.dart';
+import '../providers/diary_provider.dart';
 
 class HomeActivitySection extends ConsumerWidget {
   const HomeActivitySection({super.key});
 
+  /// Handle tap on an activity chip.
+  /// 
+  /// For "Khác" (Other), navigates to the full exercise catalog.
+  /// For specific activities, shows a quick-log bottom sheet.
+  void _handleActivityChipTap(BuildContext context, WorkoutType workoutType) {
+    if (workoutType == WorkoutType.other) {
+      // Navigate to full exercise catalog for "Khác"
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => const ExerciseListScreen(),
+        ),
+      );
+    } else {
+      // Show quick-log bottom sheet for specific activities
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) => WorkoutQuickLogSheet(
+          workoutType: workoutType,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final categories = ref.watch(homeActivityCategoriesProvider);
-    final summary = ref.watch(homeActivitySummaryProvider);
 
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.nearBlack.withOpacity(0.04),
+        color: AppColors.nearBlack.withValues(alpha: 0.04),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.charmingGreen.withOpacity(0.4)),
+        border: Border.all(color: AppColors.charmingGreen.withValues(alpha: 0.4)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -33,7 +63,12 @@ class HomeActivitySection extends ConsumerWidget {
               ),
               IconButton(
                 onPressed: () {
-                  // TODO: Navigate to activity history.
+                  // Navigate to manual exercise list screen
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const ExerciseListScreen(),
+                    ),
+                  );
                 },
                 icon: const Icon(Icons.more_horiz),
               ),
@@ -45,21 +80,12 @@ class HomeActivitySection extends ConsumerWidget {
             runSpacing: 12,
             children: categories
                 .map(
-                  (category) => ChoiceChip(
-                    label: Text(category.label),
-                    avatar: Icon(
-                      category.icon,
-                      size: 18,
+                  (category) => WorkoutActivityChip(
+                    workoutType: category.workoutType,
+                    onTap: () => _handleActivityChipTap(
+                      context,
+                      category.workoutType,
                     ),
-                    selected: false,
-                    onSelected: (_) {
-                      // TODO: Handle quick logging for activity.
-                    },
-                    backgroundColor: Colors.white,
-                    selectedColor: AppColors.mintGreen.withOpacity(0.9),
-                    labelStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
                   ),
                 )
                 .toList(),
@@ -87,25 +113,47 @@ class HomeActivitySection extends ConsumerWidget {
               );
             },
           ),
-          const SizedBox(height: 16),
-          Text(
-            summary.stepsMessage,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.mediumGray,
-                ),
-          ),
         ],
       ),
     );
   }
 }
 
-class _StepsCard extends ConsumerWidget {
+class _StepsCard extends ConsumerStatefulWidget {
   const _StepsCard();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final summary = ref.watch(homeActivitySummaryProvider);
+  ConsumerState<_StepsCard> createState() => _StepsCardState();
+}
+
+class _StepsCardState extends ConsumerState<_StepsCard> {
+  bool _isLoading = false;
+
+  Future<void> _handleConnect() async {
+    setState(() => _isLoading = true);
+    try {
+      await ref.read(activityControllerProvider.notifier).connectAndSync();
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  Future<void> _handleRefresh() async {
+    setState(() => _isLoading = true);
+    try {
+      await ref.read(activityControllerProvider.notifier).refreshToday();
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final activityState = ref.watch(activityControllerProvider);
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -114,7 +162,7 @@ class _StepsCard extends ConsumerWidget {
         borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color: Colors.black.withValues(alpha: 0.08),
             blurRadius: 15,
             offset: const Offset(0, 6),
           ),
@@ -147,27 +195,78 @@ class _StepsCard extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 12),
-          Text(
-            summary.stepsMessage,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppColors.mediumGray,
+          if (activityState.connected)
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Đã kết nối Health Connect',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: AppColors.mediumGray,
+                      ),
                 ),
-          ),
-          const SizedBox(height: 12),
-          OutlinedButton.icon(
-            onPressed: () {
-              // TODO: Implement connection to Google Fit / Health Connect.
-            },
-            icon: const Icon(Icons.link),
-            label: const Text('Kết nối ngay'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: AppColors.nearBlack,
-              side: const BorderSide(color: AppColors.charmingGreen),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-              ),
+                const SizedBox(height: 8),
+                Text(
+                  '${activityState.steps}',
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.nearBlack,
+                      ),
+                ),
+                Text(
+                  'bước hôm nay',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: AppColors.mediumGray,
+                      ),
+                ),
+                const SizedBox(height: 12),
+                TextButton.icon(
+                  onPressed: _isLoading ? null : _handleRefresh,
+                  icon: _isLoading
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.refresh, size: 18),
+                  label: const Text('Làm mới'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppColors.mintGreen,
+                  ),
+                ),
+              ],
+            )
+          else
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Kết nối Health Connect để tự động cập nhật',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: AppColors.mediumGray,
+                      ),
+                ),
+                const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  onPressed: _isLoading ? null : _handleConnect,
+                  icon: _isLoading
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.link),
+                  label: const Text('Kết nối ngay'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.nearBlack,
+                    side: const BorderSide(color: AppColors.charmingGreen),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ),
         ],
       ),
     );
@@ -179,7 +278,9 @@ class _WorkoutCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final summary = ref.watch(homeActivitySummaryProvider);
+    // Get actual burned calories from diary entries
+    final diaryState = ref.watch(diaryProvider);
+    final calories = diaryState.totalCaloriesBurned;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -209,7 +310,12 @@ class _WorkoutCard extends ConsumerWidget {
               ),
               IconButton(
                 onPressed: () {
-                  // TODO: Add workout session logging.
+                  // Navigate to manual exercise list screen to add/log workout
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const ExerciseListScreen(),
+                    ),
+                  );
                 },
                 icon: const Icon(
                   Icons.add_circle_outline,
@@ -219,7 +325,7 @@ class _WorkoutCard extends ConsumerWidget {
             ],
           ),
           Text(
-            '${summary.workoutCalories} kcal',
+            '${calories.toStringAsFixed(0)} kcal',
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   color: Colors.white,
                   fontWeight: FontWeight.w700,

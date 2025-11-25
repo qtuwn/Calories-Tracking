@@ -3,17 +3,11 @@ import 'package:flutter/material.dart';
 class MascotLaptopWidget extends StatelessWidget {
   final double size;
 
-  const MascotLaptopWidget({
-    super.key,
-    this.size = 250,
-  });
+  const MascotLaptopWidget({super.key, this.size = 250});
 
   @override
   Widget build(BuildContext context) {
-    return CustomPaint(
-      size: Size(size, size),
-      painter: _MascotLaptopPainter(),
-    );
+    return CustomPaint(size: Size(size, size), painter: _MascotLaptopPainter());
   }
 }
 
@@ -115,11 +109,7 @@ class _MascotLaptopPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeWidth = 3;
     final pawSize = 15.0;
-    canvas.drawCircle(
-      Offset(centerX + 30, centerY - 10),
-      pawSize,
-      screenPaint,
-    );
+    canvas.drawCircle(Offset(centerX + 30, centerY - 10), pawSize, screenPaint);
     canvas.drawCircle(
       Offset(centerX + 20, centerY - 5),
       pawSize * 0.6,
@@ -159,5 +149,3 @@ class _MascotLaptopPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
-
-

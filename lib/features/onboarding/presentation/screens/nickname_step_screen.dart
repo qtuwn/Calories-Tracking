@@ -57,7 +57,10 @@ class _NicknameStepScreenState extends ConsumerState<NicknameStepScreen> {
       error = 'Nickname phải từ 1 đến 24 ký tự';
       isValid = false;
     } else {
-      final hasAlphaNumeric = RegExp(r'[\p{L}\p{N}]', unicode: true).hasMatch(trimmed);
+      final hasAlphaNumeric = RegExp(
+        r'[\p{L}\p{N}]',
+        unicode: true,
+      ).hasMatch(trimmed);
       if (!hasAlphaNumeric) {
         error = 'Nickname cần ít nhất một ký tự chữ hoặc số';
         isValid = false;
@@ -79,7 +82,7 @@ class _NicknameStepScreenState extends ConsumerState<NicknameStepScreen> {
     final trimmed = _controller.text.trim();
     ref.read(onboardingControllerProvider.notifier).updateNickname(trimmed);
     FocusScope.of(context).unfocus();
-    
+
     // Track step completion with duration
     if (_stepStartTime != null) {
       final duration = DateTime.now().difference(_stepStartTime!);
@@ -88,18 +91,16 @@ class _NicknameStepScreenState extends ConsumerState<NicknameStepScreen> {
         durationMs: duration.inMilliseconds,
       );
     }
-    
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => const GenderStepScreen(),
-      ),
-    );
+
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const GenderStepScreen()));
   }
 
   @override
   Widget build(BuildContext context) {
     final bottomPadding = MediaQuery.of(context).viewInsets.bottom;
-    
+
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
       child: Scaffold(
@@ -145,13 +146,16 @@ class _NicknameStepScreenState extends ConsumerState<NicknameStepScreen> {
                 // Input card
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 28),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 28,
+                  ),
                   decoration: BoxDecoration(
-                    color: AppColors.charmingGreen.withOpacity(0.5),
+                    color: AppColors.charmingGreen.withValues(alpha: 0.5),
                     borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
+                        color: Colors.black.withValues(alpha: 0.05),
                         blurRadius: 16,
                         offset: const Offset(0, 8),
                       ),
@@ -197,7 +201,7 @@ class _NicknameStepScreenState extends ConsumerState<NicknameStepScreen> {
                           hintStyle: TextStyle(
                             fontSize: 26,
                             fontWeight: FontWeight.w600,
-                            color: AppColors.nearBlack.withOpacity(0.4),
+                            color: AppColors.nearBlack.withValues(alpha: 0.4),
                           ),
                         ),
                       ),
@@ -205,14 +209,15 @@ class _NicknameStepScreenState extends ConsumerState<NicknameStepScreen> {
                       Text(
                         '1-24 ký tự, không dùng toàn emoji. Bạn có thể thay đổi sau.',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: AppColors.nearBlack.withOpacity(0.7),
-                            ),
+                          color: AppColors.nearBlack.withValues(alpha: 0.7),
+                        ),
                       ),
                       if (_errorText != null) ...[
                         const SizedBox(height: 8),
                         Text(
                           _errorText!,
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
                                 color: AppColors.error,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -230,20 +235,23 @@ class _NicknameStepScreenState extends ConsumerState<NicknameStepScreen> {
                   child: ElevatedButton(
                     onPressed: _isValid ? _onContinuePressed : null,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor:
-                          _isValid ? AppColors.mintGreen : AppColors.charmingGreen,
+                      backgroundColor: _isValid
+                          ? AppColors.mintGreen
+                          : AppColors.charmingGreen,
                       foregroundColor: AppColors.nearBlack,
                       elevation: 0,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+                        borderRadius: BorderRadius.circular(
+                          AppTheme.radiusMedium,
+                        ),
                       ),
                     ),
                     child: Text(
                       'Tiếp tục',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            color: AppColors.nearBlack,
-                            fontWeight: FontWeight.w600,
-                          ),
+                        color: AppColors.nearBlack,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ),
@@ -255,4 +263,3 @@ class _NicknameStepScreenState extends ConsumerState<NicknameStepScreen> {
     );
   }
 }
-

@@ -120,30 +120,30 @@ class _DonutChartPainter extends CustomPainter {
       ..style = PaintingStyle.fill;
 
     final path = Path();
-    
+
     // Outer arc
     path.addArc(
       Rect.fromCircle(center: center, radius: outerRadius),
       startAngle,
       sweepAngle,
     );
-    
+
     // Line to inner arc
     final endAngle = startAngle + sweepAngle;
     final endX = center.dx + innerRadius * math.cos(endAngle);
     final endY = center.dy + innerRadius * math.sin(endAngle);
     path.lineTo(endX, endY);
-    
+
     // Inner arc (reverse direction)
     path.addArc(
       Rect.fromCircle(center: center, radius: innerRadius),
       endAngle,
       -sweepAngle,
     );
-    
+
     // Close path
     path.close();
-    
+
     canvas.drawPath(path, paint);
   }
 
@@ -154,4 +154,3 @@ class _DonutChartPainter extends CustomPainter {
         oldDelegate.fatPercent != fatPercent;
   }
 }
-

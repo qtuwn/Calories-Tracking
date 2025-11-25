@@ -5,7 +5,12 @@ import 'package:calories_app/core/theme/theme.dart';
 import '../providers/home_dashboard_providers.dart';
 
 class HomeRecentDiarySection extends ConsumerWidget {
-  const HomeRecentDiarySection({super.key});
+  final VoidCallback? onNavigateToDiary;
+
+  const HomeRecentDiarySection({
+    super.key,
+    this.onNavigateToDiary,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -24,16 +29,14 @@ class HomeRecentDiarySection extends ConsumerWidget {
                   ),
             ),
             TextButton(
-              onPressed: () {
-                // TODO: Navigate to Diary tab.
-              },
+              onPressed: onNavigateToDiary,
               child: const Text('Xem tất cả'),
             ),
           ],
         ),
         const SizedBox(height: 12),
         if (entries.isEmpty)
-          _DiaryEmptyState()
+          _DiaryEmptyState(onNavigateToDiary: onNavigateToDiary)
         else
           SizedBox(
             height: 150,
@@ -53,6 +56,10 @@ class HomeRecentDiarySection extends ConsumerWidget {
 }
 
 class _DiaryEmptyState extends StatelessWidget {
+  final VoidCallback? onNavigateToDiary;
+
+  const _DiaryEmptyState({this.onNavigateToDiary});
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -61,7 +68,7 @@ class _DiaryEmptyState extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.charmingGreen.withOpacity(0.4)),
+        border: Border.all(color: AppColors.charmingGreen.withValues(alpha: 0.4)),
       ),
       child: Column(
         children: [
@@ -89,9 +96,7 @@ class _DiaryEmptyState extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: () {
-                // TODO: Navigate to add meal flow.
-              },
+              onPressed: onNavigateToDiary,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.mintGreen,
                 foregroundColor: AppColors.nearBlack,
@@ -115,6 +120,13 @@ class _RecentDiaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Different colors for food vs exercise
+    final iconBgColor = entry.isExercise
+        ? Colors.orange.withValues(alpha: 0.2)
+        : AppColors.mintGreen.withValues(alpha: 0.25);
+    final iconColor = entry.isExercise ? Colors.orange : AppColors.nearBlack;
+    final caloriesLabel = entry.isExercise ? 'Đốt cháy' : 'Calories';
+    
     return Container(
       width: 200,
       padding: const EdgeInsets.all(18),
@@ -123,7 +135,7 @@ class _RecentDiaryCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
+            color: Colors.black.withValues(alpha: 0.06),
             blurRadius: 12,
             offset: const Offset(0, 6),
           ),
@@ -139,32 +151,35 @@ class _RecentDiaryCard extends StatelessWidget {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: AppColors.mintGreen.withOpacity(0.25),
+                  color: iconBgColor,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
                   entry.icon,
-                  color: AppColors.nearBlack,
+                  color: iconColor,
                 ),
               ),
               const SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    entry.title,
-                    style:
-                        Theme.of(context).textTheme.labelLarge?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
-                  ),
-                  Text(
-                    entry.timeLabel,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.mediumGray,
-                        ),
-                  ),
-                ],
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      entry.title,
+                      style:
+                          Theme.of(context).textTheme.labelLarge?.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    Text(
+                      entry.timeLabel,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: AppColors.mediumGray,
+                          ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
@@ -179,9 +194,9 @@ class _RecentDiaryCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Calories',
-                style: TextStyle(
+              Text(
+                caloriesLabel,
+                style: const TextStyle(
                   color: AppColors.mediumGray,
                   fontSize: 12,
                 ),
@@ -190,6 +205,7 @@ class _RecentDiaryCard extends StatelessWidget {
                 '${entry.calories} kcal',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
+                      color: entry.isExercise ? Colors.orange : null,
                     ),
               ),
             ],

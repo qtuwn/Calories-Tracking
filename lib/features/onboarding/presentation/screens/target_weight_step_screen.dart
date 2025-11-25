@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:calories_app/core/theme/theme.dart';
 
 import 'package:calories_app/core/utils/units/weight_units.dart';
+import 'package:calories_app/core/utils/bmi_calculator.dart';
 import 'package:calories_app/features/onboarding/domain/onboarding_model.dart';
 import 'package:calories_app/features/onboarding/presentation/controllers/onboarding_controller.dart';
 import 'package:calories_app/features/onboarding/presentation/widgets/progress_indicator_widget.dart';
@@ -14,10 +15,12 @@ class TargetWeightStepScreen extends ConsumerStatefulWidget {
   const TargetWeightStepScreen({super.key});
 
   @override
-  ConsumerState<TargetWeightStepScreen> createState() => _TargetWeightStepScreenState();
+  ConsumerState<TargetWeightStepScreen> createState() =>
+      _TargetWeightStepScreenState();
 }
 
-class _TargetWeightStepScreenState extends ConsumerState<TargetWeightStepScreen> {
+class _TargetWeightStepScreenState
+    extends ConsumerState<TargetWeightStepScreen> {
   double? _selectedTargetWeight;
   bool _hasSelected = false;
   String? _errorText;
@@ -27,7 +30,9 @@ class _TargetWeightStepScreenState extends ConsumerState<TargetWeightStepScreen>
     super.initState();
     // Defer provider reads to avoid modification during build
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
       final onboardingState = ref.read(onboardingControllerProvider);
       final currentWeight = onboardingState.weightKgComputed ?? 65.0;
       final goalType = onboardingState.goalType;
@@ -55,7 +60,9 @@ class _TargetWeightStepScreenState extends ConsumerState<TargetWeightStepScreen>
       if (_selectedTargetWeight != null) {
         _validateTargetWeight(_selectedTargetWeight!);
         // Update provider after validation
-        ref.read(onboardingControllerProvider.notifier).updateTargetWeight(_selectedTargetWeight!);
+        ref
+            .read(onboardingControllerProvider.notifier)
+            .updateTargetWeight(_selectedTargetWeight!);
       }
       setState(() {});
     });
@@ -63,11 +70,11 @@ class _TargetWeightStepScreenState extends ConsumerState<TargetWeightStepScreen>
 
   void _onWeightChanged(double weight) {
     // Debounce rapid updates
-    if (_selectedTargetWeight != null && 
+    if (_selectedTargetWeight != null &&
         (_selectedTargetWeight! - weight).abs() < 0.1) {
       return; // Skip if change is too small
     }
-    
+
     setState(() {
       _selectedTargetWeight = weight;
       _hasSelected = true;
@@ -76,7 +83,9 @@ class _TargetWeightStepScreenState extends ConsumerState<TargetWeightStepScreen>
     // Update provider in next frame to avoid build-time modification
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        ref.read(onboardingControllerProvider.notifier).updateTargetWeight(weight);
+        ref
+            .read(onboardingControllerProvider.notifier)
+            .updateTargetWeight(weight);
       }
     });
   }
@@ -124,37 +133,34 @@ class _TargetWeightStepScreenState extends ConsumerState<TargetWeightStepScreen>
     });
   }
 
+  /// Calculate target BMI using the shared BmiCalculator utility.
+  /// Returns null if height or target weight is not available.
   double? _calculateTargetBMI() {
     final state = ref.read(onboardingControllerProvider);
     if (state.heightCm == null || _selectedTargetWeight == null) {
       return null;
     }
-    final heightInMeters = state.heightCm! / 100.0;
-    return _selectedTargetWeight! / (heightInMeters * heightInMeters);
+    try {
+      return BmiCalculator.calculate(
+        weightKg: _selectedTargetWeight!,
+        heightCm: state.heightCm!,
+      );
+    } catch (e) {
+      // Invalid input, return null
+      return null;
+    }
   }
 
+  /// Get BMI category label using the shared BmiCalculator utility.
+  /// Uses WHO standard thresholds (18.5, 25, 30).
   String _getBMILabel(double bmi) {
-    if (bmi < 18.5) {
-      return 'Thiếu cân';
-    } else if (bmi < 23) {
-      return 'Bình thường';
-    } else if (bmi < 25) {
-      return 'Thừa cân';
-    } else {
-      return 'Béo phì';
-    }
+    return BmiCalculator.getCategory(bmi);
   }
 
+  /// Get BMI color using the shared BmiCalculator utility.
+  /// Uses WHO standard thresholds (18.5, 25, 30) instead of custom thresholds (18.5, 23, 25).
   Color _getBMIColor(double bmi) {
-    if (bmi < 18.5) {
-      return Colors.orange; // Warning
-    } else if (bmi < 23) {
-      return Colors.green; // Success
-    } else if (bmi < 25) {
-      return Colors.blue; // Info
-    } else {
-      return Colors.red; // Danger
-    }
+    return BmiCalculator.getColorForCategory(bmi);
   }
 
   String _getGoalTypeLabel() {
@@ -224,7 +230,8 @@ class _TargetWeightStepScreenState extends ConsumerState<TargetWeightStepScreen>
         case 'maintain':
           if ((weight - currentWeight).abs() > 0.5) {
             isValid = false;
-            errorMessage = 'Cân nặng mục tiêu phải gần bằng cân nặng hiện tại (±0.5 kg)';
+            errorMessage =
+                'Cân nặng mục tiêu phải gần bằng cân nặng hiện tại (±0.5 kg)';
           }
           break;
       }
@@ -246,17 +253,13 @@ class _TargetWeightStepScreenState extends ConsumerState<TargetWeightStepScreen>
     if (goalType == 'maintain') {
       // Skip weekly delta step for maintain, go directly to activity step
       Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => const ActivityLevelStepScreen(),
-        ),
+        MaterialPageRoute(builder: (_) => const ActivityLevelStepScreen()),
       );
     } else {
       // Show weekly delta step for lose/gain
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => const WeeklyDeltaStepScreen(),
-        ),
-      );
+      Navigator.of(
+        context,
+      ).push(MaterialPageRoute(builder: (_) => const WeeklyDeltaStepScreen()));
     }
   }
 
@@ -265,7 +268,7 @@ class _TargetWeightStepScreenState extends ConsumerState<TargetWeightStepScreen>
     final state = ref.read(onboardingControllerProvider);
     final currentWeight = state.weightKgComputed ?? 0;
     final targetBMI = _calculateTargetBMI();
-    
+
     // Fix closure bug: call the function to get the string value
     final goalTypeLabel = _getGoalTypeLabel();
 
@@ -323,14 +326,20 @@ class _TargetWeightStepScreenState extends ConsumerState<TargetWeightStepScreen>
                           vertical: 24,
                         ),
                         decoration: BoxDecoration(
-                          color: AppColors.charmingGreen.withOpacity(0.3),
-                          borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+                          color: AppColors.charmingGreen.withValues(alpha: 0.3),
+                          borderRadius: BorderRadius.circular(
+                            AppTheme.radiusLarge,
+                          ),
                         ),
                         child: Column(
                           children: [
                             Text(
                               _selectedTargetWeight != null
-                                  ? WeightUnits.fmt(WeightUnits.toHalfKg(_selectedTargetWeight!))
+                                  ? WeightUnits.fmt(
+                                      WeightUnits.toHalfKg(
+                                        _selectedTargetWeight!,
+                                      ),
+                                    )
                                   : '0.0',
                               style: const TextStyle(
                                 fontSize: 64,
@@ -342,7 +351,8 @@ class _TargetWeightStepScreenState extends ConsumerState<TargetWeightStepScreen>
                             const SizedBox(height: 4),
                             Text(
                               'kg',
-                              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                              style: Theme.of(context).textTheme.bodyLarge
+                                  ?.copyWith(
                                     color: AppColors.mediumGray,
                                     fontWeight: FontWeight.w600,
                                   ),
@@ -359,10 +369,12 @@ class _TargetWeightStepScreenState extends ConsumerState<TargetWeightStepScreen>
                         width: double.infinity,
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: AppColors.error.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+                          color: AppColors.error.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(
+                            AppTheme.radiusMedium,
+                          ),
                           border: Border.all(
-                            color: AppColors.error.withOpacity(0.3),
+                            color: AppColors.error.withValues(alpha: 0.3),
                             width: 1,
                           ),
                         ),
@@ -377,7 +389,8 @@ class _TargetWeightStepScreenState extends ConsumerState<TargetWeightStepScreen>
                             Expanded(
                               child: Text(
                                 _errorText!,
-                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                style: Theme.of(context).textTheme.bodySmall
+                                    ?.copyWith(
                                       color: AppColors.error,
                                       fontWeight: FontWeight.w600,
                                     ),
@@ -396,14 +409,18 @@ class _TargetWeightStepScreenState extends ConsumerState<TargetWeightStepScreen>
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
                           color: AppColors.white,
-                          borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+                          borderRadius: BorderRadius.circular(
+                            AppTheme.radiusLarge,
+                          ),
                           border: Border.all(
-                            color: _getBMIColor(targetBMI).withOpacity(0.3),
+                            color: _getBMIColor(
+                              targetBMI,
+                            ).withValues(alpha: 0.3),
                             width: 2,
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
+                              color: Colors.black.withValues(alpha: 0.05),
                               blurRadius: 16,
                               offset: const Offset(0, 8),
                             ),
@@ -417,14 +434,16 @@ class _TargetWeightStepScreenState extends ConsumerState<TargetWeightStepScreen>
                               children: [
                                 Text(
                                   'BMI mục tiêu',
-                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                        color: AppColors.mediumGray,
-                                      ),
+                                  style: Theme.of(context).textTheme.bodyMedium
+                                      ?.copyWith(color: AppColors.mediumGray),
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
                                   targetBMI.toStringAsFixed(1),
-                                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .headlineMedium
+                                      ?.copyWith(
                                         fontWeight: FontWeight.w700,
                                         color: AppColors.nearBlack,
                                       ),
@@ -437,8 +456,12 @@ class _TargetWeightStepScreenState extends ConsumerState<TargetWeightStepScreen>
                                 vertical: 8,
                               ),
                               decoration: BoxDecoration(
-                                color: _getBMIColor(targetBMI).withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(AppTheme.radiusSmall),
+                                color: _getBMIColor(
+                                  targetBMI,
+                                ).withValues(alpha: 0.2),
+                                borderRadius: BorderRadius.circular(
+                                  AppTheme.radiusSmall,
+                                ),
                                 border: Border.all(
                                   color: _getBMIColor(targetBMI),
                                   width: 1.5,
@@ -465,17 +488,21 @@ class _TargetWeightStepScreenState extends ConsumerState<TargetWeightStepScreen>
                       child: Container(
                         decoration: BoxDecoration(
                           color: AppColors.white,
-                          borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+                          borderRadius: BorderRadius.circular(
+                            AppTheme.radiusLarge,
+                          ),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
+                              color: Colors.black.withValues(alpha: 0.05),
                               blurRadius: 16,
                               offset: const Offset(0, 8),
                             ),
                           ],
                         ),
                         child: ClipRRect(
-                          borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+                          borderRadius: BorderRadius.circular(
+                            AppTheme.radiusLarge,
+                          ),
                           child: _WeightPickerWidget(
                             min: 35,
                             max: 200,
@@ -501,12 +528,15 @@ class _TargetWeightStepScreenState extends ConsumerState<TargetWeightStepScreen>
                           foregroundColor: AppColors.nearBlack,
                           elevation: 0,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+                            borderRadius: BorderRadius.circular(
+                              AppTheme.radiusMedium,
+                            ),
                           ),
                         ),
                         child: Text(
                           'Tiếp tục',
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          style: Theme.of(context).textTheme.titleLarge
+                              ?.copyWith(
                                 color: AppColors.nearBlack,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -544,7 +574,7 @@ class _WeightPickerWidget extends StatelessWidget {
     // We'll generate items for each 0.5 step: 35.0, 35.5, 36.0, ... 200.0
     final itemCount = ((max - min) * 2) + 1;
     final initialIndex = ((initial - min) * 2).round().clamp(0, itemCount - 1);
-    
+
     final controller = FixedExtentScrollController(initialItem: initialIndex);
 
     return SizedBox(
@@ -559,20 +589,16 @@ class _WeightPickerWidget extends StatelessWidget {
           final value = min + (index / 2);
           onChanged(value);
         },
-        children: List.generate(
-          itemCount,
-          (index) {
-            final value = min + (index / 2);
-            return Center(
-              child: Text(
-                '${WeightUnits.fmt(WeightUnits.toHalfKg(value))} kg',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-            );
-          },
-        ),
+        children: List.generate(itemCount, (index) {
+          final value = min + (index / 2);
+          return Center(
+            child: Text(
+              '${WeightUnits.fmt(WeightUnits.toHalfKg(value))} kg',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+          );
+        }),
       ),
     );
   }
 }
-

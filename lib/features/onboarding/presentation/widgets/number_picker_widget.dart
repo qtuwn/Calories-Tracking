@@ -36,20 +36,16 @@ class NumberPickerWidget extends StatelessWidget {
           final value = min + index;
           onChanged(value);
         },
-        children: List.generate(
-          max - min + 1,
-          (index) {
-            final value = min + index;
-            return Center(
-              child: Text(
-                suffix != null ? '$value $suffix' : '$value',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-            );
-          },
-        ),
+        children: List.generate(max - min + 1, (index) {
+          final value = min + index;
+          return Center(
+            child: Text(
+              suffix != null ? '$value $suffix' : '$value',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+          );
+        }),
       ),
     );
   }
 }
-

@@ -14,8 +14,15 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
 
-  final List<Widget> _pages = [
-    const DashboardPage(),
+  // Cache pages list to avoid recreating widgets on every build
+  late final List<Widget> _pages = [
+    DashboardPage(
+      onNavigateToDiary: () {
+        setState(() {
+          _currentIndex = 1; // Diary tab index
+        });
+      },
+    ),
     const DiaryPage(),
     const MenuPage(),
     const AccountPage(),
@@ -32,7 +39,7 @@ class _HomeScreenState extends State<HomeScreen> {
         decoration: BoxDecoration(
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, -2),
             ),
