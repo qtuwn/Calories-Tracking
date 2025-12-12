@@ -8,8 +8,12 @@ import 'package:calories_app/features/onboarding/presentation/controllers/onboar
 import 'package:calories_app/features/foods/ui/food_admin_page.dart';
 import 'package:calories_app/features/exercise/ui/exercise_admin_list_screen.dart';
 import 'package:calories_app/features/admin/ui/admin_dashboard_screen.dart';
+import 'package:calories_app/features/meal_plans/presentation/pages/admin_discover_meal_plans_page.dart';
 import 'package:calories_app/features/home/presentation/pages/personal_info_screen.dart';
 import 'package:calories_app/features/home/presentation/pages/goals_screen.dart';
+import 'package:calories_app/features/home/presentation/pages/security_screen.dart';
+import 'package:calories_app/features/home/presentation/pages/about_app_screen.dart';
+import 'package:calories_app/features/home/presentation/pages/help_support_screen.dart';
 
 /// Settings page with clean WAO-style design
 class SettingsPage extends ConsumerWidget {
@@ -135,6 +139,19 @@ class SettingsPage extends ConsumerWidget {
                         Navigator.of(context).push(
                           MaterialPageRoute(
                             builder: (_) => const ExerciseAdminListScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 8),
+                    _buildSettingsItem(
+                      context: context,
+                      icon: Icons.menu_book,
+                      title: 'Quản lý thực đơn khám phá',
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const AdminDiscoverMealPlansPage(),
                           ),
                         );
                       },
@@ -354,30 +371,7 @@ class SettingsPage extends ConsumerWidget {
   void _navigateToSecurity(BuildContext context) {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => Scaffold(
-          appBar: AppBar(title: const Text('Bảo mật')),
-          body: const Center(
-            child: Padding(
-              padding: EdgeInsets.all(24.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.lock_outlined, size: 64, color: Colors.grey),
-                  SizedBox(height: 16),
-                  Text(
-                    'Bảo mật',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    'Tính năng này đang được phát triển.',
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
+        builder: (context) => const SecurityScreen(),
       ),
     );
   }
@@ -385,30 +379,7 @@ class SettingsPage extends ConsumerWidget {
   void _navigateToHelp(BuildContext context) {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => Scaffold(
-          appBar: AppBar(title: const Text('Trợ giúp & Hỗ trợ')),
-          body: const Center(
-            child: Padding(
-              padding: EdgeInsets.all(24.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.help_outlined, size: 64, color: Colors.grey),
-                  SizedBox(height: 16),
-                  Text(
-                    'Trợ giúp & Hỗ trợ',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    'Tính năng này đang được phát triển.',
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
+        builder: (context) => const HelpSupportScreen(),
       ),
     );
   }
@@ -416,30 +387,7 @@ class SettingsPage extends ConsumerWidget {
   void _navigateToAbout(BuildContext context) {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => Scaffold(
-          appBar: AppBar(title: const Text('Về ứng dụng')),
-          body: const Center(
-            child: Padding(
-              padding: EdgeInsets.all(24.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.info_outlined, size: 64, color: Colors.grey),
-                  SizedBox(height: 16),
-                  Text(
-                    'Về ứng dụng',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    'Tính năng này đang được phát triển.',
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
+        builder: (context) => const AboutAppScreen(),
       ),
     );
   }

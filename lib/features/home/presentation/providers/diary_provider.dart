@@ -2,14 +2,16 @@ import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:calories_app/data/firebase/diary_repository.dart';
-import 'package:calories_app/features/home/domain/diary_entry.dart';
+import 'package:calories_app/domain/diary/diary_entry.dart';
+import 'package:calories_app/domain/diary/diary_service.dart';
+import 'package:calories_app/shared/state/diary_providers.dart' as diary_providers;
 import 'package:calories_app/features/home/domain/meal.dart';
 import 'package:calories_app/features/home/domain/meal_item.dart';
 import 'package:calories_app/features/home/domain/meal_type.dart';
-import 'package:calories_app/features/foods/data/food_model.dart';
+import 'package:calories_app/domain/foods/food.dart';
 import 'package:calories_app/features/exercise/data/exercise_model.dart';
 import 'package:calories_app/shared/state/auth_providers.dart';
+import 'package:calories_app/data/firebase/date_utils.dart';
 
 /// State class for Diary
 class DiaryState {
@@ -69,14 +71,13 @@ class DiaryState {
   }
 }
 
-/// Provider for DiaryRepository
-final diaryRepositoryProvider = Provider<DiaryRepository>((ref) {
-  return DiaryRepository();
-});
+// Note: DiaryRepository provider is now in lib/shared/state/diary_providers.dart
+// This file uses DiaryService via diary_providers.diaryServiceProvider
 
 /// Provider quản lý state của Diary với Firestore integration
+/// Now uses DiaryService (cache-first architecture) instead of direct repository
 class DiaryNotifier extends Notifier<DiaryState> {
-  DiaryRepository? _repository;
+  DiaryService? _service;
   StreamSubscription<List<DiaryEntry>>? _entriesSubscription;
   String? _currentUid;
 
@@ -85,8 +86,8 @@ class DiaryNotifier extends Notifier<DiaryState> {
     final today = _normalizeDate(DateTime.now());
     final dateKey = _getDateKey(today);
     
-    // Initialize repository
-    _repository = ref.read(diaryRepositoryProvider);
+    // Initialize service (cache-aware)
+    _service = ref.read(diary_providers.diaryServiceProvider);
     
     // Initialize state with default meals
     final initialState = DiaryState(
@@ -250,16 +251,17 @@ class DiaryNotifier extends Notifier<DiaryState> {
 
   /// Watch Firestore entries for a specific date and update state
   /// Requires a valid uid (should only be called when user is authenticated)
+  /// Now uses DiaryService.watchEntriesForDayWithCache for cache-first behavior
   void _watchEntriesForDate(DateTime date, {required String uid}) {
     // Cancel previous subscription
     _entriesSubscription?.cancel();
 
-    // Watch entries stream
+    // Watch entries stream using cache-first service
     try {
       state = state.copyWith(isLoading: true, clearErrorMessage: true);
       
-      _entriesSubscription = _repository!
-          .watchDiaryEntriesForDate(uid: uid, date: date)
+      _entriesSubscription = _service!
+          .watchEntriesForDayWithCache(uid, date)
           .listen(
         (entries) {
           debugPrint('[DiaryNotifier] 📊 Received ${entries.length} entries for date=${_getDateKey(date)}');
@@ -474,8 +476,8 @@ class DiaryNotifier extends Notifier<DiaryState> {
         createdAt: DateTime.now(),
       );
 
-      // Save to Firestore (stream will update UI automatically)
-      await _repository!.addDiaryEntry(entry);
+      // Save via service (cache-aware, stream will update UI automatically)
+      await _service!.addEntry(entry);
       
       debugPrint('[DiaryNotifier] ✅ Added entry: ${food.name}');
     } catch (e, stackTrace) {
@@ -515,8 +517,8 @@ class DiaryNotifier extends Notifier<DiaryState> {
         createdAt: DateTime.now(),
       );
 
-      // Save to Firestore (stream will update UI automatically)
-      await _repository!.addDiaryEntry(entry);
+      // Save via service (cache-aware, stream will update UI automatically)
+      await _service!.addEntry(entry);
       
       debugPrint('[DiaryNotifier] ✅ Added custom entry: ${item.name}');
     } catch (e, stackTrace) {
@@ -557,8 +559,8 @@ class DiaryNotifier extends Notifier<DiaryState> {
         updatedAt: DateTime.now(),
       );
 
-      // Save to Firestore (stream will update UI automatically)
-      await _repository!.updateDiaryEntry(updatedEntry);
+      // Save via service (cache-aware, stream will update UI automatically)
+      await _service!.updateEntry(updatedEntry);
       
       debugPrint('[DiaryNotifier] ✅ Updated entry: $itemId');
     } catch (e, stackTrace) {
@@ -577,8 +579,8 @@ class DiaryNotifier extends Notifier<DiaryState> {
     }
 
     try {
-      // Delete from Firestore (stream will update UI automatically)
-      await _repository!.deleteDiaryEntry(itemId);
+      // Delete via service (cache-aware, stream will update UI automatically)
+      await _service!.deleteEntry(uid, itemId, state.selectedDate);
       
       debugPrint('[DiaryNotifier] ✅ Deleted entry: $itemId');
     } catch (e, stackTrace) {
@@ -621,15 +623,22 @@ class DiaryNotifier extends Notifier<DiaryState> {
         '[DiaryNotifier] 🔵 Adding exercise: ${exercise.name}, duration=$durationMinutes, calories=$caloriesBurned',
       );
 
-      // Add exercise entry via repository
-      await _repository!.addExerciseEntry(
-        exercise: exercise,
+      // Create exercise entry and add via service
+      final entry = DiaryEntry.exercise(
+        id: '', // Will be set by repository
+        userId: uid,
+        date: DateUtils.normalizeToIsoString(state.selectedDate),
+        exerciseId: exercise.id,
+        exerciseName: exercise.name,
         durationMinutes: durationMinutes,
         caloriesBurned: caloriesBurned,
-        date: state.selectedDate,
+        exerciseUnit: exercise.unit.value,
         exerciseValue: exerciseValue,
         exerciseLevelName: exerciseLevelName,
+        createdAt: DateTime.now(),
       );
+      
+      await _service!.addEntry(entry);
 
       debugPrint('[DiaryNotifier] ✅ Exercise added successfully');
     } catch (e, stackTrace) {
@@ -641,8 +650,13 @@ class DiaryNotifier extends Notifier<DiaryState> {
 
   /// Delete an exercise entry
   Future<void> deleteExerciseEntry(String entryId) async {
+    final uid = _currentUid;
+    if (uid == null) {
+      throw Exception('User must be signed in to delete diary entries');
+    }
+    
     try {
-      await _repository!.deleteDiaryEntry(entryId);
+      await _service!.deleteEntry(uid, entryId, state.selectedDate);
       debugPrint('[DiaryNotifier] ✅ Deleted exercise entry: $entryId');
     } catch (e, stackTrace) {
       debugPrint('[DiaryNotifier] 🔥 Error deleting exercise entry: $e');

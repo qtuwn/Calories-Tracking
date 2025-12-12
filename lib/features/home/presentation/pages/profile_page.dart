@@ -4,8 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:calories_app/shared/state/auth_providers.dart';
-import 'package:calories_app/features/onboarding/domain/profile_model.dart';
-import 'package:calories_app/data/firebase/profile_repository.dart';
+import 'package:calories_app/domain/profile/profile.dart';
+import 'package:calories_app/shared/state/profile_providers.dart' as profile_providers;
 import 'package:calories_app/features/home/presentation/controllers/avatar_upload_controller.dart';
 import 'package:calories_app/features/home/presentation/pages/settings_page.dart';
 import 'package:calories_app/features/home/presentation/pages/reports/nutrition_report_screen.dart';
@@ -182,7 +182,7 @@ class AccountPage extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     User? user,
-    ProfileModel? profile,
+    Profile? profile,
   ) {
     // Use nickname from profile if available, otherwise fallback to displayName or default
     final displayName = profile?.nickname ?? 
@@ -318,7 +318,7 @@ class AccountPage extends ConsumerWidget {
   }
 
   /// Build "Hành trình của bạn" (Your Journey) card
-  Widget _buildJourneyCard(BuildContext context, ProfileModel? profile) {
+  Widget _buildJourneyCard(BuildContext context, Profile? profile) {
     final currentWeight = profile?.weightKg ?? 0.0;
     final targetWeight = profile?.targetWeight ?? 0.0;
     final goalType = profile?.goalType ?? 'maintain';
@@ -467,7 +467,7 @@ class AccountPage extends ConsumerWidget {
   }
 
   /// Build "Mục tiêu dinh dưỡng & đa lượng" (Nutrition Goals) card
-  Widget _buildNutritionGoalsCard(BuildContext context, WidgetRef ref, ProfileModel? profile) {
+  Widget _buildNutritionGoalsCard(BuildContext context, WidgetRef ref, Profile? profile) {
     final targetKcal = profile?.targetKcal ?? 0.0;
     final proteinGrams = profile?.proteinGrams ?? 0.0;
     final carbGrams = profile?.carbGrams ?? 0.0;
@@ -721,7 +721,7 @@ class AccountPage extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     User? user,
-    ProfileModel? profile,
+    Profile? profile,
   ) async {
     debugPrint('[AccountPage] 🔵 Starting avatar pick and upload');
 
@@ -755,8 +755,8 @@ class AccountPage extends ConsumerWidget {
 
     debugPrint('[AccountPage] ✅ Image picked: ${picked.path}');
 
-    // Get current profileId
-    final repository = ProfileRepository();
+    // Get current profileId via provider
+    final repository = ref.read(profile_providers.profileRepositoryProvider);
     final profileId = await repository.getCurrentProfileId(uid);
 
     if (profileId == null) {
@@ -785,7 +785,7 @@ class AccountPage extends ConsumerWidget {
       // Update Firestore with base64 string
       debugPrint('[AccountPage] 📝 Updating Firestore with photoBase64...');
       await repository.updateProfileAvatarBase64(
-        uid: uid,
+        userId: uid,
         profileId: profileId,
         photoBase64: base64String,
       );
@@ -832,7 +832,7 @@ class AccountPage extends ConsumerWidget {
   }
 
   // Navigation methods
-  void _navigateToEditProfile(BuildContext context, ProfileModel? profile) {
+  void _navigateToEditProfile(BuildContext context, Profile? profile) {
     if (profile == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -851,7 +851,7 @@ class AccountPage extends ConsumerWidget {
     );
   }
 
-  void _navigateToCustomizeNutrition(BuildContext context, ProfileModel? profile) {
+  void _navigateToCustomizeNutrition(BuildContext context, Profile? profile) {
     if (profile == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(

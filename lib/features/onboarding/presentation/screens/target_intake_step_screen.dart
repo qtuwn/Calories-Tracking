@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:calories_app/core/theme/theme.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-import 'package:calories_app/data/firebase/profile_repository.dart';
+import 'package:calories_app/shared/state/profile_providers.dart';
 import 'package:calories_app/features/auth/data/auth_service.dart';
 import 'package:calories_app/features/home/presentation/screens/home_screen.dart';
 import 'package:calories_app/features/onboarding/data/services/onboarding_logger.dart';
@@ -12,6 +12,7 @@ import 'package:calories_app/features/onboarding/data/services/onboarding_persis
 import 'package:calories_app/features/onboarding/domain/nutrition_result.dart';
 import 'package:calories_app/features/onboarding/domain/onboarding_model.dart';
 import 'package:calories_app/features/onboarding/domain/profile_model.dart';
+import 'package:calories_app/domain/profile/profile.dart';
 import 'package:calories_app/features/onboarding/presentation/controllers/onboarding_controller.dart';
 import 'package:calories_app/features/onboarding/presentation/widgets/progress_indicator_widget.dart';
 
@@ -25,7 +26,6 @@ class TargetIntakeStepScreen extends ConsumerStatefulWidget {
 
 class _TargetIntakeStepScreenState
     extends ConsumerState<TargetIntakeStepScreen> {
-  final _profileRepository = ProfileRepository();
   final _authService = AuthService(); // Use AuthService instead of direct FirebaseAuth
   bool _isSaving = false;
   DateTime? _onboardingStartTime;
@@ -74,19 +74,48 @@ class _TargetIntakeStepScreenState
       );
       final result = NutritionResult.fromMap(resultMap);
 
-      // Step 3: Build ProfileModel
-      final profile = ProfileModel.fromOnboarding(
+      // Step 3: Build ProfileModel (temporary - for compatibility)
+      final profileModel = ProfileModel.fromOnboarding(
         onboarding: state,
         result: result,
       );
 
-      // Step 4: Convert to map
-      final profileMap = profile.toMap();
-      debugPrint(
-        '[TargetIntakeStep] 📋 Profile map created with ${profileMap.length} fields',
+      // Step 4: Convert ProfileModel to Profile domain entity
+      final profile = Profile(
+        nickname: profileModel.nickname,
+        age: profileModel.age,
+        dobIso: profileModel.dobIso,
+        gender: profileModel.gender,
+        height: profileModel.height,
+        heightCm: profileModel.heightCm,
+        weight: profileModel.weight,
+        weightKg: profileModel.weightKg,
+        bmi: profileModel.bmi,
+        goalType: profileModel.goalType,
+        targetWeight: profileModel.targetWeight,
+        weeklyDeltaKg: profileModel.weeklyDeltaKg,
+        activityLevel: profileModel.activityLevel,
+        activityMultiplier: profileModel.activityMultiplier,
+        bmr: profileModel.bmr,
+        tdee: profileModel.tdee,
+        targetKcal: profileModel.targetKcal,
+        proteinPercent: profileModel.proteinPercent,
+        carbPercent: profileModel.carbPercent,
+        fatPercent: profileModel.fatPercent,
+        proteinGrams: profileModel.proteinGrams,
+        carbGrams: profileModel.carbGrams,
+        fatGrams: profileModel.fatGrams,
+        goalDate: profileModel.goalDate,
+        isCurrent: profileModel.isCurrent,
+        createdAt: profileModel.createdAt ?? DateTime.now(),
+        photoBase64: profileModel.photoBase64,
       );
 
-      // Step 5: Save profile with retry logic (max 3 attempts)
+      debugPrint(
+        '[TargetIntakeStep] 📋 Profile created from onboarding data',
+      );
+
+      // Step 5: Save profile with retry logic (max 3 attempts) using ProfileService
       String profileId;
       int retries = 3;
       Exception? lastError;
@@ -96,7 +125,11 @@ class _TargetIntakeStepScreenState
           debugPrint(
             '[TargetIntakeStep] 💾 Attempting to save profile (${4 - retries}/3)...',
           );
-          profileId = await _profileRepository.saveProfile(uid, profileMap);
+          
+          // Use ProfileService for saving (saves to both Firestore and cache)
+          final service = await ref.read(profileServiceProvider.future);
+          profileId = await service.saveProfile(uid, profile);
+          
           debugPrint(
             '[TargetIntakeStep] ✅ Profile saved successfully: profileId=$profileId',
           );

@@ -3,6 +3,11 @@ import 'onboarding_model.dart';
 import 'nutrition_result.dart';
 
 /// Profile model for Firestore
+/// 
+/// @Deprecated Use domain/profile/profile.dart instead.
+/// This legacy model is kept for backward compatibility during migration.
+/// Migration guide: Use ProfileService and Profile domain entity from lib/domain/profile/
+@Deprecated('Use domain/profile/profile.dart and ProfileService instead. See docs/migration_profile_to_domain.md')
 class ProfileModel {
   final String? nickname;
   final int? age;

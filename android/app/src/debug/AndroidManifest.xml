@@ -9,4 +9,5 @@
     <!-- Health Connect – Steps only -->
     <uses-permission android:name="android.permission.health.READ_STEPS" />
     <uses-permission android:name="android.permission.health.WRITE_STEPS" />
+    <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
 </manifest>

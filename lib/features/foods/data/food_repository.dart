@@ -4,6 +4,11 @@ import 'package:calories_app/features/foods/data/food_model.dart';
 import 'package:calories_app/shared/utils/audit_logger.dart';
 
 /// Repository for managing foods in Firestore
+/// 
+/// @Deprecated Use domain/foods/food_repository.dart and FirestoreFoodRepository instead.
+/// This legacy repository is kept for backward compatibility during migration.
+/// Migration guide: Use FoodService from lib/shared/state/food_providers.dart
+@Deprecated('Use domain/foods/food_repository.dart and FirestoreFoodRepository instead. Migration in progress.')
 class FoodRepository {
   final FirebaseFirestore _firestore;
 
@@ -124,5 +129,85 @@ class FoodRepository {
       debugPrintStack(stackTrace: stackTrace);
       return null;
     }
+  }
+
+    /// Search foods by name and filter by goal type
+  /// goalType: "lose_fat" | "muscle_gain" | "vegan" | "maintain"
+  Stream<List<Food>> searchFoodsByGoal(String query, String goalType) {
+    if (query.trim().isEmpty) {
+      return const Stream.empty();
+    }
+
+    final queryLower = query.toLowerCase();
+    final queryUpper = '$queryLower\uf8ff';
+
+    // ĐỪNG khai báo là Stream, để Dart tự suy ra Query<Map<String, dynamic>>
+    final baseQuery = _firestore
+        .collection('foods')
+        .where('nameLower', isGreaterThanOrEqualTo: queryLower)
+        .where('nameLower', isLessThan: queryUpper)
+        .limit(20);
+
+    return baseQuery.snapshots().map((snapshot) {
+      var foods = snapshot.docs.map((doc) => Food.fromDoc(doc)).toList();
+
+      // Filter by goal type
+      if (goalType == 'vegan') {
+        // Vegan: loại món có thịt / động vật
+        foods = foods.where((food) {
+          final category = food.category?.toLowerCase() ?? '';
+
+          if (category.contains('meat') ||
+              category.contains('chicken') ||
+              category.contains('pork') ||
+              category.contains('beef') ||
+              category.contains('fish') ||
+              category.contains('seafood') ||
+              category.contains('egg') ||
+              category.contains('dairy') ||
+              category.contains('milk')) {
+            return false;
+          }
+          return true;
+        }).toList();
+      }
+
+      return foods;
+    });
+  }
+
+
+    /// Get all foods filtered by goal type
+  /// Similar to searchFoodsByGoal but without name filtering
+  Stream<List<Food>> getAllFoodsByGoal(String goalType) {
+    final baseQuery = _firestore
+        .collection('foods')
+        .orderBy('nameLower')
+        .limit(100);
+
+    return baseQuery.snapshots().map((snapshot) {
+      var foods = snapshot.docs.map((doc) => Food.fromDoc(doc)).toList();
+
+      if (goalType == 'vegan') {
+        foods = foods.where((food) {
+          final category = food.category?.toLowerCase() ?? '';
+
+          if (category.contains('meat') ||
+              category.contains('chicken') ||
+              category.contains('pork') ||
+              category.contains('beef') ||
+              category.contains('fish') ||
+              category.contains('seafood') ||
+              category.contains('egg') ||
+              category.contains('dairy') ||
+              category.contains('milk')) {
+            return false;
+          }
+          return true;
+        }).toList();
+      }
+
+      return foods;
+    });
   }
 }

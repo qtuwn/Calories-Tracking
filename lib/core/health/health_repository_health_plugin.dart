@@ -113,33 +113,8 @@ class HealthRepositoryHealthPlugin implements HealthRepository {
     required DateTime startDate,
     required DateTime endDate,
   }) async {
-    debugPrint('[HealthRepo] ▶ getStepsForDateRange() called from $startDate to $endDate');
-    
-    try {
-      // Normalize startDate to midnight
-      final start = DateTime(startDate.year, startDate.month, startDate.day);
-      // Normalize endDate to end of day (23:59:59)
-      final end = DateTime(endDate.year, endDate.month, endDate.day, 23, 59, 59);
-      
-      debugPrint('[HealthRepo] Querying steps from $start to $end');
-      
-      final steps = await _health.getTotalStepsInInterval(start, end);
-      final stepCount = steps ?? 0;
-      
-      debugPrint('[HealthRepo] ✅ Steps retrieved for date range: $stepCount');
-      
-      return stepCount;
-    } catch (e, stackTrace) {
-      debugPrint('[HealthRepo] ❌ Error getting steps for date range: $e');
-      debugPrint('[HealthRepo] Stack trace: $stackTrace');
-      developer.log(
-        'Error getting steps for date range',
-        name: 'HealthRepo',
-        error: e,
-        stackTrace: stackTrace,
-      );
-      return 0;
-    }
+    // TODO: Implement actual date-range query when step-data source is ready
+    return 0;
   }
 }
 

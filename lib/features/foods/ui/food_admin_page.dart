@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:calories_app/features/foods/data/food_model.dart';
-import 'package:calories_app/features/foods/data/food_providers.dart';
+import 'package:calories_app/domain/foods/food.dart';
+import 'package:calories_app/shared/state/food_providers.dart' as food_providers;
+import 'package:calories_app/features/foods/data/food_providers.dart'; // For foodCategoryFilterProvider
 import 'package:calories_app/features/foods/data/food_categories.dart';
 import 'package:calories_app/core/theme/app_colors.dart';
 import 'package:calories_app/shared/state/auth_providers.dart';
@@ -69,7 +70,7 @@ class FoodAdminPage extends ConsumerWidget {
   }
 
   Widget _buildAdminPage(BuildContext context, WidgetRef ref) {
-    final foodsStream = ref.watch(foodRepositoryProvider).getAllFoods();
+    final foodsAsync = ref.watch(food_providers.allFoodsProvider);
     final selectedCategory = ref.watch(foodCategoryFilterProvider);
 
     return Scaffold(
@@ -151,41 +152,8 @@ class FoodAdminPage extends ConsumerWidget {
           _buildCategoryFilterBar(context, ref, selectedCategory),
           // Food list
           Expanded(
-            child: StreamBuilder<List<Food>>(
-              stream: foodsStream,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(
-                    child: CircularProgressIndicator(
-                      color: AppColors.mintGreen,
-                    ),
-                  );
-                }
-
-                if (snapshot.hasError) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.error_outline,
-                          size: 64,
-                          color: AppColors.error,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Error: ${snapshot.error}',
-                          style: const TextStyle(
-                            color: AppColors.mediumGray,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }
-
-                final foods = snapshot.data ?? [];
+            child: foodsAsync.when(
+              data: (foods) {
 
                 // Apply category filter
                 final filteredFoods =
@@ -271,6 +239,31 @@ class FoodAdminPage extends ConsumerWidget {
                   ),
                 );
               },
+              loading: () => const Center(
+                child: CircularProgressIndicator(
+                  color: AppColors.mintGreen,
+                ),
+              ),
+              error: (error, stack) => Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.error_outline,
+                      size: 64,
+                      color: AppColors.error,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Error: $error',
+                      style: const TextStyle(
+                        color: AppColors.mediumGray,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
         ],
@@ -482,8 +475,10 @@ class FoodAdminPage extends ConsumerWidget {
             final user = FirebaseAuth.instance.currentUser;
             if (user == null) return;
 
-            final repo = ref.read(foodRepositoryProvider);
-            await repo.createOrUpdateFood(food, user.uid);
+            final repository = ref.read(food_providers.foodRepositoryProvider);
+            await repository.createOrUpdate(food, user.uid);
+            // Invalidate cache to refresh UI
+            ref.invalidate(food_providers.allFoodsProvider);
             if (context.mounted) {
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
@@ -536,8 +531,11 @@ class FoodAdminPage extends ConsumerWidget {
               final user = FirebaseAuth.instance.currentUser;
               if (user == null) return;
 
-              final repo = ref.read(foodRepositoryProvider);
-              await repo.deleteFood(food.id, user.uid, foodName: food.name);
+              final service = ref.read(food_providers.foodServiceProvider);
+              final repository = ref.read(food_providers.foodRepositoryProvider);
+              await repository.delete(food.id, user.uid, foodName: food.name);
+              // Clear cache to refresh UI
+              await service.clearCache();
               if (context.mounted) {
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(

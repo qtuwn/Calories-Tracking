@@ -4,6 +4,11 @@ import 'package:flutter/foundation.dart';
 import 'package:calories_app/features/onboarding/domain/profile_model.dart';
 
 /// Profile repository for Firestore operations
+/// 
+/// @Deprecated Use domain/profile/profile_repository.dart and FirestoreProfileRepository instead.
+/// This legacy repository is kept for backward compatibility during migration.
+/// Migration guide: Use ProfileService from lib/shared/state/profile_providers.dart
+@Deprecated('Use domain/profile/profile_repository.dart and FirestoreProfileRepository instead. See docs/migration_profile_to_domain.md')
 class ProfileRepository {
   final FirebaseFirestore _firestore;
   final FirebaseAuth _auth;

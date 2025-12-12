@@ -19,6 +19,7 @@ import 'date_utils.dart';
 /// 
 /// TODO: Implement aggregation logic for each analytics feature
 class AnalyticsRepository {
+  // ignore: unused_field
   final FirebaseFirestore _firestore;
   final FirebaseAuth _auth;
 
@@ -108,7 +109,9 @@ class AnalyticsRepository {
     debugPrint('[AnalyticsRepository] 🔵 TODO: Implement getMonthlyNutritionStats for $month');
     
     final (startDate, endDate) = _getMonthRange(month);
+    // ignore: unused_local_variable
     final startDateStr = DateUtils.normalizeToIsoString(startDate);
+    // ignore: unused_local_variable
     final endDateStr = DateUtils.normalizeToIsoString(endDate);
     
     // TODO: Query and aggregate diary entries
