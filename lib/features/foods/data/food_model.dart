@@ -1,6 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 /// Food model representing a food item in the catalog
+/// 
+/// @Deprecated Use domain/foods/food.dart instead.
+/// This legacy model is kept for backward compatibility during migration.
+/// Migration guide: Use FoodService and Food domain entity from lib/domain/foods/
+@Deprecated('Use domain/foods/food.dart and FoodService instead. Migration in progress.')
 class Food {
   final String id;
   final String name;

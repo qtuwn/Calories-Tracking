@@ -1,9 +1,11 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:calories_app/features/home/domain/workout_type.dart';
-import 'package:calories_app/features/home/domain/diary_entry.dart';
+import 'package:calories_app/domain/diary/diary_entry.dart';
+import 'package:calories_app/shared/state/diary_providers.dart' as diary_providers;
 import 'package:calories_app/features/home/presentation/providers/diary_provider.dart';
 import 'package:calories_app/shared/state/auth_providers.dart';
+import 'package:calories_app/data/firebase/date_utils.dart';
 
 /// Provider/Notifier for quick workout logging from the Home screen.
 /// 
@@ -84,7 +86,7 @@ class QuickWorkoutLogNotifier extends Notifier<void> {
       final entry = DiaryEntry.exercise(
         id: '', // Will be set by Firestore
         userId: uid,
-        date: _getDateKey(selectedDate),
+        date: DateUtils.normalizeToIsoString(selectedDate),
         exerciseId: 'quick_${workoutType.value}', // Synthetic ID for quick logs
         exerciseName: note ?? workoutType.displayName, // Use note as name if provided
         durationMinutes: durationMinutes,
@@ -95,8 +97,9 @@ class QuickWorkoutLogNotifier extends Notifier<void> {
         createdAt: DateTime.now(),
       );
 
-      // Save to Firestore via diary repository
-      await ref.read(diaryRepositoryProvider).addDiaryEntry(entry);
+      // Save via DiaryService (cache-aware)
+      final service = ref.read(diary_providers.diaryServiceProvider);
+      await service.addEntry(entry);
 
       debugPrint(
         '[QuickWorkoutLogNotifier] ✅ Quick workout logged successfully',
@@ -132,11 +135,7 @@ class QuickWorkoutLogNotifier extends Notifier<void> {
     );
   }
 
-  /// Normalize date to ISO string (yyyy-MM-dd)
-  String _getDateKey(DateTime date) {
-    final normalized = DateTime(date.year, date.month, date.day);
-    return '${normalized.year}-${normalized.month.toString().padLeft(2, '0')}-${normalized.day.toString().padLeft(2, '0')}';
-  }
+  // Note: Date normalization is now handled by DateUtils.normalizeToIsoString
 }
 
 /// Provider for quick workout logging.

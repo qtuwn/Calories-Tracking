@@ -5,7 +5,7 @@ import 'package:calories_app/features/home/domain/meal_item.dart';
 import 'package:calories_app/features/home/domain/meal_type.dart';
 import 'package:calories_app/features/home/presentation/providers/diary_provider.dart';
 import 'package:calories_app/features/home/presentation/providers/food_search_providers.dart';
-import 'package:calories_app/features/foods/data/food_model.dart';
+import 'package:calories_app/domain/foods/food.dart';
 
 /// Bottom sheet để thêm/sửa món ăn với food search
 class AddMealItemBottomSheet extends ConsumerStatefulWidget {

@@ -1,16 +1,14 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:calories_app/data/firebase/diary_repository.dart';
+import 'package:calories_app/domain/diary/diary_entry.dart';
+import 'package:calories_app/shared/state/diary_providers.dart' as diary_providers;
 import 'package:calories_app/data/firebase/weight_repository.dart';
 import 'package:calories_app/core/health/health_providers.dart';
-import 'package:calories_app/features/home/domain/diary_entry.dart';
 import 'package:calories_app/features/home/domain/statistics_models.dart';
 import 'package:calories_app/shared/state/auth_providers.dart';
 import 'package:calories_app/data/firebase/date_utils.dart';
 
-/// Provider for DiaryRepository
-final diaryRepositoryProvider = Provider<DiaryRepository>((ref) {
-  return DiaryRepository();
-});
+// Note: DiaryRepository provider is now in lib/shared/state/diary_providers.dart
+// Use diary_providers.diaryRepositoryProvider instead
 
 /// Provider for WeightRepository
 final weightRepositoryProvider = Provider<WeightRepository>((ref) {
@@ -39,11 +37,11 @@ final todayNutritionStatsProvider = FutureProvider<NutritionStats>((ref) async {
     final now = DateTime.now();
     final today = DateUtils.normalizeToMidnight(now);
     
-    final repository = ref.read(diaryRepositoryProvider);
-    final entries = await repository.getDiaryEntriesForDateRange(
-      uid: uid,
-      startDate: today,
-      endDate: today, // Use same date for single-day query
+    final repository = ref.read(diary_providers.diaryRepositoryProvider);
+    final entries = await repository.fetchEntriesForDateRange(
+      uid,
+      today,
+      today, // Use same date for single-day query
     );
 
     // Filter food entries only
@@ -94,11 +92,11 @@ final weekNutritionStatsProvider = FutureProvider<NutritionStats>((ref) async {
   final startDate = now.subtract(const Duration(days: 6)); // Last 7 days including today
   final normalizedStart = DateUtils.normalizeToMidnight(startDate);
   
-  final repository = ref.read(diaryRepositoryProvider);
-  final entries = await repository.getDiaryEntriesForDateRange(
-    uid: uid,
-    startDate: normalizedStart,
-    endDate: now,
+  final repository = ref.read(diary_providers.diaryRepositoryProvider);
+  final entries = await repository.fetchEntriesForDateRange(
+    uid,
+    normalizedStart,
+    now,
   );
 
   // Filter food entries only
@@ -146,11 +144,11 @@ final monthNutritionStatsProvider = FutureProvider<NutritionStats>((ref) async {
   final startDate = DateTime(now.year, now.month, 1); // First day of month
   final normalizedStart = DateUtils.normalizeToMidnight(startDate);
   
-  final repository = ref.read(diaryRepositoryProvider);
-  final entries = await repository.getDiaryEntriesForDateRange(
-    uid: uid,
-    startDate: normalizedStart,
-    endDate: now,
+  final repository = ref.read(diary_providers.diaryRepositoryProvider);
+  final entries = await repository.fetchEntriesForDateRange(
+    uid,
+    normalizedStart,
+    now,
   );
 
   // Filter food entries only
@@ -203,11 +201,11 @@ final todayWorkoutStatsProvider = FutureProvider<WorkoutStats>((ref) async {
     final now = DateTime.now();
     final today = DateUtils.normalizeToMidnight(now);
     
-    final repository = ref.read(diaryRepositoryProvider);
-    final entries = await repository.getDiaryEntriesForDateRange(
-      uid: uid,
-      startDate: today,
-      endDate: today, // Use same date for single-day query
+    final repository = ref.read(diary_providers.diaryRepositoryProvider);
+    final entries = await repository.fetchEntriesForDateRange(
+      uid,
+      today,
+      today, // Use same date for single-day query
     );
 
     // Filter exercise entries only
@@ -249,11 +247,11 @@ final weekWorkoutStatsProvider = FutureProvider<WorkoutStats>((ref) async {
   final startDate = now.subtract(const Duration(days: 6));
   final normalizedStart = DateUtils.normalizeToMidnight(startDate);
   
-  final repository = ref.read(diaryRepositoryProvider);
-  final entries = await repository.getDiaryEntriesForDateRange(
-    uid: uid,
-    startDate: normalizedStart,
-    endDate: now,
+  final repository = ref.read(diary_providers.diaryRepositoryProvider);
+  final entries = await repository.fetchEntriesForDateRange(
+    uid,
+    normalizedStart,
+    now,
   );
 
   // Filter exercise entries only
@@ -291,11 +289,11 @@ final monthWorkoutStatsProvider = FutureProvider<WorkoutStats>((ref) async {
   final startDate = DateTime(now.year, now.month, 1);
   final normalizedStart = DateUtils.normalizeToMidnight(startDate);
   
-  final repository = ref.read(diaryRepositoryProvider);
-  final entries = await repository.getDiaryEntriesForDateRange(
-    uid: uid,
-    startDate: normalizedStart,
-    endDate: now,
+  final repository = ref.read(diary_providers.diaryRepositoryProvider);
+  final entries = await repository.fetchEntriesForDateRange(
+    uid,
+    normalizedStart,
+    now,
   );
 
   // Filter exercise entries only
@@ -348,59 +346,20 @@ final todayStepsStatsProvider = FutureProvider<StepsStats>((ref) async {
 
 /// Get steps statistics for this week (last 7 days)
 final weekStepsStatsProvider = FutureProvider<StepsStats>((ref) async {
-  final healthRepo = ref.read(healthRepositoryProvider);
-  
-  try {
-    final now = DateTime.now();
-    final startDate = now.subtract(const Duration(days: 6));
-    final normalizedStart = DateUtils.normalizeToMidnight(startDate);
-    
-    final steps = await healthRepo.getStepsForDateRange(
-      startDate: normalizedStart,
-      endDate: now,
-    );
-    
-    // TODO: Get step goal from profile or settings if available
-    const targetSteps = null; // No step goal configured yet
-    final weeklyTarget = targetSteps != null ? targetSteps * 7 : null;
-    
-    return StepsStats(
-      totalSteps: steps,
-      targetSteps: weeklyTarget,
-    );
-  } catch (e) {
-    // Return 0 steps on error
-    return StepsStats(totalSteps: 0, targetSteps: null);
-  }
+  // TODO: Implement weekly step aggregation once HealthRepository supports date-range queries
+  return StepsStats(
+    totalSteps: 0,
+    targetSteps: null,
+  );
 });
 
 /// Get steps statistics for this month
 final monthStepsStatsProvider = FutureProvider<StepsStats>((ref) async {
-  final healthRepo = ref.read(healthRepositoryProvider);
-  
-  try {
-    final now = DateTime.now();
-    final startDate = DateTime(now.year, now.month, 1);
-    final normalizedStart = DateUtils.normalizeToMidnight(startDate);
-    
-    final steps = await healthRepo.getStepsForDateRange(
-      startDate: normalizedStart,
-      endDate: now,
-    );
-    
-    // TODO: Get step goal from profile or settings if available
-    const targetSteps = null; // No step goal configured yet
-    final daysInMonth = DateTime(now.year, now.month + 1, 0).day;
-    final monthlyTarget = targetSteps != null ? targetSteps * daysInMonth : null;
-    
-    return StepsStats(
-      totalSteps: steps,
-      targetSteps: monthlyTarget,
-    );
-  } catch (e) {
-    // Return 0 steps on error
-    return StepsStats(totalSteps: 0, targetSteps: null);
-  }
+  // TODO: Implement monthly step aggregation once HealthRepository supports date-range queries
+  return StepsStats(
+    totalSteps: 0,
+    targetSteps: null,
+  );
 });
 
 // ============================================================================

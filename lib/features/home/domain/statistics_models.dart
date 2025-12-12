@@ -1,5 +1,3 @@
-/// Models for statistics data used in report screens
-
 /// Nutrition statistics for a time period
 class NutritionStats {
   final double totalCalories;
