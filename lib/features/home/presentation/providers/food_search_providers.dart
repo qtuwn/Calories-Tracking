@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:calories_app/features/foods/data/food_model.dart';
-import 'package:calories_app/features/foods/data/food_providers.dart';
+import 'package:calories_app/domain/foods/food.dart';
+import 'package:calories_app/shared/state/food_providers.dart' as food_providers;
 
 /// Notifier for food search query
 class FoodSearchQueryNotifier extends Notifier<String> {
@@ -23,16 +23,19 @@ final foodSearchQueryProvider =
     );
 
 /// Provider for food search results
+/// Uses the new cache-aware food search from food_providers
 final foodSearchResultsProvider = StreamProvider.autoDispose<List<Food>>((ref) {
   final query = ref.watch(foodSearchQueryProvider);
-  final repo = ref.watch(foodRepositoryProvider);
-
   final trimmed = query.trim();
   if (trimmed.isEmpty) {
-    return const Stream.empty();
+    return Stream.value([]);
   }
-
-  return repo.searchFoods(trimmed);
+  final searchAsync = ref.watch(food_providers.foodSearchProvider(trimmed));
+  return searchAsync.when(
+    data: (foods) => Stream.value(foods),
+    loading: () => Stream.value([]),
+    error: (_, __) => Stream.value([]),
+  );
 });
 
 /// Notifier for selected food (local state for the bottom sheet)

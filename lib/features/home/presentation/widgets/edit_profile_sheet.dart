@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:calories_app/core/utils/bmi_calculator.dart';
-import 'package:calories_app/features/onboarding/domain/profile_model.dart';
-import 'package:calories_app/data/firebase/profile_repository.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:calories_app/domain/profile/profile.dart';
+import 'package:calories_app/shared/state/profile_providers.dart' as profile_providers;
 import 'package:calories_app/shared/state/auth_providers.dart';
 
 /// Gender option with canonical value for storage and Vietnamese label for display.
@@ -36,7 +37,7 @@ class EditProfileSheet extends ConsumerStatefulWidget {
     required this.profile,
   });
 
-  final ProfileModel profile;
+  final Profile profile;
 
   @override
   ConsumerState<EditProfileSheet> createState() => _EditProfileSheetState();
@@ -209,17 +210,32 @@ class _EditProfileSheetState extends ConsumerState<EditProfileSheet> {
         bmi: bmi,
       );
 
-      // Update via repository (updates both profile nickname and user document displayName)
-      final repository = ProfileRepository();
-      await repository.updateCurrentProfileFromModel(uid, updatedProfile);
-      await repository.updateUserDisplayName(uid, name);
+      // Update via ProfileService (updates both profile and cache)
+      final service = await ref.read(profile_providers.profileServiceProvider.future);
+      
+      // Get current profile ID
+      final repository = ref.read(profile_providers.profileRepositoryProvider);
+      final profileId = await repository.getCurrentProfileId(uid);
+      
+      if (profileId == null) {
+        throw Exception('No current profile found');
+      }
+      
+      // Update profile via service
+      await service.updateProfile(uid, profileId, updatedProfile);
+      
+      // Update user display name
+      final firestore = FirebaseFirestore.instance;
+      await firestore.collection('users').doc(uid).set({
+        'displayName': name.trim(),
+      }, SetOptions(merge: true));
 
       if (mounted) {
         // Invalidate providers to trigger refresh
         ref.invalidate(currentUserProfileDataProvider(uid));
         ref.invalidate(currentUserProfileProvider);
         // Also invalidate the UserProfile provider to refresh displayName
-        ref.invalidate(currentProfileProvider(uid));
+        ref.invalidate(profile_providers.currentProfileProvider(uid));
         
         Navigator.of(context).pop(true);
         
@@ -323,7 +339,7 @@ class _EditProfileSheetState extends ConsumerState<EditProfileSheet> {
                 ),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
-                  value: _selectedGender,
+                  initialValue: _selectedGender,
                   decoration: InputDecoration(
                     filled: true,
                     fillColor: Colors.grey[50],
@@ -467,7 +483,7 @@ class _EditProfileSheetState extends ConsumerState<EditProfileSheet> {
                 ),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
-                  value: _selectedGoalType,
+                  initialValue: _selectedGoalType,
                   decoration: InputDecoration(
                     filled: true,
                     fillColor: Colors.grey[50],
@@ -530,7 +546,7 @@ class _EditProfileSheetState extends ConsumerState<EditProfileSheet> {
                 ),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
-                  value: _selectedActivityLevel,
+                  initialValue: _selectedActivityLevel,
                   decoration: InputDecoration(
                     filled: true,
                     fillColor: Colors.grey[50],

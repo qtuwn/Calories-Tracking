@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:calories_app/features/home/domain/diary_entry.dart';
+import 'package:calories_app/domain/diary/diary_entry.dart';
 import 'package:calories_app/features/home/domain/meal_item.dart';
 import 'package:calories_app/features/home/domain/meal_type.dart';
 import 'package:calories_app/features/home/presentation/providers/diary_provider.dart';

@@ -17,9 +17,14 @@ abstract class HealthRepository {
 
   /// Get total steps for a date range (from startDate to endDate, inclusive).
   /// Returns 0 if no data is available or if there's an error.
+  /// 
+  /// TODO: Implement actual date-range query when step-data source is ready
   Future<int> getStepsForDateRange({
     required DateTime startDate,
     required DateTime endDate,
-  });
+  }) async {
+    // TODO: Implement actual date-range query when step-data source is ready
+    return 0;
+  }
 }
 

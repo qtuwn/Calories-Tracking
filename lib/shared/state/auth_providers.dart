@@ -2,10 +2,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:calories_app/data/firebase/profile_repository.dart';
 import 'package:calories_app/shared/state/models/user_status.dart';
-import 'package:calories_app/features/onboarding/domain/profile_model.dart';
-import 'profile_parsing_utils.dart';
+import 'package:calories_app/domain/profile/profile.dart';
+import 'package:calories_app/shared/state/profile_providers.dart' as profile_providers;
+import 'package:calories_app/data/profile/firestore_profile_repository.dart';
 
 /// Stream provider for Firebase Auth state changes
 final authStateProvider = StreamProvider<User?>(
@@ -205,9 +205,11 @@ final userStatusProvider = FutureProvider.family<UserStatus, String>((
       debugPrint(
         '[UserStatusProvider] 📋 Profile exists but flag missing, backfilling for uid=$uid',
       );
-      // Backfill onboardingCompleted flag using repository
-      final repository = ProfileRepository();
-      await repository.backfillOnboardingFlag(uid);
+      // Backfill onboardingCompleted flag
+      // Note: Direct Firestore call for backfill (not in ProfileRepository interface)
+      await FirebaseFirestore.instance.collection('users').doc(uid).set({
+        'onboardingCompleted': true,
+      }, SetOptions(merge: true));
 
       return UserStatus(hasProfile: true, onboardingCompleted: true);
     }
@@ -228,14 +230,15 @@ final userStatusProvider = FutureProvider.family<UserStatus, String>((
   }
 });
 
-/// Stream provider for current user's detailed profile data from Firestore
+/// Stream provider for current user's detailed profile data with cache support
 /// Watches users/{uid}/profiles subcollection for the current profile
-/// Returns ProfileModel with all health metrics (weight, height, BMI, etc.)
+/// Returns Profile with all health metrics (weight, height, BMI, etc.)
 /// Returns null if user is not signed in or profile doesn't exist
 /// 
 /// NOTE: This is a family provider that takes uid as parameter.
+/// Uses the new cache-aware ProfileService for instant loading.
 /// For automatic auth-state-aware profile loading, use `currentUserProfileProvider` instead.
-final currentUserProfileDataProvider = StreamProvider.family<ProfileModel?, String>((
+final currentUserProfileDataProvider = StreamProvider.family<Profile?, String>((
   ref,
   uid,
 ) {
@@ -252,37 +255,26 @@ final currentUserProfileDataProvider = StreamProvider.family<ProfileModel?, Stri
     return Stream.value(null);
   }
 
-  try {
-    final repository = ProfileRepository();
-    return repository.watchCurrentUserProfile(uid).map((profileMap) {
-      // Use shared utility for consistent profile parsing
-      return ProfileParsingUtils.parseProfileMap(
-        profileMap,
-        context: 'CurrentUserProfileDataProvider',
-      );
-    }).handleError((error) {
-      debugPrint(
-        '[CurrentUserProfileDataProvider] 🔥 Stream error for uid=$uid: $error',
-      );
-      return null;
-    });
-  } catch (e, stackTrace) {
-    debugPrint(
-      '[CurrentUserProfileDataProvider] 🔥 Exception creating stream for uid=$uid: $e',
-    );
-    debugPrintStack(stackTrace: stackTrace);
-    return Stream.value(null);
-  }
+  // Use the new cache-aware provider
+  // Note: currentProfileProvider returns StreamProvider, so we need to watch it and extract the stream
+  final profileAsync = ref.watch(profile_providers.currentProfileProvider(uid));
+  return profileAsync.when(
+    data: (profile) => Stream.value(profile),
+    loading: () => const Stream<Profile?>.empty(),
+    error: (_, __) => Stream.value(null),
+  );
 });
 
 /// Stream provider for current authenticated user's detailed profile data
 /// Automatically watches auth state and updates when user changes
-/// Returns ProfileModel with all health metrics (weight, height, BMI, etc.)
+/// Returns Profile with all health metrics (weight, height, BMI, etc.)
 /// Returns null if user is not signed in or profile doesn't exist
 /// 
 /// This provider automatically reacts to auth state changes, making it ideal
 /// for AccountPage and other screens that need to update when switching accounts.
-final currentUserProfileProvider = StreamProvider<ProfileModel?>((ref) {
+/// 
+/// Uses the new cache-aware ProfileService for instant loading from cache.
+final currentUserProfileProvider = StreamProvider<Profile?>((ref) {
   debugPrint('[CurrentUserProfileProvider] 🔵 Setting up auth-aware profile stream');
   
   // Watch auth state - this ensures the provider recomputes when user changes
@@ -293,41 +285,28 @@ final currentUserProfileProvider = StreamProvider<ProfileModel?>((ref) {
     data: (user) {
       if (user == null) {
         debugPrint('[CurrentUserProfileProvider] ⚠️ No user signed in, returning null');
-        return Stream<ProfileModel?>.value(null);
+        return Stream<Profile?>.value(null);
       }
       
       final uid = user.uid;
-      debugPrint('[CurrentUserProfileProvider] 🔵 User signed in (uid=$uid), watching profile');
+      debugPrint('[CurrentUserProfileProvider] 🔵 User signed in (uid=$uid), watching profile with cache');
       
-      try {
-        final repository = ProfileRepository();
-        return repository.watchCurrentUserProfile(uid).map((profileMap) {
-          // Use shared utility for consistent profile parsing
-          return ProfileParsingUtils.parseProfileMap(
-            profileMap,
-            context: 'CurrentUserProfileProvider',
-          );
-        }).handleError((error) {
-          debugPrint(
-            '[CurrentUserProfileProvider] 🔥 Stream error for uid=$uid: $error',
-          );
-          return null;
-        });
-      } catch (e, stackTrace) {
-        debugPrint(
-          '[CurrentUserProfileProvider] 🔥 Exception creating stream for uid=$uid: $e',
-        );
-        debugPrintStack(stackTrace: stackTrace);
-        return Stream<ProfileModel?>.value(null);
-      }
+      // Use the new cache-aware provider
+      // Note: currentProfileProvider returns StreamProvider, so we need to watch it and extract the stream
+      final profileAsync = ref.watch(profile_providers.currentProfileProvider(uid));
+      return profileAsync.when(
+        data: (profile) => Stream.value(profile),
+        loading: () => const Stream<Profile?>.empty(),
+        error: (_, __) => Stream.value(null),
+      );
     },
     loading: () {
       debugPrint('[CurrentUserProfileProvider] ⏳ Auth state loading, returning empty stream');
-      return const Stream<ProfileModel?>.empty();
+      return const Stream<Profile?>.empty();
     },
     error: (error, stackTrace) {
       debugPrint('[CurrentUserProfileProvider] 🔥 Auth state error: $error');
-      return Stream<ProfileModel?>.value(null);
+      return Stream<Profile?>.value(null);
     },
   );
 });

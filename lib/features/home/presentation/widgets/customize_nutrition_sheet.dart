@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:calories_app/features/onboarding/domain/profile_model.dart';
-import 'package:calories_app/data/firebase/profile_repository.dart';
+import 'package:calories_app/domain/profile/profile.dart';
+import 'package:calories_app/shared/state/profile_providers.dart' as profile_providers;
 import 'package:calories_app/shared/state/auth_providers.dart';
 
 /// Modal bottom sheet for customizing nutrition targets and macro distribution.
@@ -27,7 +27,7 @@ class CustomizeNutritionSheet extends ConsumerStatefulWidget {
     required this.profile,
   });
 
-  final ProfileModel profile;
+  final Profile profile;
 
   @override
   ConsumerState<CustomizeNutritionSheet> createState() =>
@@ -157,16 +157,40 @@ class _CustomizeNutritionSheetState
       final carbPercent = double.parse(_carbPercentController.text.trim());
       final fatPercent = double.parse(_fatPercentController.text.trim());
 
-      // Update via repository using dedicated nutrition targets method
-      // This method automatically calculates grams and validates percentages
-      final repository = ProfileRepository();
-      await repository.updateNutritionTargets(
-        uid: uid,
-        dailyCalories: targetKcal,
+      // Calculate grams from percentages
+      // Protein & Carbs: 4 kcal/g, Fat: 9 kcal/g
+      final proteinKcal = targetKcal * proteinPercent / 100;
+      final carbKcal = targetKcal * carbPercent / 100;
+      final fatKcal = targetKcal * fatPercent / 100;
+
+      final proteinGrams = proteinKcal / 4;
+      final carbGrams = carbKcal / 4;
+      final fatGrams = fatKcal / 9;
+
+      // Update profile via ProfileService
+      final service = await ref.read(profile_providers.profileServiceProvider.future);
+      
+      // Get current profile ID
+      final repository = ref.read(profile_providers.profileRepositoryProvider);
+      final profiles = await repository.getUserProfiles(uid);
+      final currentProfileDoc = profiles.firstWhere(
+        (p) => p['isCurrent'] == true,
+        orElse: () => profiles.first,
+      );
+      final currentProfileId = currentProfileDoc['id'] as String;
+      
+      // Update profile with new nutrition targets
+      final updatedProfile = widget.profile.copyWith(
+        targetKcal: targetKcal,
         proteinPercent: proteinPercent,
         carbPercent: carbPercent,
         fatPercent: fatPercent,
+        proteinGrams: proteinGrams,
+        carbGrams: carbGrams,
+        fatGrams: fatGrams,
       );
+      
+      await service.updateProfile(uid, currentProfileId, updatedProfile);
 
       if (mounted) {
         // Invalidate providers to trigger refresh

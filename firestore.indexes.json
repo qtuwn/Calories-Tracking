@@ -1,29 +1,70 @@
 {
   "indexes": [
     {
-      "collectionGroup": "exercises",
+      "collectionGroup": "meal_plans",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "isEnabled", "order": "ASCENDING" },
-        { "fieldPath": "nameLower", "order": "ASCENDING" }
+        {
+          "fieldPath": "isEnabled",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "name",
+          "order": "ASCENDING"
+        }
       ]
     },
     {
-      "collectionGroup": "weights",
+      "collectionGroup": "meal_plans",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "date", "order": "DESCENDING" },
-        { "fieldPath": "createdAt", "order": "DESCENDING" }
+        {
+          "fieldPath": "isFeatured",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "isEnabled",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "dailyCalories",
+          "order": "ASCENDING"
+        }
       ]
     },
     {
-      "collectionGroup": "diaryEntries",
+      "collectionGroup": "meal_plans",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "date", "order": "ASCENDING" },
-        { "fieldPath": "createdAt", "order": "ASCENDING" }
+        {
+          "fieldPath": "goalType",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "isEnabled",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "dailyCalories",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "meal_plans",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "createdBy",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "name",
+          "order": "ASCENDING"
+        }
       ]
     }
   ],
   "fieldOverrides": []
 }
+
