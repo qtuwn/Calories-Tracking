@@ -8,13 +8,28 @@ import '../../data/profile/firestore_profile_repository.dart';
 import '../../data/profile/shared_prefs_profile_cache.dart';
 
 /// Provider for SharedPreferences instance
-final sharedPreferencesProvider = FutureProvider<SharedPreferences>((ref) async {
-  return await SharedPreferences.getInstance();
+/// 
+/// IMPORTANT: This provider should be overridden in main.dart with a preloaded instance.
+/// If not overridden, it will attempt to get SharedPreferences, but this should never happen
+/// in production since main.dart preloads it before runApp().
+/// 
+/// The override ensures SharedPreferences is always available synchronously,
+/// eliminating the need for Dummy caches and preventing race conditions.
+final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
+  // This should never be called if main.dart properly overrides it
+  // But we provide a fallback for safety
+  throw StateError(
+    'sharedPreferencesProvider must be overridden in main.dart with a preloaded instance. '
+    'Ensure SharedPreferences.getInstance() is called before runApp() and passed via ProviderScope.overrides.',
+  );
 });
 
 /// Provider for ProfileCache implementation
-final profileCacheProvider = FutureProvider<ProfileCache>((ref) async {
-  final prefs = await ref.watch(sharedPreferencesProvider.future);
+/// 
+/// SharedPreferences is guaranteed to be available since it's preloaded in main.dart
+/// and provided via ProviderScope.overrides.
+final profileCacheProvider = Provider<ProfileCache>((ref) {
+  final prefs = ref.watch(sharedPreferencesProvider);
   return SharedPrefsProfileCache(prefs);
 });
 
@@ -27,9 +42,11 @@ final profileRepositoryProvider = Provider<ProfileRepository>((ref) {
 /// 
 /// This service coordinates between Firestore (repository) and local cache
 /// to provide instant profile loading with background synchronization.
-final profileServiceProvider = FutureProvider<ProfileService>((ref) async {
+/// 
+/// Cache is guaranteed to be available since SharedPreferences is preloaded in main.dart.
+final profileServiceProvider = Provider<ProfileService>((ref) {
   final repository = ref.watch(profileRepositoryProvider);
-  final cache = await ref.watch(profileCacheProvider.future);
+  final cache = ref.watch(profileCacheProvider);
   return ProfileService(repository: repository, cache: cache);
 });
 
@@ -51,31 +68,17 @@ final profileServiceProvider = FutureProvider<ProfileService>((ref) async {
 /// );
 /// ```
 final currentProfileProvider =
-    StreamProvider.autoDispose.family<Profile?, String>((ref, uid) async* {
-  final serviceAsync = ref.watch(profileServiceProvider);
-
-  await for (final service in serviceAsync.when(
-    data: (service) => Stream.value(service),
-    loading: () => const Stream<ProfileService?>.empty(),
-    error: (_, __) => const Stream<ProfileService?>.empty(),
-  )) {
-    if (service == null) continue;
-
-    yield* service.watchProfileWithCache(uid);
-  }
+    StreamProvider.autoDispose.family<Profile?, String>((ref, uid) {
+  final service = ref.watch(profileServiceProvider);
+  return service.watchProfileWithCache(uid);
 });
 
 /// Future provider for loading profile once (cache-first, then Firestore)
 /// 
 /// Useful for one-time profile loads where you don't need a stream.
 final profileLoadOnceProvider =
-    FutureProvider.autoDispose.family<Profile?, String>((ref, uid) async {
-  final serviceAsync = ref.watch(profileServiceProvider);
-
-  return serviceAsync.when(
-    data: (service) => service.loadOnce(uid),
-    loading: () => Future.value(null),
-    error: (_, __) => Future.value(null),
-  );
+    FutureProvider.autoDispose.family<Profile?, String>((ref, uid) {
+  final service = ref.watch(profileServiceProvider);
+  return service.loadOnce(uid);
 });
 

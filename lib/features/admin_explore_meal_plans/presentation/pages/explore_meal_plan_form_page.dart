@@ -27,7 +27,7 @@ class _ExploreMealPlanFormPageState
 
   MealPlanGoalType _selectedGoalType = MealPlanGoalType.other;
   bool _isFeatured = false;
-  bool _isPublished = false;
+  bool _isPublished = true; // Default: published for new plans (Option A)
   bool _isEnabled = true;
   String? _difficulty;
   bool _isLoading = false;
@@ -49,7 +49,8 @@ class _ExploreMealPlanFormPageState
         TextEditingController(text: plan?.tags.join(', ') ?? '');
     _selectedGoalType = plan?.goalType ?? MealPlanGoalType.other;
     _isFeatured = plan?.isFeatured ?? false;
-    _isPublished = plan?.isPublished ?? false;
+    // For new plans, default isPublished=true. For existing plans, use existing value.
+    _isPublished = plan?.isPublished ?? true;
     _isEnabled = plan?.isEnabled ?? true;
     _difficulty = plan?.difficulty;
   }
@@ -309,20 +310,18 @@ class _ExploreMealPlanFormPageState
       );
 
       if (widget.plan == null) {
-        await service.createPlan(plan);
+        // Create new plan
+        final created = await service.createPlan(plan);
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Đã tạo thực đơn thành công')),
-          );
-          Navigator.pop(context);
+          // Return planId to caller (for navigation to editor)
+          Navigator.pop(context, created.id);
         }
       } else {
+        // Update existing plan
         await service.updatePlan(plan);
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Đã cập nhật thực đơn thành công')),
-          );
-          Navigator.pop(context);
+          // Return planId for consistency (caller may navigate to editor)
+          Navigator.pop(context, plan.id);
         }
       }
     } catch (e) {

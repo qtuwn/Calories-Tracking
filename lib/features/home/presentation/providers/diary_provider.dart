@@ -6,8 +6,8 @@ import 'package:calories_app/domain/diary/diary_entry.dart';
 import 'package:calories_app/domain/diary/diary_service.dart';
 import 'package:calories_app/shared/state/diary_providers.dart' as diary_providers;
 import 'package:calories_app/features/home/domain/meal.dart';
-import 'package:calories_app/features/home/domain/meal_item.dart';
-import 'package:calories_app/features/home/domain/meal_type.dart';
+import 'package:calories_app/features/home/domain/diary_meal_item.dart';
+import 'package:calories_app/features/meal_plans/domain/models/shared/meal_type.dart';
 import 'package:calories_app/domain/foods/food.dart';
 import 'package:calories_app/features/exercise/data/exercise_model.dart';
 import 'package:calories_app/shared/state/auth_providers.dart';
@@ -270,8 +270,8 @@ class DiaryNotifier extends Notifier<DiaryState> {
           final foodEntries = entries.where((e) => e.isFood).toList();
           final exerciseEntries = entries.where((e) => e.isExercise).toList();
 
-          // Convert food DiaryEntry to MealItem and group by meal type
-          final mealsByType = <MealType, List<MealItem>>{};
+          // Convert food DiaryEntry to DiaryMealItem and group by meal type
+          final mealsByType = <MealType, List<DiaryMealItem>>{};
           for (final mealType in MealType.values) {
             mealsByType[mealType] = [];
           }
@@ -282,13 +282,13 @@ class DiaryNotifier extends Notifier<DiaryState> {
               orElse: () => MealType.breakfast,
             );
 
-            // Convert DiaryEntry to MealItem
+            // Convert DiaryEntry to DiaryMealItem
             try {
               final mealItemJson = entry.toMealItemJson();
-              final mealItem = MealItem.fromJson(mealItemJson);
+              final mealItem = DiaryMealItem.fromJson(mealItemJson);
               mealsByType[mealType]?.add(mealItem);
             } catch (e) {
-              debugPrint('[DiaryNotifier] ⚠️ Error converting food entry to MealItem: $e');
+              debugPrint('[DiaryNotifier] ⚠️ Error converting food entry to DiaryMealItem: $e');
             }
           }
 
@@ -488,7 +488,7 @@ class DiaryNotifier extends Notifier<DiaryState> {
   }
 
   /// Add a meal entry from MealItem (for custom entries without Food)
-  Future<void> addMealItem(MealType mealType, MealItem item) async {
+  Future<void> addMealItem(MealType mealType, DiaryMealItem item) async {
     // Use cached UID from auth state watcher
     final uid = _currentUid;
     if (uid == null) {
@@ -499,7 +499,7 @@ class DiaryNotifier extends Notifier<DiaryState> {
       // Calculate total grams
       final totalGrams = item.totalGrams;
 
-      // Create DiaryEntry from MealItem
+      // Create DiaryEntry from DiaryMealItem
       final entry = DiaryEntry(
         id: '', // Will be set by repository
         userId: uid,
@@ -529,7 +529,7 @@ class DiaryNotifier extends Notifier<DiaryState> {
   }
 
   /// Update a meal item
-  Future<void> updateMealItem(MealType mealType, String itemId, MealItem updatedItem) async {
+  Future<void> updateMealItem(MealType mealType, String itemId, DiaryMealItem updatedItem) async {
     // Use cached UID from auth state watcher
     final uid = _currentUid;
     if (uid == null) {

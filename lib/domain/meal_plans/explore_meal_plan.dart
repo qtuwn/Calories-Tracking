@@ -192,6 +192,7 @@ class MealSlot {
   final double fat;
   final String? foodId; // Reference to food catalog
   final String? description;
+  final double servingSize; // Required: serving size must be > 0
 
   const MealSlot({
     required this.id,
@@ -203,7 +204,8 @@ class MealSlot {
     required this.fat,
     this.foodId,
     this.description,
-  });
+    required this.servingSize,
+  }) : assert(servingSize > 0, 'servingSize must be positive, got $servingSize');
 
   MealSlot copyWith({
     String? id,
@@ -215,6 +217,7 @@ class MealSlot {
     double? fat,
     String? foodId,
     String? description,
+    double? servingSize,
   }) {
     return MealSlot(
       id: id ?? this.id,
@@ -226,6 +229,7 @@ class MealSlot {
       fat: fat ?? this.fat,
       foodId: foodId ?? this.foodId,
       description: description ?? this.description,
+      servingSize: servingSize ?? this.servingSize,
     );
   }
 

@@ -4,10 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:calories_app/core/theme/app_colors.dart';
 import 'package:calories_app/domain/meal_plans/user_meal_plan_repository.dart' show MealItem;
+import 'package:calories_app/domain/meal_plans/services/meal_nutrition_calculator.dart' show MealNutritionCalculator, MealNutritionException;
 import 'package:calories_app/domain/foods/food.dart';
 import 'package:calories_app/shared/state/food_providers.dart' as food_providers;
 import 'package:calories_app/shared/state/user_meal_plan_providers.dart' as user_meal_plan_providers;
-import 'package:calories_app/features/home/domain/meal_type.dart';
+import 'package:calories_app/features/meal_plans/domain/models/shared/meal_type.dart';
 
 /// Standalone page for editing meals in a specific day of a user's custom meal plan
 /// Can be navigated to from the meal plan detail page
@@ -409,24 +410,30 @@ class _MealDayEditorPageState extends ConsumerState<MealDayEditorPage> {
   }
 
   Map<String, double> _calculateDayTotals(List<MealItem> meals) {
-    double totalCalories = 0.0;
-    double totalProtein = 0.0;
-    double totalCarb = 0.0;
-    double totalFat = 0.0;
-
-    for (final meal in meals) {
-      totalCalories += meal.calories;
-      totalProtein += meal.protein;
-      totalCarb += meal.carb;
-      totalFat += meal.fat;
+    // Use domain service for all nutrition calculations
+    try {
+      final totals = MealNutritionCalculator.sumMeals(
+        meals,
+        planId: widget.planId,
+        userId: widget.userId,
+        dayIndex: widget.dayIndex,
+      );
+      return {
+        'calories': totals.calories,
+        'protein': totals.protein,
+        'carb': totals.carb,
+        'fat': totals.fat,
+      };
+    } on MealNutritionException catch (e) {
+      // Log error but return zeros to prevent UI crash
+      debugPrint('[MealDayEditorPage] ⚠️ Nutrition calculation error: $e');
+      return {
+        'calories': 0.0,
+        'protein': 0.0,
+        'carb': 0.0,
+        'fat': 0.0,
+      };
     }
-
-    return {
-      'calories': totalCalories,
-      'protein': totalProtein,
-      'carb': totalCarb,
-      'fat': totalFat,
-    };
   }
 
   Widget _buildMealsList() {
@@ -847,13 +854,59 @@ class _AddFoodDialogState extends ConsumerState<_AddFoodDialog> {
 
       final dailyCalories = userPlan.dailyCalories;
 
-      if (dailyCalories > 0) {
-        double currentTotal = 0.0;
-        for (final meal in widget.allMeals) {
-          currentTotal += meal.calories;
-        }
+      // Create temporary meal item for validation
+      final tempMealItem = MealItem(
+        id: '', // Temp ID for calculation
+        mealType: widget.mealType.name,
+        foodId: food.id,
+        servingSize: servingSize,
+        calories: calories,
+        protein: protein,
+        carb: carb,
+        fat: fat,
+      );
 
-        final newTotal = currentTotal + calories;
+      // Validate nutrition using domain service
+      try {
+        MealNutritionCalculator.computeFromMealItem(
+          tempMealItem,
+          planId: widget.planId,
+          userId: widget.userId,
+          dayIndex: widget.dayIndex,
+        );
+      } on MealNutritionException catch (e) {
+        debugPrint('[AddFoodDialog] ⚠️ Invalid nutrition values: $e');
+        if (mounted) {
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Giá trị dinh dưỡng không hợp lệ: ${e.message}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
+
+      if (dailyCalories > 0) {
+        // Calculate current day totals using domain service
+        final currentDayNutrition = MealNutritionCalculator.sumMeals(
+          widget.allMeals,
+          planId: widget.planId,
+          userId: widget.userId,
+          dayIndex: widget.dayIndex,
+        );
+        final currentTotal = currentDayNutrition.calories;
+
+        // Calculate new meal nutrition
+        final newMealNutrition = MealNutritionCalculator.computeFromMealItem(
+          tempMealItem,
+          planId: widget.planId,
+          userId: widget.userId,
+          dayIndex: widget.dayIndex,
+        );
+        final newTotal = currentDayNutrition.add(newMealNutrition).calories;
+
         if (newTotal > dailyCalories) {
           if (mounted) {
             Navigator.pop(context);
@@ -874,16 +927,7 @@ class _AddFoodDialogState extends ConsumerState<_AddFoodDialog> {
         }
       }
 
-      final mealItem = MealItem(
-        id: '',
-        mealType: widget.mealType.name,
-        foodId: food.id,
-        servingSize: servingSize,
-        calories: calories,
-        protein: protein,
-        carb: carb,
-        fat: fat,
-      );
+      final mealItem = tempMealItem;
 
       widget.onMealAdded(mealItem);
 
@@ -1001,6 +1045,36 @@ class _EditFoodDialogState extends ConsumerState<_EditFoodDialog> {
       final carb = food.carbsPer100g * multiplier;
       final fat = food.fatPer100g * multiplier;
 
+      // Create updated meal item for validation
+      final updatedMealItem = widget.item.copyWith(
+        servingSize: servingSize,
+        calories: calories,
+        protein: protein,
+        carb: carb,
+        fat: fat,
+      );
+
+      // Validate nutrition using domain service
+      try {
+        MealNutritionCalculator.computeFromMealItem(
+          updatedMealItem,
+          planId: widget.planId,
+          userId: widget.userId,
+          dayIndex: widget.dayIndex,
+        );
+      } on MealNutritionException catch (e) {
+        debugPrint('[EditFoodDialog] ⚠️ Invalid nutrition values: $e');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Giá trị dinh dưỡng không hợp lệ: ${e.message}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
+
       final service = ref.read(user_meal_plan_providers.userMealPlanServiceProvider);
       final userPlan = await service.loadPlanByIdOnce(widget.userId, widget.planId);
 
@@ -1016,12 +1090,30 @@ class _EditFoodDialogState extends ConsumerState<_EditFoodDialog> {
       final dailyCalories = userPlan.dailyCalories;
 
       if (dailyCalories > 0) {
-        double currentTotal = 0.0;
-        for (final meal in widget.allMeals) {
-          currentTotal += meal.calories;
-        }
+        // Use domain service to compute current total
+        final currentDayNutrition = MealNutritionCalculator.sumMeals(
+          widget.allMeals,
+          planId: widget.planId,
+          userId: widget.userId,
+          dayIndex: widget.dayIndex,
+        );
 
-        final newTotal = currentTotal - widget.item.calories + calories;
+        // Calculate new total: subtract old meal, add new meal
+        final oldMealNutrition = MealNutritionCalculator.computeFromMealItem(
+          widget.item,
+          planId: widget.planId,
+          userId: widget.userId,
+          dayIndex: widget.dayIndex,
+        );
+        final newMealNutrition = MealNutritionCalculator.computeFromMealItem(
+          updatedMealItem,
+          planId: widget.planId,
+          userId: widget.userId,
+          dayIndex: widget.dayIndex,
+        );
+        // Remove old meal nutrition, add new meal nutrition
+        final newTotal = currentDayNutrition.calories - oldMealNutrition.calories + newMealNutrition.calories;
+
         if (newTotal > dailyCalories) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -1037,14 +1129,6 @@ class _EditFoodDialogState extends ConsumerState<_EditFoodDialog> {
           return;
         }
       }
-
-      final updatedMealItem = widget.item.copyWith(
-        servingSize: servingSize,
-        calories: calories,
-        protein: protein,
-        carb: carb,
-        fat: fat,
-      );
 
       widget.onMealUpdated(updatedMealItem);
 

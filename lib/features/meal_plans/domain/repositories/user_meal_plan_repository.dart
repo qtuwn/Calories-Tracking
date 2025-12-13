@@ -1,6 +1,6 @@
 import 'package:calories_app/features/meal_plans/domain/models/user/user_meal_plan.dart';
 import 'package:calories_app/features/meal_plans/domain/models/user/user_meal_day.dart';
-import 'package:calories_app/features/meal_plans/domain/models/shared/meal_item.dart';
+import 'package:calories_app/domain/meal_plans/user_meal_plan_repository.dart' show MealItem;
 import 'package:calories_app/features/meal_plans/domain/models/explore/explore_meal_plan_template.dart';
 import 'package:calories_app/domain/profile/profile.dart';
 

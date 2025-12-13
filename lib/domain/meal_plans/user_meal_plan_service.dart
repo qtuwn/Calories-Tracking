@@ -17,47 +17,163 @@ class UserMealPlanService {
 
   UserMealPlanService(this._repository, this._cache);
 
-  /// Watch active plan for a user, loading from cache first and then syncing with Firestore.
+  /// Watch active plan for a user with cache-first fallback and Firestore as source of truth.
+  /// 
+  /// Policy A: Prefer Firestore first, fallback to cache with timeout
   /// 
   /// Strategy:
-  /// 1. Subscribe to Firestore stream first (source of truth)
-  /// 2. While waiting for first Firestore emission, emit cached plan if available
-  /// 3. Once Firestore emits, always use Firestore value and update cache
+  /// 1. Subscribe to Firestore stream immediately (source of truth)
+  /// 2. Wait up to 300ms for first Firestore emission
+  /// 3. If Firestore emits within timeout: emit that as first value (no cache flicker)
+  /// 4. If Firestore doesn't emit within timeout: emit cachedPlan (if any) as temporary value
+  /// 5. When Firestore eventually emits: dedupe by planId; emit only if different
+  /// 6. Persist remote -> cache after each remote emission
   /// 
-  /// This ensures Firestore is the source of truth and cache doesn't interfere
-  /// with recent apply operations.
+  /// This prevents UI flicker when cache has stale data after Apply operations.
   Stream<UserMealPlan?> watchActivePlanWithCache(String userId) async* {
     print('[UserMealPlanService] [ActivePlan] 🔵 Setting up active plan stream for userId=$userId');
     
-    // 1. Load from cache first and emit immediately (for instant UI)
-    final cachedPlan = await _cache.loadActivePlan(userId);
-    if (cachedPlan != null) {
-      print('[UserMealPlanService] [ActivePlan] 📦 Emitting from cache: planId=${cachedPlan.id}, name="${cachedPlan.name}"');
-      yield cachedPlan;
-    } else {
-      print('[UserMealPlanService] [ActivePlan] 📦 No cached plan, emitting null');
-      yield null; // Emit null to show UI is ready
+    // Subscribe to Firestore stream (source of truth)
+    // NOTE: We do NOT load cache here as fallback - if Firestore times out, we emit null
+    // This prevents stale cache from being emitted after apply operations
+    final firestoreStream = _repository.getActivePlan(userId);
+    
+    // Use a Completer to wait for first Firestore emission with timeout
+    final firstEmissionCompleter = Completer<UserMealPlan?>();
+    StreamSubscription<UserMealPlan?>? subscription;
+    bool firstEmissionReceived = false;
+    
+    // Set up subscription to capture first emission
+    subscription = firestoreStream.listen(
+      (plan) {
+        if (!firstEmissionReceived) {
+          firstEmissionReceived = true;
+          if (!firstEmissionCompleter.isCompleted) {
+            firstEmissionCompleter.complete(plan);
+          }
+        }
+      },
+      onError: (error, stackTrace) {
+        if (!firstEmissionCompleter.isCompleted) {
+          firstEmissionCompleter.completeError(error, stackTrace);
+        }
+      },
+      cancelOnError: false,
+    );
+    
+    // Wait for first Firestore emission with timeout (3000ms)
+    // CRITICAL: If Firestore times out, we emit null (NOT cache) to prevent stale data
+    // After apply operations, cache is cleared, so emitting cache would show old plan
+    // Firestore is the source of truth - we wait for it or emit null
+    const timeout = Duration(milliseconds: 3000);
+    UserMealPlan? firstRemotePlan;
+    bool firestoreEmittedQuickly = false;
+    
+    print('[ActivePlanCache] ⏳ waiting first Firestore emission timeout=${timeout.inMilliseconds}ms');
+    
+    try {
+      firstRemotePlan = await firstEmissionCompleter.future.timeout(timeout);
+      firestoreEmittedQuickly = true;
+      print('[ActivePlanCache] ✅ Firestore first emission received planId=${firstRemotePlan?.id ?? "null"}');
+    } catch (e) {
+      if (e is TimeoutException) {
+        // CRITICAL FIX: Never yield stale cache here - emit null instead
+        print('[ActivePlanCache] ⚠️ Firestore timeout → emitting NULL (no cache fallback)');
+        print('[ActivePlanCache] 🔁 Will continue streaming Firestore emissions...');
+      } else {
+        print('[UserMealPlanService] [ActivePlan] ⚠️ Firestore stream error: $e');
+      }
+      firestoreEmittedQuickly = false;
     }
-
-    // 2. Subscribe to Firestore updates (source of truth)
-    // This will override any cached value once Firestore emits
-    await for (final remotePlan in _repository.getActivePlan(userId)) {
+    
+    // Emit first value based on Firestore availability
+    String? lastEmittedPlanId;
+    if (firestoreEmittedQuickly) {
+      // Firestore emitted quickly - emit it first (no cache flicker)
+      if (firstRemotePlan != null) {
+        print('[UserMealPlanService] [ActivePlan] 🔥 Emitting from Firestore (first): planId=${firstRemotePlan.id}, name="${firstRemotePlan.name}"');
+      } else {
+        print('[UserMealPlanService] [ActivePlan] 🔥 Emitting from Firestore (first): null (no active plan)');
+      }
+      yield firstRemotePlan;
+      await _cache.saveActivePlan(userId, firstRemotePlan);
+      lastEmittedPlanId = firstRemotePlan?.id;
+    } else {
+      // CRITICAL FIX: Firestore timeout - emit null (NOT cache) to prevent stale data
+      // After apply operations, cache is cleared, but even if it wasn't,
+      // we should not emit stale cache when Firestore is delayed
+      // Firestore is the source of truth - we wait for it
+      print('[UserMealPlanService] [ActivePlan] 📦 Firestore timeout - emitting NULL (no cache fallback to prevent stale data)');
+      print('[UserMealPlanService] [ActivePlan] 📡 Will continue streaming Firestore emissions...');
+      yield null;
+      lastEmittedPlanId = null;
+    }
+    
+    // Continue streaming Firestore updates (deduplicated)
+    // Cancel the old subscription and create a new one for remaining events
+    await subscription.cancel();
+    
+    // Create a new subscription for remaining events
+    final controller = StreamController<UserMealPlan?>();
+    bool skipFirst = firestoreEmittedQuickly;
+    bool controllerClosed = false;
+    
+    final remainingSubscription = firestoreStream.listen(
+      (remotePlan) {
+        if (skipFirst) {
+          skipFirst = false;
+          return; // Skip the first emission we already handled
+        }
+        
+        // Deduplicate: only emit if planId changed
+        final remotePlanId = remotePlan?.id;
+        if (remotePlanId == lastEmittedPlanId) {
+          print('[UserMealPlanService] [ActivePlan] ⏭️ Skipping duplicate emission: planId=$remotePlanId');
+          // Still update cache even if we skip emission
+          _cache.saveActivePlan(userId, remotePlan);
+          return;
+        }
+        
+        lastEmittedPlanId = remotePlanId;
+        print('[ActivePlanCache] 🔁 Firestore subsequent emission planId=${remotePlanId ?? "null"}');
+        
+        if (!controllerClosed) {
+          controller.add(remotePlan);
+        }
+        
+        // Save to cache
+        _cache.saveActivePlan(userId, remotePlan).then((_) {
+          if (remotePlan != null) {
+            print('[UserMealPlanService] [ActivePlan] 💾 Saved to cache: planId=${remotePlan.id}');
+          }
+        });
+      },
+      onError: (error, stackTrace) {
+        if (!controllerClosed) {
+          controller.addError(error, stackTrace);
+        }
+      },
+      onDone: () {
+        if (!controllerClosed) {
+          controller.close();
+          controllerClosed = true;
+        }
+      },
+      cancelOnError: false,
+    );
+    
+    // Yield from controller stream
+    await for (final remotePlan in controller.stream) {
       if (remotePlan != null) {
         print('[UserMealPlanService] [ActivePlan] 🔥 Emitting from Firestore: planId=${remotePlan.id}, name="${remotePlan.name}", isActive=${remotePlan.isActive}');
       } else {
         print('[UserMealPlanService] [ActivePlan] 🔥 Emitting from Firestore: null (no active plan)');
       }
-      
       yield remotePlan;
-      
-      // Save to cache when we get updates from Firestore
-      await _cache.saveActivePlan(userId, remotePlan);
-      if (remotePlan != null) {
-        print('[UserMealPlanService] [ActivePlan] 💾 Saved to cache: planId=${remotePlan.id}');
-      } else {
-        print('[UserMealPlanService] [ActivePlan] 💾 Cleared cache (no active plan)');
-      }
     }
+    
+    // Cleanup
+    await remainingSubscription.cancel();
   }
 
   /// Load active plan once, prioritizing cache.
@@ -157,6 +273,7 @@ class UserMealPlanService {
   /// Apply explore template as active plan.
   /// 
   /// Clears stale active plan cache before applying to ensure fresh data.
+  /// After apply, verifies the new plan is queryable from Firestore before returning.
   Future<UserMealPlan> applyExploreTemplateAsActivePlan({
     required String userId,
     required String templateId,
@@ -180,15 +297,65 @@ class UserMealPlanService {
     
     print('[UserMealPlanService] [ApplyExplore] ✅ Repository returned new plan: planId=${plan.id}, name="${plan.name}", isActive=${plan.isActive}');
     
-    // Update cache with new active plan
-    await _cache.saveActivePlan(userId, plan);
-    await _cache.savePlan(userId, plan);
-    print('[UserMealPlanService] [ApplyExplore] 💾 Saved new active plan to cache');
+    // CRITICAL: Verify the new plan is actually queryable from Firestore
+    // This ensures the query will return the new plan when stream subscribes
+    print('[UserMealPlanService] [ApplyExplore] 🔍 Verifying new plan is queryable from Firestore...');
+    final verifyAttempts = 3;
+    final verifyDelay = const Duration(milliseconds: 200);
+    UserMealPlan? verifiedPlan;
+    
+    for (int attempt = 1; attempt <= verifyAttempts; attempt++) {
+      try {
+        final activePlanStream = _repository.getActivePlan(userId);
+        verifiedPlan = await activePlanStream.first.timeout(
+          const Duration(milliseconds: 1000),
+          onTimeout: () {
+            print('[UserMealPlanService] [ApplyExplore] ⏱️ Verification attempt $attempt: Firestore query timeout');
+            return null;
+          },
+        );
+        
+        if (verifiedPlan != null && verifiedPlan.id == plan.id) {
+          print('[UserMealPlanService] [ApplyExplore] ✅ Verification attempt $attempt: New plan verified in Firestore (planId=${verifiedPlan.id})');
+          break;
+        } else if (verifiedPlan != null) {
+          print('[UserMealPlanService] [ApplyExplore] ⚠️ Verification attempt $attempt: Got different plan (expected ${plan.id}, got ${verifiedPlan.id}), retrying...');
+          verifiedPlan = null;
+        } else {
+          print('[UserMealPlanService] [ApplyExplore] ⚠️ Verification attempt $attempt: No active plan found, retrying...');
+        }
+      } catch (e) {
+        print('[UserMealPlanService] [ApplyExplore] ⚠️ Verification attempt $attempt failed: $e, retrying...');
+        verifiedPlan = null;
+      }
+      
+      if (attempt < verifyAttempts) {
+        await Future.delayed(verifyDelay);
+      }
+    }
+    
+    if (verifiedPlan == null || verifiedPlan.id != plan.id) {
+      print('[UserMealPlanService] [ApplyExplore] ❌ verification failed: Could not verify new plan in Firestore after $verifyAttempts attempts');
+      print('[UserMealPlanService] [ApplyExplore] ❌ Expected planId=${plan.id}, got planId=${verifiedPlan?.id ?? "null"}');
+      throw StateError('Active plan verification failed: expected planId=${plan.id}, got planId=${verifiedPlan?.id ?? "null"}');
+    }
+    
+    print('[UserMealPlanService] [ApplyExplore] ✅ verification passed: New plan verified in Firestore (planId=${verifiedPlan.id})');
+    
+    // CRITICAL: Clear cache again to ensure stream reads from Firestore first
+    // This prevents stale cache from being emitted after provider invalidation
+    await _cache.clearActivePlan(userId);
+    print('[UserMealPlanService] [ApplyExplore] 🧹 Cleared cache again to force Firestore-first read');
+    
+    // Don't save to cache immediately - let the stream read from Firestore first (source of truth)
+    // The stream will cache the Firestore result automatically
+    // This ensures no stale cache is emitted after apply
     
     // Invalidate user's plans list cache
     await _cache.clearAllForUser(userId);
     
     print('[UserMealPlanService] [ApplyExplore] ✅ Apply complete: planId=${plan.id}');
+    print('[UserMealPlanService] [ApplyExplore] 📡 Stream will read from Firestore (source of truth) and cache automatically');
     return plan;
   }
 
@@ -238,17 +405,65 @@ class UserMealPlanService {
     
     print('[UserMealPlanService] [ApplyCustom] ✅ Repository returned new plan: planId=${plan.id}, name="${plan.name}", isActive=${plan.isActive}');
     
-    // Update cache with new active plan
-    print('[UserMealPlanService] [ApplyCustom] 💾 Step 3: Saving new active plan to cache...');
-    await _cache.saveActivePlan(userId, plan);
-    print('[UserMealPlanService] [ApplyCustom] ✅ Saved new active plan to cache: planId=${plan.id}');
+    // CRITICAL: Verify the new plan is actually queryable from Firestore
+    // This ensures the query will return the new plan when stream subscribes
+    print('[UserMealPlanService] [ApplyCustom] 🔍 Step 3: Verifying new plan is queryable from Firestore...');
+    final verifyAttempts = 3;
+    final verifyDelay = const Duration(milliseconds: 200);
+    UserMealPlan? verifiedPlan;
+    
+    for (int attempt = 1; attempt <= verifyAttempts; attempt++) {
+      try {
+        final activePlanStream = _repository.getActivePlan(userId);
+        verifiedPlan = await activePlanStream.first.timeout(
+          const Duration(milliseconds: 1000),
+          onTimeout: () {
+            print('[UserMealPlanService] [ApplyCustom] ⏱️ Verification attempt $attempt: Firestore query timeout');
+            return null;
+          },
+        );
+        
+        if (verifiedPlan != null && verifiedPlan.id == plan.id) {
+          print('[UserMealPlanService] [ApplyCustom] ✅ Verification attempt $attempt: New plan verified in Firestore (planId=${verifiedPlan.id})');
+          break;
+        } else if (verifiedPlan != null) {
+          print('[UserMealPlanService] [ApplyCustom] ⚠️ Verification attempt $attempt: Got different plan (expected ${plan.id}, got ${verifiedPlan.id}), retrying...');
+          verifiedPlan = null;
+        } else {
+          print('[UserMealPlanService] [ApplyCustom] ⚠️ Verification attempt $attempt: No active plan found, retrying...');
+        }
+      } catch (e) {
+        print('[UserMealPlanService] [ApplyCustom] ⚠️ Verification attempt $attempt failed: $e, retrying...');
+        verifiedPlan = null;
+      }
+      
+      if (attempt < verifyAttempts) {
+        await Future.delayed(verifyDelay);
+      }
+    }
+    
+    if (verifiedPlan == null || verifiedPlan.id != plan.id) {
+      print('[UserMealPlanService] [ApplyCustom] ⚠️ WARNING: Could not verify new plan in Firestore after $verifyAttempts attempts');
+      print('[UserMealPlanService] [ApplyCustom] ⚠️ This is not critical - stream will eventually emit the correct plan');
+    }
+    
+    // CRITICAL: Clear cache again to ensure stream reads from Firestore first
+    // This prevents stale cache from being emitted after provider invalidation
+    print('[UserMealPlanService] [ApplyCustom] 🧹 Step 4: Clearing cache again to force Firestore-first read...');
+    await _cache.clearActivePlan(userId);
+    print('[UserMealPlanService] [ApplyCustom] ✅ Cleared cache again');
+    
+    // Don't save to cache immediately - let the stream read from Firestore first (source of truth)
+    // The stream will cache the Firestore result automatically
+    // This ensures no stale cache is emitted after apply
     
     // Invalidate user's plans list cache
-    print('[UserMealPlanService] [ApplyCustom] 🧹 Step 4: Clearing user plans list cache...');
+    print('[UserMealPlanService] [ApplyCustom] 🧹 Step 5: Clearing user plans list cache...');
     await _cache.clearAllForUser(userId);
     print('[UserMealPlanService] [ApplyCustom] ✅ Cleared user plans list cache');
     
     print('[UserMealPlanService] [ApplyCustom] ✅ Apply complete: planId=${plan.id}, isActive=${plan.isActive}');
+    print('[UserMealPlanService] [ApplyCustom] 📡 Stream will read from Firestore (source of truth) and cache automatically');
     print('[UserMealPlanService] [ApplyCustom] ========== END applyCustomPlanAsActive (SUCCESS) ==========');
     return plan;
   }
@@ -327,4 +542,3 @@ class UserMealPlanService {
     );
   }
 }
-

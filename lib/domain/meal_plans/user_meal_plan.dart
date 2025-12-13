@@ -82,6 +82,10 @@ class UserMealPlan {
   final bool isActive; // Only one plan can be active at a time
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  // Metadata fields (optional, backward compatible)
+  final String? description;
+  final List<String> tags; // Default to empty list
+  final String? difficulty; // "easy" | "medium" | "hard"
 
   const UserMealPlan({
     required this.id,
@@ -98,6 +102,9 @@ class UserMealPlan {
     this.isActive = false,
     this.createdAt,
     this.updatedAt,
+    this.description,
+    this.tags = const [],
+    this.difficulty,
   });
 
   /// Calculate current day index based on start date
@@ -143,6 +150,9 @@ class UserMealPlan {
     bool? isActive,
     DateTime? createdAt,
     DateTime? updatedAt,
+    String? description,
+    List<String>? tags,
+    String? difficulty,
   }) {
     return UserMealPlan(
       id: id ?? this.id,
@@ -159,6 +169,9 @@ class UserMealPlan {
       isActive: isActive ?? this.isActive,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      description: description ?? this.description,
+      tags: tags ?? this.tags,
+      difficulty: difficulty ?? this.difficulty,
     );
   }
 
@@ -179,6 +192,9 @@ class UserMealPlan {
       'isActive': isActive,
       'createdAt': createdAt?.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
+      'description': description,
+      'tags': tags,
+      'difficulty': difficulty,
     };
   }
 
@@ -203,6 +219,9 @@ class UserMealPlan {
       updatedAt: json['updatedAt'] != null
           ? DateTime.parse(json['updatedAt'] as String)
           : null,
+      description: json['description'] as String?,
+      tags: List<String>.from((json['tags'] as List?) ?? const []),
+      difficulty: json['difficulty'] as String?,
     );
   }
 
@@ -221,7 +240,10 @@ class UserMealPlan {
         other.status == status &&
         other.dailyCalories == dailyCalories &&
         other.durationDays == durationDays &&
-        other.isActive == isActive;
+        other.isActive == isActive &&
+        other.description == description &&
+        other.tags == tags &&
+        other.difficulty == difficulty;
   }
 
   @override
@@ -239,6 +261,9 @@ class UserMealPlan {
       dailyCalories,
       durationDays,
       isActive,
+      description,
+      tags,
+      difficulty,
     );
   }
 }

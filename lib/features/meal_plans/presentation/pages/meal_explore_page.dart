@@ -4,6 +4,7 @@ import 'package:calories_app/core/theme/app_colors.dart';
 import 'package:calories_app/domain/meal_plans/explore_meal_plan.dart';
 import 'package:calories_app/domain/meal_plans/meal_plan_goal_type.dart';
 import 'package:calories_app/shared/state/explore_meal_plan_providers.dart' as explore_meal_plan_providers;
+import 'package:calories_app/data/meal_plans/explore_meal_plan_query_exception.dart';
 import 'package:calories_app/features/meal_plans/presentation/pages/meal_detail_page.dart';
 import 'package:calories_app/features/meal_plans/presentation/widgets/meal_plan_summary_card.dart';
 
@@ -178,6 +179,7 @@ class _MealExplorePageState extends ConsumerState<MealExplorePage> {
               durationDays: plan.durationDays,
               mealsPerDay: plan.mealsPerDay,
               tags: plan.tags,
+              difficulty: plan.difficulty,
               isActive: false,
               onTap: () {
                 // Navigate to detail page
@@ -201,36 +203,46 @@ class _MealExplorePageState extends ConsumerState<MealExplorePage> {
           child: CircularProgressIndicator(),
         ),
       ),
-      error: (error, stack) => Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(
-                Icons.error_outline,
-                size: 64,
-                color: AppColors.error,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Lỗi khi tải danh sách thực đơn',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: AppColors.mediumGray,
+      error: (error, stack) {
+        // Show specific error message based on exception type
+        String errorMessage = 'Lỗi khi tải danh sách thực đơn';
+        if (error is ExploreMealPlanQueryException) {
+          errorMessage = error.message;
+        } else {
+          errorMessage = 'Lỗi: ${error.toString()}';
+        }
+        
+        return Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.error_outline,
+                  size: 64,
+                  color: AppColors.error,
                 ),
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () {
-                  ref.invalidate(explore_meal_plan_providers.publishedMealPlansProvider);
-                },
-                child: const Text('Thử lại'),
-              ),
-            ],
+                const SizedBox(height: 16),
+                Text(
+                  errorMessage,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: AppColors.mediumGray,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () {
+                    ref.invalidate(explore_meal_plan_providers.publishedMealPlansProvider);
+                  },
+                  child: const Text('Thử lại'),
+                ),
+              ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

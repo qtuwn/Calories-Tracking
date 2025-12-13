@@ -36,6 +36,10 @@ class UserMealPlanDto {
   final bool isActive;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  // Metadata fields (optional, backward compatible)
+  final String? description;
+  final List<String> tags; // Default to empty list
+  final String? difficulty; // "easy" | "medium" | "hard"
 
   const UserMealPlanDto({
     required this.id,
@@ -52,6 +56,9 @@ class UserMealPlanDto {
     this.isActive = false,
     this.createdAt,
     this.updatedAt,
+    this.description,
+    this.tags = const [],
+    this.difficulty,
   });
 
   /// Create from Firestore DocumentSnapshot
@@ -76,6 +83,9 @@ class UserMealPlanDto {
       isActive: data['isActive'] as bool? ?? false,
       createdAt: createdAtTimestamp?.toDate(),
       updatedAt: updatedAtTimestamp?.toDate(),
+      description: data['description'] as String?,
+      tags: List<String>.from((data['tags'] as List?) ?? const []),
+      difficulty: data['difficulty'] as String?,
     );
   }
 
@@ -100,6 +110,9 @@ class UserMealPlanDto {
       isActive: map['isActive'] as bool? ?? false,
       createdAt: createdAtTimestamp?.toDate(),
       updatedAt: updatedAtTimestamp?.toDate(),
+      description: map['description'] as String?,
+      tags: List<String>.from((map['tags'] as List?) ?? const []),
+      difficulty: map['difficulty'] as String?,
     );
   }
 
@@ -123,6 +136,9 @@ class UserMealPlanDto {
       'updatedAt': updatedAt != null
           ? Timestamp.fromDate(updatedAt!)
           : FieldValue.serverTimestamp(),
+      'description': description,
+      'tags': tags,
+      if (difficulty != null) 'difficulty': difficulty,
     };
   }
 }
@@ -146,6 +162,9 @@ extension UserMealPlanDtoMapper on UserMealPlanDto {
       isActive: isActive,
       createdAt: createdAt,
       updatedAt: updatedAt,
+      description: description,
+      tags: tags,
+      difficulty: difficulty,
     );
   }
 }
@@ -169,6 +188,9 @@ extension UserMealPlanToDto on UserMealPlan {
       isActive: isActive,
       createdAt: createdAt,
       updatedAt: updatedAt,
+      description: description,
+      tags: tags,
+      difficulty: difficulty,
     );
   }
 }

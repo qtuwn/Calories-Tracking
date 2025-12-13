@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:calories_app/features/home/domain/meal_type.dart';
+import 'package:calories_app/features/meal_plans/domain/models/shared/meal_type.dart';
 
 /// Domain service for classifying meal types based on time of day
 /// 

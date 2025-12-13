@@ -5,6 +5,7 @@ import 'package:calories_app/core/theme/app_colors.dart';
 import 'package:calories_app/domain/meal_plans/explore_meal_plan.dart';
 import 'package:calories_app/features/meal_plans/state/admin_explore_meal_plan_controller.dart';
 import 'package:calories_app/features/meal_plans/presentation/pages/explore_meal_plan_admin_editor_page.dart';
+import 'package:calories_app/features/admin_explore_meal_plans/presentation/pages/explore_meal_plan_form_page.dart';
 import 'package:calories_app/shared/state/auth_providers.dart';
 
 /// Admin-only page for managing public "Discover" meal plans
@@ -112,16 +113,33 @@ class _AdminDiscoverMealPlansPageState extends ConsumerState<AdminDiscoverMealPl
       ),
       body: _buildContent(context, ref, controllerState),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          // Navigate to dedicated admin editor in create mode
-          Navigator.push(
+        onPressed: () async {
+          // Navigate to form first (create mode)
+          if (!mounted) return;
+          
+          final createdPlanId = await Navigator.push<String>(
             context,
             MaterialPageRoute(
-              builder: (_) => const ExploreMealPlanAdminEditorPage(
-                planId: null, // Create new plan
-              ),
+              builder: (_) => const ExploreMealPlanFormPage(),
             ),
           );
+          
+          // After form returns planId, navigate to editor
+          if (mounted && createdPlanId != null && createdPlanId.isNotEmpty) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => ExploreMealPlanAdminEditorPage(
+                  planId: createdPlanId,
+                ),
+              ),
+            ).then((_) {
+              // Refresh list after returning from editor
+              if (mounted) {
+                ref.read(adminExploreMealPlanControllerProvider.notifier).refresh();
+              }
+            });
+          }
         },
         backgroundColor: AppColors.mintGreen,
         foregroundColor: AppColors.nearBlack,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:calories_app/core/theme/app_colors.dart';
+import 'difficulty_helper.dart';
 
 /// Reusable card widget for displaying meal plan summaries
 /// 
@@ -19,6 +20,7 @@ class MealPlanSummaryCard extends StatelessWidget {
     this.carbGrams,
     this.fatGrams,
     this.tags = const [],
+    this.difficulty,
     this.isActive = false,
     this.currentDayIndex,
     this.onTap,
@@ -34,6 +36,7 @@ class MealPlanSummaryCard extends StatelessWidget {
   final int? carbGrams;
   final int? fatGrams;
   final List<String> tags;
+  final String? difficulty;
   final bool isActive;
   final int? currentDayIndex;
   final VoidCallback? onTap;
@@ -138,20 +141,42 @@ class MealPlanSummaryCard extends StatelessWidget {
                 ),
               ],
             ),
-            if (tags.isNotEmpty) ...[
+            if (tags.isNotEmpty || difficulty != null) ...[
               const SizedBox(height: 16),
               Wrap(
                 spacing: 12,
                 runSpacing: 8,
-                children: tags.map((tag) => Chip(
-                  label: Text(tag),
-                  backgroundColor: goalColor.withValues(alpha: 0.18),
-                  labelStyle: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    color: AppColors.nearBlack,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                )).toList(),
+                children: [
+                  // Tags
+                  ...tags.map((tag) => Chip(
+                    label: Text(tag),
+                    backgroundColor: goalColor.withValues(alpha: 0.18),
+                    labelStyle: Theme.of(context).textTheme.labelMedium?.copyWith(
+                      color: AppColors.nearBlack,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  )),
+                  // Difficulty badge
+                  if (difficulty != null)
+                    Chip(
+                      avatar: Icon(
+                        DifficultyHelper.difficultyToIcon(difficulty),
+                        size: 16,
+                        color: DifficultyHelper.difficultyToColor(difficulty),
+                      ),
+                      label: Text(
+                        DifficultyHelper.difficultyToLabel(difficulty) ?? difficulty!,
+                        style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                          color: DifficultyHelper.difficultyToColor(difficulty) ?? AppColors.nearBlack,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      backgroundColor: (DifficultyHelper.difficultyToColor(difficulty) ?? AppColors.mediumGray)
+                          .withValues(alpha: 0.18),
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                ],
               ),
             ],
             if (proteinGrams != null || carbGrams != null || fatGrams != null) ...[
