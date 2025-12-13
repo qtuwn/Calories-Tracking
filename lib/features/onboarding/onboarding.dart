@@ -28,4 +28,3 @@ export 'presentation/widgets/number_picker_widget.dart';
 export 'presentation/widgets/progress_indicator_widget.dart';
 export 'presentation/widgets/speech_bubble_widget.dart';
 export 'presentation/widgets/weight_ruler_widget.dart';
-

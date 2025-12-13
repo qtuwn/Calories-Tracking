@@ -20,7 +20,7 @@ class _MacroStepScreenState extends ConsumerState<MacroStepScreen> {
   Widget build(BuildContext context) {
     final state = ref.watch(onboardingControllerProvider);
     final targetKcal = state.targetKcal ?? 2000.0;
-    
+
     // Get macros from state or use defaults
     final proteinPercent = state.proteinPercent ?? 20.0;
     final carbPercent = state.carbPercent ?? 50.0;
@@ -51,16 +51,16 @@ class _MacroStepScreenState extends ConsumerState<MacroStepScreen> {
               Text(
                 'Phân bổ dinh dưỡng',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      color: AppColors.nearBlack,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  color: AppColors.nearBlack,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 8),
               Text(
                 'Tỷ lệ protein, carb và fat trong chế độ ăn của bạn',
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: AppColors.mediumGray,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyLarge?.copyWith(color: AppColors.mediumGray),
               ),
               const SizedBox(height: 32),
 
@@ -102,15 +102,17 @@ class _MacroStepScreenState extends ConsumerState<MacroStepScreen> {
                     side: BorderSide(color: AppColors.mintGreen, width: 2),
                     foregroundColor: AppColors.nearBlack,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+                      borderRadius: BorderRadius.circular(
+                        AppTheme.radiusMedium,
+                      ),
                     ),
                   ),
                   child: Text(
                     'Tuỳ chỉnh mục tiêu',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: AppColors.nearBlack,
-                          fontWeight: FontWeight.w600,
-                        ),
+                      color: AppColors.nearBlack,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ),
@@ -134,15 +136,17 @@ class _MacroStepScreenState extends ConsumerState<MacroStepScreen> {
                     foregroundColor: AppColors.nearBlack,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+                      borderRadius: BorderRadius.circular(
+                        AppTheme.radiusMedium,
+                      ),
                     ),
                   ),
                   child: Text(
                     'Tiếp tục',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: AppColors.nearBlack,
-                          fontWeight: FontWeight.w600,
-                        ),
+                      color: AppColors.nearBlack,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ),
@@ -156,7 +160,7 @@ class _MacroStepScreenState extends ConsumerState<MacroStepScreen> {
   void _showCustomizeBottomSheet(BuildContext context) {
     final state = ref.read(onboardingControllerProvider);
     final targetKcal = state.targetKcal ?? 2000.0;
-    
+
     double proteinPercent = state.proteinPercent ?? 20.0;
     double carbPercent = state.carbPercent ?? 50.0;
     double fatPercent = state.fatPercent ?? 30.0;
@@ -201,21 +205,21 @@ class _MacroStepScreenState extends ConsumerState<MacroStepScreen> {
                       ),
                     ),
                   ),
-                  
+
                   // Title
                   Text(
                     'Tuỳ chỉnh phân bổ dinh dưỡng',
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          color: AppColors.nearBlack,
-                          fontWeight: FontWeight.bold,
-                        ),
+                      color: AppColors.nearBlack,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'Tổng phải bằng 100% (±1%)',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppColors.mediumGray,
-                        ),
+                      color: AppColors.mediumGray,
+                    ),
                   ),
                   const SizedBox(height: 24),
 
@@ -224,13 +228,11 @@ class _MacroStepScreenState extends ConsumerState<MacroStepScreen> {
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       color: isValid
-                          ? AppColors.mintGreen.withOpacity(0.2)
-                          : AppColors.error.withOpacity(0.1),
+                          ? AppColors.mintGreen.withValues(alpha: 0.2)
+                          : AppColors.error.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(AppTheme.radiusSmall),
                       border: Border.all(
-                        color: isValid
-                            ? AppColors.mintGreen
-                            : AppColors.error,
+                        color: isValid ? AppColors.mintGreen : AppColors.error,
                         width: 2,
                       ),
                     ),
@@ -239,14 +241,16 @@ class _MacroStepScreenState extends ConsumerState<MacroStepScreen> {
                       children: [
                         Text(
                           'Tổng',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(
                                 color: AppColors.nearBlack,
                                 fontWeight: FontWeight.w600,
                               ),
                         ),
                         Text(
                           '${total.toStringAsFixed(1)}%',
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          style: Theme.of(context).textTheme.titleLarge
+                              ?.copyWith(
                                 color: isValid
                                     ? AppColors.mintGreen
                                     : AppColors.error,
@@ -268,7 +272,7 @@ class _MacroStepScreenState extends ConsumerState<MacroStepScreen> {
                       setModalState(() {
                         final remaining = 100 - value;
                         final otherTotal = carbPercent + fatPercent;
-                        
+
                         if (otherTotal > 0 && remaining > 0) {
                           // Adjust carb and fat proportionally
                           final carbRatio = carbPercent / otherTotal;
@@ -296,7 +300,7 @@ class _MacroStepScreenState extends ConsumerState<MacroStepScreen> {
                       setModalState(() {
                         final remaining = 100 - value;
                         final otherTotal = proteinPercent + fatPercent;
-                        
+
                         if (otherTotal > 0 && remaining > 0) {
                           // Adjust protein and fat proportionally
                           final proteinRatio = proteinPercent / otherTotal;
@@ -324,7 +328,7 @@ class _MacroStepScreenState extends ConsumerState<MacroStepScreen> {
                       setModalState(() {
                         final remaining = 100 - value;
                         final otherTotal = proteinPercent + carbPercent;
-                        
+
                         if (otherTotal > 0 && remaining > 0) {
                           // Adjust protein and carb proportionally
                           final proteinRatio = proteinPercent / otherTotal;
@@ -349,7 +353,9 @@ class _MacroStepScreenState extends ConsumerState<MacroStepScreen> {
                     child: ElevatedButton(
                       onPressed: isValid
                           ? () {
-                              ref.read(onboardingControllerProvider.notifier).updateMacros(
+                              ref
+                                  .read(onboardingControllerProvider.notifier)
+                                  .updateMacros(
                                     proteinPercent: proteinPercent,
                                     carbPercent: carbPercent,
                                     fatPercent: fatPercent,
@@ -363,15 +369,17 @@ class _MacroStepScreenState extends ConsumerState<MacroStepScreen> {
                         foregroundColor: AppColors.nearBlack,
                         elevation: 0,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+                          borderRadius: BorderRadius.circular(
+                            AppTheme.radiusMedium,
+                          ),
                         ),
                       ),
                       child: Text(
                         'Lưu',
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              color: AppColors.nearBlack,
-                              fontWeight: FontWeight.w600,
-                            ),
+                          color: AppColors.nearBlack,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ),
@@ -451,7 +459,7 @@ class _MacroLegendItem extends StatelessWidget {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
-        side: BorderSide(color: AppColors.charmingGreen.withOpacity(0.3)),
+        side: BorderSide(color: AppColors.charmingGreen.withValues(alpha: 0.3)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -461,13 +469,10 @@ class _MacroLegendItem extends StatelessWidget {
             Container(
               width: 24,
               height: 24,
-              decoration: BoxDecoration(
-                color: color,
-                shape: BoxShape.circle,
-              ),
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
             ),
             const SizedBox(width: 16),
-            
+
             // Label and values
             Expanded(
               child: Column(
@@ -476,9 +481,9 @@ class _MacroLegendItem extends StatelessWidget {
                   Text(
                     label,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: AppColors.nearBlack,
-                          fontWeight: FontWeight.w600,
-                        ),
+                      color: AppColors.nearBlack,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Row(
@@ -486,22 +491,22 @@ class _MacroLegendItem extends StatelessWidget {
                       Text(
                         '${percent.toStringAsFixed(0)}%',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: AppColors.mediumGray,
-                            ),
+                          color: AppColors.mediumGray,
+                        ),
                       ),
                       const SizedBox(width: 8),
                       Text(
                         '•',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: AppColors.mediumGray,
-                            ),
+                          color: AppColors.mediumGray,
+                        ),
                       ),
                       const SizedBox(width: 8),
                       Text(
                         '${grams.toStringAsFixed(0)}g',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: AppColors.mediumGray,
-                            ),
+                          color: AppColors.mediumGray,
+                        ),
                       ),
                     ],
                   ),
@@ -552,18 +557,18 @@ class _MacroSlider extends StatelessWidget {
                 Text(
                   label,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: AppColors.nearBlack,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    color: AppColors.nearBlack,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ],
             ),
             Text(
               '${value.toStringAsFixed(1)}% • ${grams.toStringAsFixed(0)}g',
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: AppColors.nearBlack,
-                    fontWeight: FontWeight.w600,
-                  ),
+                color: AppColors.nearBlack,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ],
         ),
@@ -571,9 +576,9 @@ class _MacroSlider extends StatelessWidget {
         SliderTheme(
           data: SliderTheme.of(context).copyWith(
             activeTrackColor: color,
-            inactiveTrackColor: color.withOpacity(0.3),
+            inactiveTrackColor: color.withValues(alpha: 0.3),
             thumbColor: color,
-            overlayColor: color.withOpacity(0.2),
+            overlayColor: color.withValues(alpha: 0.2),
             trackHeight: 6,
             thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 12),
             overlayShape: const RoundSliderOverlayShape(overlayRadius: 24),
@@ -591,4 +596,3 @@ class _MacroSlider extends StatelessWidget {
     );
   }
 }
-

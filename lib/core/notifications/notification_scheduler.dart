@@ -1,0 +1,118 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:calories_app/core/notifications/local_notifications_service.dart';
+import 'package:calories_app/core/notifications/notification_messages.dart';
+import 'package:calories_app/features/settings/data/notification_prefs.dart';
+
+/// Service for scheduling local notifications based on user preferences
+class NotificationScheduler {
+  final LocalNotificationsService _localNotificationsService;
+
+  NotificationScheduler(this._localNotificationsService);
+
+  /// Reschedule all notifications based on preferences
+  Future<void> rescheduleAll(NotificationPrefs prefs) async {
+    try {
+      // Cancel all existing notifications first
+      await _localNotificationsService.cancelAll();
+      debugPrint('[NotificationScheduler] ✅ Cancelled all existing notifications');
+
+      // Schedule meal reminders if enabled
+      if (prefs.enableMealReminders) {
+        // Breakfast reminder - ID 100
+        await _localNotificationsService.scheduleDailyNotification(
+          id: 100,
+          time: prefs.breakfastTime,
+          title: 'Nhắc bữa sáng',
+          body: randomNotificationMessage(NotificationCategory.breakfast),
+        );
+        debugPrint(
+          '[NotificationScheduler] ✅ Scheduled breakfast reminder at ${prefs.breakfastTime.hour}:${prefs.breakfastTime.minute}',
+        );
+
+        // Lunch reminder - ID 101
+        await _localNotificationsService.scheduleDailyNotification(
+          id: 101,
+          time: prefs.lunchTime,
+          title: 'Nhắc bữa trưa',
+          body: randomNotificationMessage(NotificationCategory.lunch),
+        );
+        debugPrint(
+          '[NotificationScheduler] ✅ Scheduled lunch reminder at ${prefs.lunchTime.hour}:${prefs.lunchTime.minute}',
+        );
+
+        // Dinner reminder - ID 102
+        await _localNotificationsService.scheduleDailyNotification(
+          id: 102,
+          time: prefs.dinnerTime,
+          title: 'Nhắc bữa tối',
+          body: randomNotificationMessage(NotificationCategory.dinner),
+        );
+        debugPrint(
+          '[NotificationScheduler] ✅ Scheduled dinner reminder at ${prefs.dinnerTime.hour}:${prefs.dinnerTime.minute}',
+        );
+      } else {
+        debugPrint('[NotificationScheduler] ℹ️ Meal reminders disabled');
+      }
+
+      // Schedule exercise reminder if enabled
+      if (prefs.enableExerciseReminder) {
+        await _localNotificationsService.scheduleDailyNotification(
+          id: 200,
+          time: prefs.exerciseTime,
+          title: 'Nhắc vận động',
+          body: randomNotificationMessage(NotificationCategory.exercise),
+        );
+        debugPrint(
+          '[NotificationScheduler] ✅ Scheduled exercise reminder at ${prefs.exerciseTime.hour}:${prefs.exerciseTime.minute}',
+        );
+      } else {
+        debugPrint('[NotificationScheduler] ℹ️ Exercise reminder disabled');
+      }
+
+      // Schedule water reminder if enabled
+      if (prefs.enableWaterReminder) {
+        await _localNotificationsService.scheduleDailyNotification(
+          id: 300,
+          time: const TimeOfDay(hour: 10, minute: 0), // Default 10:00 AM
+          title: 'Nhắc uống nước',
+          body: randomNotificationMessage(NotificationCategory.water),
+        );
+        debugPrint(
+          '[NotificationScheduler] ✅ Scheduled water reminder at 10:00',
+        );
+      } else {
+        debugPrint('[NotificationScheduler] ℹ️ Water reminder disabled');
+      }
+
+      debugPrint('[NotificationScheduler] ✅ All notifications rescheduled');
+    } catch (e, stackTrace) {
+      debugPrint('[NotificationScheduler] 🔥 Error rescheduling notifications: $e');
+      debugPrint('[NotificationScheduler] Stack trace: $stackTrace');
+      rethrow;
+    }
+  }
+
+  /// Initialize default schedules by loading preferences and rescheduling
+  Future<void> initDefaultSchedules() async {
+    try {
+      debugPrint('[NotificationScheduler] 🔵 Initializing default schedules...');
+      final repository = NotificationPrefsRepository();
+      final prefs = await repository.load();
+      await rescheduleAll(prefs);
+      debugPrint('[NotificationScheduler] ✅ Default schedules initialized');
+    } catch (e, stackTrace) {
+      debugPrint(
+        '[NotificationScheduler] 🔥 Error initializing default schedules: $e',
+      );
+      debugPrint('[NotificationScheduler] Stack trace: $stackTrace');
+    }
+  }
+}
+
+/// Riverpod provider for NotificationScheduler
+final notificationSchedulerProvider = Provider<NotificationScheduler>((ref) {
+  final localNotificationsService = ref.read(localNotificationsServiceProvider);
+  return NotificationScheduler(localNotificationsService);
+});
+

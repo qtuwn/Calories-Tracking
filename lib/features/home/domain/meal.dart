@@ -1,14 +1,14 @@
-import 'meal_item.dart';
-import 'meal_type.dart';
+import 'diary_meal_item.dart';
+import 'package:calories_app/features/meal_plans/domain/models/shared/meal_type.dart';
 
 /// Model cho một bữa ăn (chứa nhiều món ăn)
 class Meal {
   final MealType type;
-  final List<MealItem> items;
+  final List<DiaryMealItem> items;
 
   Meal({
     required this.type,
-    List<MealItem>? items,
+    List<DiaryMealItem>? items,
   }) : items = items ?? [];
 
   // Tính tổng dinh dưỡng của bữa ăn
@@ -28,7 +28,7 @@ class Meal {
 
   Meal copyWith({
     MealType? type,
-    List<MealItem>? items,
+    List<DiaryMealItem>? items,
   }) {
     return Meal(
       type: type ?? this.type,
@@ -49,7 +49,7 @@ class Meal {
         (e) => e.name == json['type'],
       ),
       items: (json['items'] as List<dynamic>)
-          .map((item) => MealItem.fromJson(item as Map<String, dynamic>))
+          .map((item) => DiaryMealItem.fromJson(item as Map<String, dynamic>))
           .toList(),
     );
   }

@@ -29,14 +29,15 @@ class _HeightRulerWidgetState extends State<HeightRulerWidget> {
   @override
   void initState() {
     super.initState();
-    _currentHeight = widget.initialHeight.clamp(widget.minHeight, widget.maxHeight);
+    _currentHeight = widget.initialHeight.clamp(
+      widget.minHeight,
+      widget.maxHeight,
+    );
     final initialIndex = _currentHeight - widget.minHeight;
     final initialOffset = initialIndex * _itemHeight;
-    
-    _scrollController = ScrollController(
-      initialScrollOffset: initialOffset,
-    );
-    
+
+    _scrollController = ScrollController(initialScrollOffset: initialOffset);
+
     _scrollController.addListener(_onScroll);
   }
 
@@ -50,8 +51,11 @@ class _HeightRulerWidgetState extends State<HeightRulerWidget> {
   void _onScroll() {
     final offset = _scrollController.offset;
     final index = (offset / _itemHeight).round();
-    final height = (index + widget.minHeight).clamp(widget.minHeight, widget.maxHeight);
-    
+    final height = (index + widget.minHeight).clamp(
+      widget.minHeight,
+      widget.maxHeight,
+    );
+
     if (height != _currentHeight) {
       setState(() {
         _currentHeight = height;
@@ -95,19 +99,16 @@ class _HeightRulerWidgetState extends State<HeightRulerWidget> {
               },
             ),
           ),
-          
+
           // Selection indicator
           Center(
             child: Container(
               height: _itemHeight,
               decoration: BoxDecoration(
-                color: AppColors.mintGreen.withOpacity(0.15),
+                color: AppColors.mintGreen.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(AppTheme.radiusSmall),
                 border: Border.symmetric(
-                  horizontal: BorderSide(
-                    color: AppColors.mintGreen,
-                    width: 2,
-                  ),
+                  horizontal: BorderSide(color: AppColors.mintGreen, width: 2),
                 ),
               ),
             ),
@@ -134,10 +135,10 @@ class _HeightRulerWidgetState extends State<HeightRulerWidget> {
             height: isMajorTick ? 2 : 1,
             color: isSelected
                 ? AppColors.mintGreen
-                : AppColors.charmingGreen.withOpacity(0.5),
+                : AppColors.charmingGreen.withValues(alpha: 0.5),
           ),
           const SizedBox(width: 16),
-          
+
           // Height label (only for major ticks or selected)
           if (isMajorTick || isSelected)
             Text(
@@ -145,14 +146,12 @@ class _HeightRulerWidgetState extends State<HeightRulerWidget> {
               style: TextStyle(
                 fontSize: isSelected ? 20 : 14,
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                color: isSelected
-                    ? AppColors.mintGreen
-                    : AppColors.mediumGray,
+                color: isSelected ? AppColors.mintGreen : AppColors.mediumGray,
               ),
             ),
-          
+
           const Spacer(),
-          
+
           // Unit label
           if (isSelected)
             Text(
@@ -168,4 +167,3 @@ class _HeightRulerWidgetState extends State<HeightRulerWidget> {
     );
   }
 }
-

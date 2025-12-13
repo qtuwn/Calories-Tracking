@@ -34,13 +34,13 @@ class _GenderStepScreenState extends ConsumerState<GenderStepScreen> {
   }
 
   void _onContinue() {
-    if (_selectedGender == null) return;
+    if (_selectedGender == null) {
+      return;
+    }
 
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => const DobStepScreen(),
-      ),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const DobStepScreen()));
   }
 
   @override
@@ -115,15 +115,17 @@ class _GenderStepScreenState extends ConsumerState<GenderStepScreen> {
                     foregroundColor: AppColors.nearBlack,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+                      borderRadius: BorderRadius.circular(
+                        AppTheme.radiusMedium,
+                      ),
                     ),
                   ),
                   child: Text(
                     'Tiếp tục',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: AppColors.nearBlack,
-                          fontWeight: FontWeight.w600,
-                        ),
+                      color: AppColors.nearBlack,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ),
@@ -152,10 +154,7 @@ class _GenderCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final gradient = LinearGradient(
-      colors: [
-        AppColors.mintGreen.withOpacity(0.9),
-        AppColors.mintGreen,
-      ],
+      colors: [AppColors.mintGreen.withValues(alpha: 0.9), AppColors.mintGreen],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     );
@@ -168,14 +167,12 @@ class _GenderCard extends StatelessWidget {
         color: isSelected ? null : AppColors.white,
         borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
         border: Border.all(
-          color: isSelected
-              ? Colors.transparent
-              : AppColors.charmingGreen,
+          color: isSelected ? Colors.transparent : AppColors.charmingGreen,
           width: 2,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isSelected ? 0.12 : 0.05),
+            color: Colors.black.withValues(alpha: isSelected ? 0.12 : 0.05),
             blurRadius: 16,
             offset: const Offset(0, 8),
           ),
@@ -200,11 +197,11 @@ class _GenderCard extends StatelessWidget {
                 Text(
                   label,
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        color: isSelected
-                            ? AppColors.nearBlack
-                            : AppColors.nearBlack,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    color: isSelected
+                        ? AppColors.nearBlack
+                        : AppColors.nearBlack,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ],
             ),
@@ -214,4 +211,3 @@ class _GenderCard extends StatelessWidget {
     );
   }
 }
-

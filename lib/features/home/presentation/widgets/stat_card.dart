@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../constants/app_colors.dart';
+import 'package:calories_app/core/theme/theme.dart';
 import '../constants/app_styles.dart';
 
 class StatCard extends StatelessWidget {
@@ -14,7 +14,7 @@ class StatCard extends StatelessWidget {
     required this.label,
     required this.value,
     required this.unit,
-    this.color = AppColors.primary,
+    this.color = AppColors.mintGreen, // Use core theme color instead of duplicate
     this.icon,
   });
 

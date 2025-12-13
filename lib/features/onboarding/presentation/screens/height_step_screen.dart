@@ -23,7 +23,9 @@ class _HeightStepScreenState extends ConsumerState<HeightStepScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
       final onboardingState = ref.read(onboardingControllerProvider);
       setState(() {
         _selectedHeight = onboardingState.heightCm ?? 170; // Default to 170 cm
@@ -41,20 +43,20 @@ class _HeightStepScreenState extends ConsumerState<HeightStepScreen> {
   }
 
   void _onContinuePressed() {
-    if (_selectedHeight == null || !_hasSelected) return;
+    if (_selectedHeight == null || !_hasSelected) {
+      return;
+    }
 
     // Navigate to weight step
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => const CurrentWeightStepScreen(),
-      ),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const CurrentWeightStepScreen()));
   }
 
   @override
   Widget build(BuildContext context) {
     final bottomPadding = MediaQuery.of(context).viewInsets.bottom;
-    
+
     return Scaffold(
       backgroundColor: AppColors.palePink,
       resizeToAvoidBottomInset: true,
@@ -91,9 +93,7 @@ class _HeightStepScreenState extends ConsumerState<HeightStepScreen> {
               ),
               const SizedBox(height: 24),
 
-              ProgressIndicatorWidget(
-                progress: 4 / OnboardingModel.totalSteps,
-              ),
+              ProgressIndicatorWidget(progress: 4 / OnboardingModel.totalSteps),
               const SizedBox(height: 32),
 
               // Large height display
@@ -104,7 +104,7 @@ class _HeightStepScreenState extends ConsumerState<HeightStepScreen> {
                     vertical: 24,
                   ),
                   decoration: BoxDecoration(
-                    color: AppColors.charmingGreen.withOpacity(0.3),
+                    color: AppColors.charmingGreen.withValues(alpha: 0.3),
                     borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
                   ),
                   child: Column(
@@ -122,9 +122,9 @@ class _HeightStepScreenState extends ConsumerState<HeightStepScreen> {
                       Text(
                         'cm',
                         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                              color: AppColors.mediumGray,
-                              fontWeight: FontWeight.w600,
-                            ),
+                          color: AppColors.mediumGray,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ],
                   ),
@@ -140,7 +140,7 @@ class _HeightStepScreenState extends ConsumerState<HeightStepScreen> {
                   borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: Colors.black.withValues(alpha: 0.05),
                       blurRadius: 16,
                       offset: const Offset(0, 8),
                     ),
@@ -173,15 +173,17 @@ class _HeightStepScreenState extends ConsumerState<HeightStepScreen> {
                     foregroundColor: AppColors.nearBlack,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+                      borderRadius: BorderRadius.circular(
+                        AppTheme.radiusMedium,
+                      ),
                     ),
                   ),
                   child: Text(
                     'Tiếp tục',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: AppColors.nearBlack,
-                          fontWeight: FontWeight.w600,
-                        ),
+                      color: AppColors.nearBlack,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ),
@@ -193,4 +195,3 @@ class _HeightStepScreenState extends ConsumerState<HeightStepScreen> {
     );
   }
 }
-

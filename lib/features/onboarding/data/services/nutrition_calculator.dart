@@ -1,3 +1,4 @@
+import 'package:calories_app/core/utils/bmi_calculator.dart';
 import 'package:calories_app/features/onboarding/domain/nutrition_result.dart';
 import 'package:calories_app/features/onboarding/domain/onboarding_model.dart';
 
@@ -16,15 +17,14 @@ class NutritionCalculator {
   // Safety minimum calories
   static const double minCalories = 1200.0;
 
-  /// Calculate BMI: weight (kg) / height (m)^2
-  static double calcBMI({
-    required double weightKg,
-    required double heightM,
-  }) {
-    if (heightM <= 0) {
-      throw ArgumentError('Height must be greater than 0');
-    }
-    return weightKg / (heightM * heightM);
+  /// Calculate BMI using the shared BmiCalculator utility.
+  /// 
+  /// This method delegates to [BmiCalculator] to ensure consistency
+  /// across the app. Accepts height in meters for backward compatibility.
+  static double calcBMI({required double weightKg, required double heightM}) {
+    // Convert heightM to heightCm for BmiCalculator
+    final heightCm = (heightM * 100).round();
+    return BmiCalculator.calculate(weightKg: weightKg, heightCm: heightCm);
   }
 
   /// Calculate BMR using Mifflin-St Jeor Equation
@@ -37,7 +37,7 @@ class NutritionCalculator {
     required String gender,
   }) {
     final heightInCm = heightCm.toDouble();
-    
+
     if (gender.toLowerCase() == 'male' || gender.toLowerCase() == 'nam') {
       return 10 * weightKg + 6.25 * heightInCm - 5 * age + 5;
     } else {
@@ -70,11 +70,12 @@ class NutritionCalculator {
     double? dailyDeltaKcal,
   }) {
     double targetKcal;
-    
+
     if (goalType == 'maintain') {
       targetKcal = tdee;
     } else if (dailyDeltaKcal != null) {
-      targetKcal = tdee + dailyDeltaKcal; // dailyDeltaKcal is already negative for lose
+      targetKcal =
+          tdee + dailyDeltaKcal; // dailyDeltaKcal is already negative for lose
     } else {
       targetKcal = tdee;
     }
@@ -192,4 +193,3 @@ class NutritionCalculator {
     );
   }
 }
-
