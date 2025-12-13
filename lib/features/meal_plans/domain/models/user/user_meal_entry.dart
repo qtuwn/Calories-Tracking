@@ -1,4 +1,4 @@
-import 'package:calories_app/features/meal_plans/domain/models/shared/meal_item.dart';
+import 'package:calories_app/domain/meal_plans/user_meal_plan_repository.dart' show MealItem;
 
 /// Alias for MealItem in user meal plan context
 /// 

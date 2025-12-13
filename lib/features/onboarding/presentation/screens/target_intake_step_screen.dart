@@ -127,7 +127,7 @@ class _TargetIntakeStepScreenState
           );
           
           // Use ProfileService for saving (saves to both Firestore and cache)
-          final service = await ref.read(profileServiceProvider.future);
+          final service = ref.read(profileServiceProvider);
           profileId = await service.saveProfile(uid, profile);
           
           debugPrint(

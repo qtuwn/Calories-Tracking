@@ -1,5 +1,9 @@
-/// Model cho một món ăn trong bữa ăn
-class MealItem {
+/// Model cho một món ăn trong bữa ăn (dành cho Diary/Home feature)
+/// 
+/// NOTE: This is different from the meal plan MealItem.
+/// This model is used specifically for diary entries and home display.
+/// For meal plans, use domain/meal_plans/user_meal_plan_repository.dart::MealItem
+class DiaryMealItem {
   final String id;
   final String name;
   final double servingSize; // Khẩu phần (ví dụ: 1.5 = 1.5 phần)
@@ -9,7 +13,7 @@ class MealItem {
   final double fatPer100g; // Fat trên 100g
   final double gramsPerServing; // Số gram cho 1 phần ăn chuẩn
 
-  MealItem({
+  DiaryMealItem({
     required this.id,
     required this.name,
     required this.servingSize,
@@ -35,7 +39,7 @@ class MealItem {
 
   double get totalGrams => gramsPerServing * servingSize;
 
-  MealItem copyWith({
+  DiaryMealItem copyWith({
     String? id,
     String? name,
     double? servingSize,
@@ -45,7 +49,7 @@ class MealItem {
     double? fatPer100g,
     double? gramsPerServing,
   }) {
-    return MealItem(
+    return DiaryMealItem(
       id: id ?? this.id,
       name: name ?? this.name,
       servingSize: servingSize ?? this.servingSize,
@@ -70,8 +74,8 @@ class MealItem {
     };
   }
 
-  factory MealItem.fromJson(Map<String, dynamic> json) {
-    return MealItem(
+  factory DiaryMealItem.fromJson(Map<String, dynamic> json) {
+    return DiaryMealItem(
       id: json['id'] as String,
       name: json['name'] as String,
       servingSize: (json['servingSize'] as num).toDouble(),

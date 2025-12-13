@@ -168,7 +168,7 @@ class _CustomizeNutritionSheetState
       final fatGrams = fatKcal / 9;
 
       // Update profile via ProfileService
-      final service = await ref.read(profile_providers.profileServiceProvider.future);
+      final service = ref.read(profile_providers.profileServiceProvider);
       
       // Get current profile ID
       final repository = ref.read(profile_providers.profileRepositoryProvider);

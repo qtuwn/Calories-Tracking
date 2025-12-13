@@ -25,8 +25,9 @@ import 'package:calories_app/shared/state/food_providers.dart' as food_providers
 import 'package:calories_app/shared/state/auth_providers.dart';
 import 'package:calories_app/shared/state/explore_meal_plan_providers.dart' as explore_meal_plan_providers;
 import 'package:calories_app/shared/state/user_meal_plan_providers.dart' as user_meal_plan_providers;
-import 'package:calories_app/features/meal_plans/state/meal_plan_repository_providers.dart' show exploreTemplateMealsProvider;
+import 'package:calories_app/features/meal_plans/state/meal_plan_repository_providers.dart' show exploreTemplateMealsProvider, userMealPlanMealsProvider;
 import 'package:calories_app/features/meal_plans/presentation/pages/meal_day_editor_page.dart';
+import 'package:calories_app/features/meal_plans/presentation/widgets/difficulty_helper.dart';
 
 class MealDetailPage extends ConsumerStatefulWidget {
   const MealDetailPage({
@@ -46,6 +47,7 @@ class MealDetailPage extends ConsumerStatefulWidget {
 
 class _MealDetailPageState extends ConsumerState<MealDetailPage> {
   int _selectedDayIndex = 1;
+  bool _isStarting = false; // PHASE 1: Guard against double-trigger
 
   @override
   Widget build(BuildContext context) {
@@ -61,6 +63,11 @@ class _MealDetailPageState extends ConsumerState<MealDetailPage> {
   Widget _buildTemplatePlanDetail() {
     // Load template using cache-aware provider
     final templateAsync = ref.watch(explore_meal_plan_providers.exploreMealPlanByIdProvider(widget.planId));
+    
+    // PHASE 1: Watch controller provider to prevent autoDispose during async operations
+    // Note: applyState is intentionally watched but not used - keeps provider alive
+    final _applyState = ref.watch(appliedMealPlanControllerProvider);
+    debugPrint('[MealDetailPage] 🧲 watching AppliedMealPlanController state to prevent autoDispose');
 
     return Scaffold(
       backgroundColor: AppColors.palePink,
@@ -144,20 +151,42 @@ class _MealDetailPageState extends ConsumerState<MealDetailPage> {
                               ),
                             ],
                           ),
-                          if (template.tags.isNotEmpty) ...[
+                          if (template.tags.isNotEmpty || template.difficulty != null) ...[
                             const SizedBox(height: 12),
                             Wrap(
                               spacing: 8,
                               runSpacing: 8,
-                              children: template.tags.map((tag) => Chip(
-                                label: Text(tag),
-                                backgroundColor: AppColors.mintGreen.withValues(alpha: 0.18),
-                                labelStyle: Theme.of(context).textTheme.labelMedium?.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.nearBlack,
-                                ),
-                                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              )).toList(),
+                              children: [
+                                // Tags
+                                ...template.tags.map((tag) => Chip(
+                                  label: Text(tag),
+                                  backgroundColor: AppColors.mintGreen.withValues(alpha: 0.18),
+                                  labelStyle: Theme.of(context).textTheme.labelMedium?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.nearBlack,
+                                  ),
+                                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                )),
+                                // Difficulty badge
+                                if (template.difficulty != null)
+                                  Chip(
+                                    avatar: Icon(
+                                      DifficultyHelper.difficultyToIcon(template.difficulty),
+                                      size: 16,
+                                      color: DifficultyHelper.difficultyToColor(template.difficulty),
+                                    ),
+                                    label: Text(
+                                      DifficultyHelper.difficultyToLabel(template.difficulty) ?? template.difficulty!,
+                                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                                        color: DifficultyHelper.difficultyToColor(template.difficulty) ?? AppColors.nearBlack,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    backgroundColor: (DifficultyHelper.difficultyToColor(template.difficulty) ?? AppColors.mediumGray)
+                                        .withValues(alpha: 0.18),
+                                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                  ),
+                              ],
                             ),
                           ],
                         ],
@@ -375,7 +404,7 @@ class _MealDetailPageState extends ConsumerState<MealDetailPage> {
               child: SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () => _startPlan(),
+                  onPressed: _isStarting ? null : () => _startPlan(),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.mintGreen,
                     foregroundColor: AppColors.nearBlack,
@@ -434,13 +463,13 @@ class _MealDetailPageState extends ConsumerState<MealDetailPage> {
     final service = ref.read(user_meal_plan_providers.userMealPlanServiceProvider);
     final userPlanFuture = service.loadPlanByIdOnce(user.uid, widget.userPlanId!);
     
-    // Watch meals stream for current selected day - automatically updates when day changes
-    final mealsStream = service.getDayMeals(
-      widget.userPlanId!,
-      user.uid,
-      _selectedDayIndex,
-    );
-    final mealsAsync = ref.watch(StreamProvider((ref) => mealsStream));
+    // Watch meals stream for current selected day using the canonical provider
+    // This prevents creating new streams on every build
+    final mealsAsync = ref.watch(userMealPlanMealsProvider((
+      planId: widget.userPlanId!,
+      userId: user.uid,
+      dayIndex: _selectedDayIndex,
+    )));
 
     return Scaffold(
       backgroundColor: AppColors.palePink,
@@ -811,83 +840,96 @@ class _MealDetailPageState extends ConsumerState<MealDetailPage> {
   }
 
   Future<void> _startPlan() async {
+    // PHASE 1: Prevent double-trigger
+    if (_isStarting) {
+      debugPrint('[MealDetailPage] ⚠️ _startPlan() already in progress, ignoring duplicate call');
+      return;
+    }
+    
+    setState(() {
+      _isStarting = true;
+    });
+    
     debugPrint('[MealDetailPage] 🚀 _startPlan() called for template: ${widget.planId}');
     
-    final authState = ref.read(authStateProvider);
-    final user = authState.value;
-    if (user == null) {
-      debugPrint('[MealDetailPage] ⚠️ User not logged in');
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Vui lòng đăng nhập để bắt đầu thực đơn'),
-        ),
-      );
-      return;
-    }
-
-    debugPrint('[MealDetailPage] ✅ User logged in: ${user.uid}');
-
-    // Get user profile for template application
-    final profileAsync = ref.read(currentUserProfileProvider);
-    final profile = profileAsync.value;
-    if (profile == null) {
-      debugPrint('[MealDetailPage] ⚠️ User profile not found');
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Không thể tải thông tin người dùng'),
-        ),
-      );
-      return;
-    }
-
-    debugPrint('[MealDetailPage] ✅ User profile loaded');
-
-    // Check if user already has an active plan (use provider as source of truth)
-    final appliedController = ref.read(appliedMealPlanControllerProvider.notifier);
-    final activePlanAsync = ref.read(user_meal_plan_providers.activeMealPlanProvider);
-    final activePlan = activePlanAsync.value;
-
-    debugPrint('[MealDetailPage] 📊 Current active plan: ${activePlan?.id ?? "none"}');
-
-    // Show confirmation dialog if there's an active plan
-    if (activePlan != null) {
-      debugPrint('[MealDetailPage] ⚠️ User has active plan, showing confirmation dialog');
-      final shouldProceed = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Xác nhận thay đổi thực đơn'),
-          content: Text(
-            'Bạn đang có thực đơn "${activePlan.name}" đang hoạt động.\n\n'
-            'Chỉ có thể có một thực đơn hoạt động tại một thời điểm. '
-            'Thực đơn hiện tại sẽ bị tắt và thực đơn mới sẽ được kích hoạt.\n\n'
-            'Bạn có muốn tiếp tục?',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Hủy'),
-            ),
-            ElevatedButton(
-              onPressed: () => Navigator.pop(context, true),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.mintGreen,
-                foregroundColor: AppColors.nearBlack,
-              ),
-              child: const Text('Xác nhận'),
-            ),
-          ],
-        ),
-      );
-
-      if (shouldProceed != true) {
-        debugPrint('[MealDetailPage] ❌ User cancelled confirmation dialog');
-        return; // User cancelled
-      }
-      
-      debugPrint('[MealDetailPage] ✅ User confirmed, proceeding with apply');
-    }
-
     try {
+      final authState = ref.read(authStateProvider);
+      final user = authState.value;
+      if (user == null) {
+        debugPrint('[MealDetailPage] ⚠️ User not logged in');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Vui lòng đăng nhập để bắt đầu thực đơn'),
+            ),
+          );
+        }
+        return;
+      }
+
+      debugPrint('[MealDetailPage] ✅ User logged in: ${user.uid}');
+
+      // Get user profile for template application
+      final profileAsync = ref.read(currentUserProfileProvider);
+      final profile = profileAsync.value;
+      if (profile == null) {
+        debugPrint('[MealDetailPage] ⚠️ User profile not found');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Không thể tải thông tin người dùng'),
+            ),
+          );
+        }
+        return;
+      }
+
+      debugPrint('[MealDetailPage] ✅ User profile loaded');
+
+      // Check if user already has an active plan (use provider as source of truth)
+      final appliedController = ref.read(appliedMealPlanControllerProvider.notifier);
+      final currentActivePlanAsync = ref.read(user_meal_plan_providers.activeMealPlanProvider);
+      final currentActivePlan = currentActivePlanAsync.value;
+
+      debugPrint('[MealDetailPage] 📊 Current active plan: ${currentActivePlan?.id ?? "none"}');
+
+      // Show confirmation dialog if there's an active plan
+      if (currentActivePlan != null) {
+        debugPrint('[MealDetailPage] ⚠️ User has active plan, showing confirmation dialog');
+        final shouldProceed = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Xác nhận thay đổi thực đơn'),
+            content: Text(
+              'Bạn đang có thực đơn "${currentActivePlan.name}" đang hoạt động.\n\n'
+              'Chỉ có thể có một thực đơn hoạt động tại một thời điểm. '
+              'Thực đơn hiện tại sẽ bị tắt và thực đơn mới sẽ được kích hoạt.\n\n'
+              'Bạn có muốn tiếp tục?',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Hủy'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context, true),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.mintGreen,
+                  foregroundColor: AppColors.nearBlack,
+                ),
+                child: const Text('Xác nhận'),
+              ),
+            ],
+          ),
+        );
+
+        if (shouldProceed != true) {
+          debugPrint('[MealDetailPage] ❌ User cancelled confirmation dialog');
+          return; // User cancelled
+        }
+        
+        debugPrint('[MealDetailPage] ✅ User confirmed, proceeding with apply');
+      }
       debugPrint('[MealDetailPage] 📋 Loading template: ${widget.planId}');
       
       // Get template using cache-aware service
@@ -918,7 +960,47 @@ class _MealDetailPageState extends ConsumerState<MealDetailPage> {
         userId: user.uid,
       );
 
-      debugPrint('[MealDetailPage] ✅ applyExploreTemplate() completed successfully');
+      // PHASE 1: Post-condition verification - ensure active plan actually switched
+      debugPrint('[MealDetailPage] 🔍 Verifying active plan switched...');
+      
+      // Wait a bit for provider to update, then verify
+      await Future.delayed(const Duration(milliseconds: 500));
+      
+      final verifiedActivePlanAsync = ref.read(user_meal_plan_providers.activeMealPlanProvider);
+      UserMealPlan? verifiedActivePlan = verifiedActivePlanAsync.value;
+      
+      // If provider hasn't updated yet, query repository directly (source of truth)
+      if (verifiedActivePlan == null || verifiedActivePlan.planTemplateId != template.id) {
+        debugPrint('[MealDetailPage] ⏳ Provider not updated yet, querying repository directly...');
+        try {
+          final repository = ref.read(user_meal_plan_providers.userMealPlanRepositoryProvider);
+          final activePlanStream = repository.getActivePlan(user.uid);
+          verifiedActivePlan = await activePlanStream.first.timeout(
+            const Duration(milliseconds: 2000),
+            onTimeout: () {
+              debugPrint('[MealDetailPage] ⏱️ Active plan verification timeout');
+              return null;
+            },
+          );
+        } catch (e) {
+          debugPrint('[MealDetailPage] ⚠️ Active plan verification error: $e');
+          verifiedActivePlan = null;
+        }
+      }
+      
+      // Verify active plan switched
+      if (verifiedActivePlan == null) {
+        debugPrint('[MealDetailPage] ❌ Verification failed: active plan is null');
+        throw StateError('Active plan verification failed: no active plan found after apply');
+      }
+      
+      if (verifiedActivePlan.planTemplateId != template.id) {
+        debugPrint('[MealDetailPage] ❌ Verification failed: expected templateId=${template.id}, got templateId=${verifiedActivePlan.planTemplateId}');
+        throw StateError('Active plan verification failed: expected templateId=${template.id}, got templateId=${verifiedActivePlan.planTemplateId}');
+      }
+      
+      debugPrint('[MealDetailPage] ✅ Verification passed: active plan switched to planId=${verifiedActivePlan.id}, templateId=${verifiedActivePlan.planTemplateId}');
+      debugPrint('[MealDetailPage] ✅ applyExploreTemplate() completed successfully with verification');
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -931,8 +1013,13 @@ class _MealDetailPageState extends ConsumerState<MealDetailPage> {
         Navigator.pop(context);
       }
     } catch (e, stackTrace) {
-      debugPrint('[MealDetailPage] 🔥 Error starting plan: $e');
-      debugPrint('[MealDetailPage] 🔥 Stack trace: $stackTrace');
+      // PHASE 2: Print real error + stack trace
+      debugPrint('[MealDetailPage] 🔥 ========== startPlan FAILED ==========');
+      debugPrint('[MealDetailPage] 🔥 Error: $e');
+      debugPrint('[MealDetailPage] 🔥 Error type: ${e.runtimeType}');
+      debugPrint('[MealDetailPage] 🔥 Stack trace:');
+      debugPrintStack(stackTrace: stackTrace);
+      debugPrint('[MealDetailPage] 🔥 =======================================');
       
       if (mounted) {
         String errorMessage = 'Không thể bắt đầu thực đơn. Vui lòng thử lại sau.';
@@ -1476,17 +1563,13 @@ class _FoodItemRow extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Load food name asynchronously
-    final repository = ref.read(food_providers.foodRepositoryProvider);
-    final foodFuture = repository.getById(item.foodId);
+    // Load food name using memoized provider (prevents repeated lookups)
+    final foodAsync = ref.watch(food_providers.foodByIdProvider(item.foodId));
 
-    return FutureBuilder(
-      future: foodFuture,
-      builder: (context, snapshot) {
-        final foodName = snapshot.hasData && snapshot.data != null
-            ? snapshot.data!.name
-            : 'Món ăn (ID: ${item.foodId})';
-
+    return foodAsync.when(
+      data: (food) {
+        final foodName = food?.name ?? 'Món ăn (ID: ${item.foodId})';
+        
         return Padding(
           padding: const EdgeInsets.only(bottom: 8),
           child: Row(
@@ -1522,6 +1605,58 @@ class _FoodItemRow extends ConsumerWidget {
           ),
         );
       },
+      loading: () => Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Đang tải...',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  Text(
+                    '${item.servingSize.toStringAsFixed(1)} phần • ${item.calories.toInt()} kcal',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppColors.mediumGray,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+      error: (error, stack) => Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Món ăn (ID: ${item.foodId})',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  Text(
+                    '${item.servingSize.toStringAsFixed(1)} phần • ${item.calories.toInt()} kcal',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppColors.mediumGray,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

@@ -15,7 +15,7 @@ import 'package:calories_app/shared/state/user_meal_plan_providers.dart' as user
 import 'package:calories_app/features/meal_plans/state/meal_plan_repository_providers.dart' show userMealPlanMealsProvider;
 import 'package:calories_app/features/meal_plans/presentation/pages/meal_detail_page.dart';
 import 'package:calories_app/features/meal_plans/presentation/widgets/meal_plan_summary_card.dart';
-import 'package:calories_app/features/home/domain/meal_type.dart';
+import 'package:calories_app/features/meal_plans/domain/models/shared/meal_type.dart';
 import 'package:calories_app/features/home/presentation/providers/diary_provider.dart';
 import 'package:calories_app/shared/state/food_providers.dart' as food_providers;
 import 'package:calories_app/shared/state/auth_providers.dart';
@@ -64,6 +64,46 @@ class _MealUserActivePageState extends ConsumerState<MealUserActivePage> {
                     Navigator.pushNamed(context, '/meals/custom');
                   }
                 },
+              );
+            }
+
+            // FAIL-FAST: Check if plan has 0 days (invalid state)
+            // This should never happen if apply template worked correctly,
+            // but we guard against it in the UI to prevent crashes
+            if (activePlan.durationDays == 0) {
+              debugPrint('[ActivePlan] Active plan has no days → invalid state (planId=${activePlan.id}, name="${activePlan.name}")');
+              
+              return Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(32.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        Icons.error_outline,
+                        size: 48,
+                        color: AppColors.error,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Meal plan is empty. Please re-apply.',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          color: AppColors.error,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Thực đơn trống. Vui lòng áp dụng lại.',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: AppColors.mediumGray,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               );
             }
 
@@ -505,8 +545,8 @@ class _FoodItemRowState extends ConsumerState<_FoodItemRow> {
 
   @override
   Widget build(BuildContext context) {
-    final repository = ref.read(food_providers.foodRepositoryProvider);
-    final foodFuture = repository.getById(widget.item.foodId);
+    // Load food name using memoized provider (prevents repeated lookups)
+    final foodAsync = ref.watch(food_providers.foodByIdProvider(widget.item.foodId));
     
     // Check if item is already in diary for today
     final diaryState = ref.watch(diaryProvider);
@@ -526,48 +566,114 @@ class _FoodItemRowState extends ConsumerState<_FoodItemRow> {
       });
     }
     
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        children: [
-          Checkbox(
-            value: _isLogged,
-            onChanged: (value) {
-              setState(() => _isLogged = value ?? false);
-              widget.onToggle(_isLogged);
-            },
-            activeColor: AppColors.mintGreen,
-          ),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                FutureBuilder(
-                  future: foodFuture,
-                  builder: (context, snapshot) {
-                    final foodName = snapshot.hasData && snapshot.data != null
-                        ? snapshot.data!.name
-                        : 'Món ăn (ID: ${widget.item.foodId})';
-                    return Text(
+    return foodAsync.when(
+      data: (food) {
+        final foodName = food?.name ?? 'Món ăn (ID: ${widget.item.foodId})';
+        
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Row(
+            children: [
+              Checkbox(
+                value: _isLogged,
+                onChanged: (value) {
+                  setState(() => _isLogged = value ?? false);
+                  widget.onToggle(_isLogged);
+                },
+                activeColor: AppColors.mintGreen,
+              ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
                       foodName,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         fontWeight: FontWeight.w600,
                         decoration: _isLogged ? TextDecoration.lineThrough : null,
                         color: _isLogged ? AppColors.mediumGray : AppColors.nearBlack,
                       ),
-                    );
-                  },
+                    ),
+                    Text(
+                      '${widget.item.servingSize.toStringAsFixed(1)} phần • ${widget.item.calories.toInt()} kcal • P: ${widget.item.protein.toInt()}g C: ${widget.item.carb.toInt()}g F: ${widget.item.fat.toInt()}g',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: AppColors.mediumGray,
+                      ),
+                    ),
+                  ],
                 ),
-                Text(
-                  '${widget.item.servingSize.toStringAsFixed(1)} phần • ${widget.item.calories.toInt()} kcal • P: ${widget.item.protein.toInt()}g C: ${widget.item.carb.toInt()}g F: ${widget.item.fat.toInt()}g',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.mediumGray,
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
+        );
+      },
+      loading: () => Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: Row(
+          children: [
+            Checkbox(
+              value: _isLogged,
+              onChanged: (value) {
+                setState(() => _isLogged = value ?? false);
+                widget.onToggle(_isLogged);
+              },
+              activeColor: AppColors.mintGreen,
+            ),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Đang tải...',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  Text(
+                    '${widget.item.servingSize.toStringAsFixed(1)} phần • ${widget.item.calories.toInt()} kcal',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppColors.mediumGray,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+      error: (error, stack) => Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: Row(
+          children: [
+            Checkbox(
+              value: _isLogged,
+              onChanged: (value) {
+                setState(() => _isLogged = value ?? false);
+                widget.onToggle(_isLogged);
+              },
+              activeColor: AppColors.mintGreen,
+            ),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Món ăn (ID: ${widget.item.foodId})',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  Text(
+                    '${widget.item.servingSize.toStringAsFixed(1)} phần • ${widget.item.calories.toInt()} kcal',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppColors.mediumGray,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

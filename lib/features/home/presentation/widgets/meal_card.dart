@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:calories_app/features/home/domain/meal.dart';
-import 'package:calories_app/features/home/domain/meal_item.dart';
+import 'package:calories_app/features/home/domain/diary_meal_item.dart';
 
 /// Widget hiển thị một bữa ăn với danh sách món ăn
 class MealCard extends StatelessWidget {
   final Meal meal;
   final VoidCallback onAddItem;
-  final Function(MealItem) onEditItem;
+  final Function(DiaryMealItem) onEditItem;
   final Function(String) onDeleteItem;
 
   const MealCard({
@@ -116,7 +116,7 @@ class MealCard extends StatelessWidget {
     );
   }
 
-  Widget _buildMealItemTile(BuildContext context, MealItem item) {
+  Widget _buildMealItemTile(BuildContext context, DiaryMealItem item) {
     return InkWell(
       onTap: () => onEditItem(item),
       child: Padding(
@@ -194,7 +194,7 @@ class MealCard extends StatelessWidget {
     );
   }
 
-  void _showDeleteConfirmation(BuildContext context, MealItem item) {
+  void _showDeleteConfirmation(BuildContext context, DiaryMealItem item) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(

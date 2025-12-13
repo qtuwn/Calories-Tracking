@@ -3,20 +3,6 @@ import '../../../../domain/meal_plans/explore_meal_plan.dart';
 import '../../../../domain/meal_plans/meal_plan_goal_type.dart';
 import '../../../../shared/state/explore_meal_plan_providers.dart' as shared_providers;
 
-/// @Deprecated('Use shared_providers.exploreMealPlanRepositoryProvider instead')
-/// Legacy provider - redirects to shared provider
-@Deprecated('Use shared_providers.exploreMealPlanRepositoryProvider instead')
-final exploreMealPlanRepositoryProvider = Provider((ref) {
-  return ref.read(shared_providers.exploreMealPlanRepositoryProvider);
-});
-
-/// @Deprecated('Use shared_providers.exploreMealPlanServiceProvider instead')
-/// Legacy provider - redirects to shared provider
-@Deprecated('Use shared_providers.exploreMealPlanServiceProvider instead')
-final exploreMealPlanServiceProvider = Provider((ref) {
-  return ref.read(shared_providers.exploreMealPlanServiceProvider);
-});
-
 /// Provider for all meal plans including unpublished (admin use)
 /// Uses cache-first architecture from shared providers
 final allMealPlansProvider = shared_providers.allMealPlansProvider;

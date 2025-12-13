@@ -18,6 +18,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:calories_app/domain/meal_plans/user_meal_plan_service.dart';
+import 'package:calories_app/domain/meal_plans/user_meal_plan.dart';
 import 'package:calories_app/features/meal_plans/domain/models/shared/macros_summary.dart';
 import 'package:calories_app/features/meal_plans/domain/services/apply_custom_meal_plan_service.dart';
 import 'package:calories_app/shared/state/user_meal_plan_providers.dart' as user_meal_plan_providers;
@@ -76,6 +77,10 @@ class AppliedMealPlanController extends Notifier<AppliedMealPlanState> {
 
   @override
   AppliedMealPlanState build() {
+    // PHASE 2: Keep provider alive to prevent autoDispose during async operations
+    ref.keepAlive();
+    print('[ApplyExplore] 🧲 keepAlive enabled for AppliedMealPlanController');
+    
     _service = ref.read(user_meal_plan_providers.userMealPlanServiceProvider);
     return const AppliedMealPlanState();
   }
@@ -92,32 +97,46 @@ class AppliedMealPlanController extends Notifier<AppliedMealPlanState> {
     required Profile profile,
     required String userId,
   }) async {
-    if (!ref.mounted) return;
+    // PHASE 0: Entry logging with [ApplyExplore] tag
+    print('[ApplyExplore] 🚀 START applyExploreTemplate templateId=$templateId userId=$userId');
     
     try {
+      // PHASE 3: Removed early mounted check - allow service call to proceed
+      // Provider is kept alive via Phase 1 (UI watch) and Phase 2 (keepAlive)
+      print('[ApplyExplore] step: read auth user');
       debugPrint('[AppliedMealPlanController] [Explore] 🚀 Starting apply explore template flow for templateId: $templateId');
       debugPrint('[AppliedMealPlanController] [Explore] User ID: $userId');
       
-      state = state.copyWith(isLoading: true, errorMessage: null);
+      print('[ApplyExplore] step: update state to loading');
+      // PHASE 3: Guard state updates with mounted check
+      if (ref.mounted) {
+        state = state.copyWith(isLoading: true, errorMessage: null);
+      }
       
+      print('[ApplyExplore] step: get service');
       final service = _service ?? ref.read(user_meal_plan_providers.userMealPlanServiceProvider);
       if (service == null) {
+        print('[ApplyExplore] ❌ FAILED: Service not initialized');
         throw Exception('Service not initialized');
       }
       
-      // Load template from explore repository
+      // PHASE 4: Load template from explore repository (if not passed in)
+      print('[ApplyExplore] step: load template from repository');
       final exploreRepo = ref.read(explore_meal_plan_providers.exploreMealPlanRepositoryProvider);
       debugPrint('[AppliedMealPlanController] [Explore] 📋 Loading template: $templateId');
       
       final template = await exploreRepo.getPlanById(templateId);
       
       if (template == null) {
+        print('[ApplyExplore] ❌ FAILED: Template not found: $templateId');
         throw Exception('Template not found: $templateId');
       }
       
+      print('[ApplyExplore] step: template loaded - name="${template.name}", days=${template.durationDays}');
       debugPrint('[AppliedMealPlanController] [Explore] ✅ Template loaded: ${template.name}');
       debugPrint('[AppliedMealPlanController] [Explore] 📋 Template details: days=${template.durationDays}, kcal=${template.templateKcal}');
       
+      print('[ApplyExplore] step: prepare profile data');
       // Convert Profile to Map for service method (using correct Profile field names)
       final profileData = {
         'targetKcal': profile.targetKcal,
@@ -126,7 +145,8 @@ class AppliedMealPlanController extends Notifier<AppliedMealPlanState> {
         'fatGrams': profile.fatGrams,
       };
       
-      // Use service's atomic method to apply template (handles cache)
+      // PHASE 3: Call service
+      print('[ApplyExplore] step: call service.applyExploreTemplateAsActivePlan');
       debugPrint('[AppliedMealPlanController] [Explore] 🔄 Calling service.applyExploreTemplateAsActivePlan()...');
       final newPlan = await service.applyExploreTemplateAsActivePlan(
         userId: userId,
@@ -135,38 +155,118 @@ class AppliedMealPlanController extends Notifier<AppliedMealPlanState> {
         profileData: profileData,
       );
       
-      if (!ref.mounted) return;
+      print('[ApplyExplore] step: service returned planId=${newPlan.id}');
+      print('[ApplyExplore] ✅ service returned planId=${newPlan.id} templateId=$templateId');
+      
+      // PHASE 3: Post-condition verification - ensure active plan actually switched
+      // Note: Removed mounted check here - allow verification to proceed
+      print('[ApplyExplore] step: verify active plan switched');
+      final activePlanStream = ref.read(user_meal_plan_providers.userMealPlanRepositoryProvider).getActivePlan(userId);
+      UserMealPlan? verifiedActivePlan;
+      try {
+        verifiedActivePlan = await activePlanStream.first.timeout(
+          const Duration(milliseconds: 2000),
+          onTimeout: () {
+            print('[ApplyExplore] ⏱️ Active plan verification timeout');
+            return null;
+          },
+        );
+      } catch (e) {
+        print('[ApplyExplore] ⚠️ Active plan verification error: $e');
+        verifiedActivePlan = null;
+      }
+      
+      if (verifiedActivePlan == null) {
+        print('[ApplyExplore] ❌ verification failed: active plan is null');
+        throw StateError('Active plan verification failed: no active plan found after apply');
+      }
+      
+      if (verifiedActivePlan.id != newPlan.id) {
+        print('[ApplyExplore] ❌ verification failed: expected planId=${newPlan.id}, got planId=${verifiedActivePlan.id}');
+        throw StateError('Active plan verification failed: expected planId=${newPlan.id}, got planId=${verifiedActivePlan.id}');
+      }
+      
+      if (verifiedActivePlan.planTemplateId != templateId) {
+        print('[ApplyExplore] ⚠️ WARNING: active plan templateId mismatch (expected $templateId, got ${verifiedActivePlan.planTemplateId}), but planId matches');
+        // This is a warning, not a failure, since planId is the source of truth
+      }
+      
+      print('[ApplyExplore] step: verification passed - active plan switched to planId=${verifiedActivePlan.id}');
+      print('[ApplyExplore] ✅ verification passed: active plan switched to planId=${verifiedActivePlan.id}');
       
       debugPrint('[AppliedMealPlanController] [Explore] ✅ Successfully applied explore template: $templateId');
-      debugPrint('[AppliedMealPlanController] [Explore] ✅ New active plan: planId=${newPlan.id}, name="${newPlan.name}"');
+      print('[ApplyExplore] ✅ apply returned planId=${newPlan.id}');
       
-      // The service has already:
-      // 1. Cleared stale cache
-      // 2. Applied the plan via repository
-      // 3. Saved new plan to cache
-      // 
-      // The activeMealPlanProvider stream will automatically emit the new plan
-      // from Firestore, which will override any cached value.
-      // 
-      // We invalidate the provider to ensure it re-subscribes and gets the latest data.
-      debugPrint('[AppliedMealPlanController] [Explore] 🔄 Invalidating activeMealPlanProvider to trigger refresh...');
+      // CRITICAL: Wait for cache/Firestore to be ready before invalidating provider
+      print('[ApplyExplore] step: wait for cache confirmation');
+      final cache = ref.read(user_meal_plan_providers.userMealPlanCacheProvider);
+      bool cacheConfirmed = false;
+      const maxCacheAttempts = 5;
+      const cacheCheckDelay = Duration(milliseconds: 100);
+      
+      for (int attempt = 1; attempt <= maxCacheAttempts; attempt++) {
+        final cached = await cache.loadActivePlan(userId);
+        final cachedPlanId = cached?.id;
+        print('[ApplyExplore] ⏳ wait cache reflect newPlan attempt=$attempt cachedPlanId=$cachedPlanId');
+        
+        if (cached?.id == newPlan.id) {
+          cacheConfirmed = true;
+          print('[ApplyExplore] ✅ Cache confirmed new plan after $attempt attempt(s)');
+          break;
+        }
+        
+        if (attempt < maxCacheAttempts) {
+          await Future.delayed(cacheCheckDelay);
+        }
+      }
+      
+      // Fallback: If cache confirmation failed, delay 500ms before invalidation
+      if (!cacheConfirmed) {
+        print('[ApplyExplore] ⚠️ Cache confirmation failed after $maxCacheAttempts attempts, delaying 500ms before invalidation');
+        await Future.delayed(const Duration(milliseconds: 500));
+      }
+      
+      // PHASE 3: Invalidate provider
+      print('[ApplyExplore] step: invalidate activeMealPlanProvider');
+      print('[ApplyExplore] 🔄 invalidate activeMealPlanProvider planId=${newPlan.id}');
       ref.invalidate(user_meal_plan_providers.activeMealPlanProvider);
       
-      debugPrint('[AppliedMealPlanController] [Explore] ✅ Apply complete - activeMealPlanProvider will emit new plan from Firestore');
+      print('[ApplyExplore] step: update state to success');
+      print('[ApplyExplore] ✅ Apply complete - active plan verified and provider invalidated');
       
+      // PHASE 3: Guard state updates with mounted check - only check before state mutation
+      if (!ref.mounted) {
+        print('[ApplyExplore] ⚠️ Provider disposed after service call; skipping state updates');
+        print('[ApplyExplore] ✅ DONE (state update skipped due to disposal)');
+        return;
+      }
+      
+      debugPrint('[AppliedMealPlanController] [Explore] ✅ Apply complete - activeMealPlanProvider will emit new plan from Firestore');
       state = state.copyWith(
         isLoading: false,
         clearErrorMessage: true,
       );
+      
+      print('[ApplyExplore] ✅ DONE');
     } catch (e, stackTrace) {
-      if (!ref.mounted) return;
+      // PHASE 2: Print real error + stack trace and rethrow
+      print('[ApplyExplore] ❌ FAILED: $e');
+      print('[ApplyExplore] ❌ Error type: ${e.runtimeType}');
+      print('[ApplyExplore] ❌ Stack trace:');
+      debugPrintStack(stackTrace: stackTrace);
+      
+      if (!ref.mounted) {
+        print('[ApplyExplore] ⚠️ Widget unmounted, cannot update state');
+        rethrow;
+      }
+      
       debugPrint('[AppliedMealPlanController] [Explore] 🔥 Error applying explore template: $e');
       debugPrint('[AppliedMealPlanController] [Explore] 🔥 Stack trace: $stackTrace');
       state = state.copyWith(
         isLoading: false,
         errorMessage: 'Failed to apply template: ${e.toString()}',
       );
-      rethrow;
+      rethrow; // PHASE 2: Always rethrow
     }
   }
 

@@ -12,7 +12,7 @@ import 'package:calories_app/features/meal_plans/domain/models/shared/meal_type.
 import 'package:calories_app/features/meal_plans/state/admin_explore_meal_plan_controller.dart';
 import 'package:calories_app/shared/state/explore_meal_plan_providers.dart' as explore_shared;
 import 'package:calories_app/shared/state/food_providers.dart' as food_providers;
-import 'package:calories_app/features/meal_plans/domain/services/macros_summary_service.dart';
+import 'package:calories_app/domain/meal_plans/services/meal_nutrition_calculator.dart' show MealNutritionCalculator, MealNutritionException;
 import 'package:calories_app/domain/foods/food.dart';
 
 /// Admin editor for Explore meal plan templates
@@ -41,6 +41,12 @@ class _ExploreMealPlanAdminEditorPageState
   int _currentDayIndex = 1;
   bool _isSaving = false;
   String? _existingPlanId;
+  bool? _existingIsPublished;
+  bool? _existingIsEnabled;
+  DateTime? _existingCreatedAt;
+  List<String> _existingTags = [];
+  String? _existingDifficulty;
+  String? _existingCreatedBy;
   
   // In-memory storage for meals: dayIndex -> list of meals
   final Map<int, List<MealItem>> _mealsByDay = {};
@@ -74,6 +80,13 @@ class _ExploreMealPlanAdminEditorPageState
         _selectedGoalType = template.goalType.value;
         _selectedDurationDays = template.durationDays;
         _existingPlanId = widget.planId;
+        // Preserve all metadata when updating (don't overwrite form's settings)
+        _existingIsPublished = template.isPublished;
+        _existingIsEnabled = template.isEnabled;
+        _existingCreatedAt = template.createdAt;
+        _existingTags = List<String>.from(template.tags); // Preserve tags
+        _existingDifficulty = template.difficulty; // Preserve difficulty
+        _existingCreatedBy = template.createdBy; // Preserve createdBy
         
         // Load meals from repository
         await _loadMealsFromRepository();
@@ -122,16 +135,24 @@ class _ExploreMealPlanAdminEditorPageState
         await for (final mealSlots in mealsStream.take(1)) {
           if (mealSlots.isNotEmpty) {
             // Convert MealSlot to MealItem
-            final meals = mealSlots.map((slot) => MealItem(
-              id: slot.id,
-              mealType: slot.mealType,
-              foodId: slot.foodId ?? '',
-              servingSize: 1.0, // MealSlot doesn't have servingSize, use default
-              calories: slot.calories,
-              protein: slot.protein,
-              carb: slot.carb,
-              fat: slot.fat,
-            )).toList();
+            final meals = mealSlots.map((slot) {
+              // Validate foodId is non-empty (MealSlot.foodId is nullable but MealItem requires non-null)
+              final foodId = slot.foodId?.trim() ?? '';
+              if (foodId.isEmpty) {
+                throw Exception('MealSlot ${slot.id} has empty foodId - cannot convert to MealItem');
+              }
+              
+              return MealItem(
+                id: slot.id,
+                mealType: slot.mealType,
+                foodId: foodId,
+                servingSize: slot.servingSize, // Use servingSize from MealSlot (now required)
+                calories: slot.calories,
+                protein: slot.protein,
+                carb: slot.carb,
+                fat: slot.fat,
+              );
+            }).toList();
             _mealsByDay[dayIndex] = meals;
           }
           break;
@@ -514,6 +535,8 @@ class _ExploreMealPlanAdminEditorPageState
       String currentPlanId;
 
       // Create domain model
+      // When updating existing template, preserve all metadata from loaded template
+      // When creating new template, use defaults (form sets these to true)
       final template = ExploreMealPlan(
         id: _existingPlanId ?? '',
         name: name,
@@ -522,11 +545,14 @@ class _ExploreMealPlanAdminEditorPageState
         templateKcal: calories,
         durationDays: _selectedDurationDays!,
         mealsPerDay: 4, // Default
-        tags: [],
+        tags: _existingTags, // Preserve existing tags (loaded from template)
         isFeatured: false,
-        isPublished: false, // Default to unpublished
-        isEnabled: true,
-        createdAt: DateTime.now(),
+        isPublished: _existingIsPublished ?? false, // Preserve existing or default to false for new
+        isEnabled: _existingIsEnabled ?? true, // Preserve existing or default to true
+        createdAt: _existingCreatedAt ?? DateTime.now(), // Preserve original createdAt when updating
+        updatedAt: DateTime.now(), // Always update timestamp
+        createdBy: _existingCreatedBy, // Preserve createdBy from existing template
+        difficulty: _existingDifficulty, // Preserve difficulty from existing template
       );
 
         if (wasNewTemplate) {
@@ -969,14 +995,29 @@ class _AdminDayMealsEditorState extends ConsumerState<_AdminDayMealsEditor> {
   }
 
   Map<String, double> _calculateDayTotals(List<MealItem> meals) {
-    // Use domain service for calculations
-    final macros = MacrosSummaryService.sumMacros(meals);
-    return {
-      'calories': macros.calories,
-      'protein': macros.protein,
-      'carb': macros.carb,
-      'fat': macros.fat,
-    };
+      // Use domain service for calculations
+      try {
+        final nutrition = MealNutritionCalculator.sumMeals(
+          meals,
+          planId: widget.planId, // For admin templates, use planId
+          dayIndex: widget.dayIndex,
+        );
+      return {
+        'calories': nutrition.calories,
+        'protein': nutrition.protein,
+        'carb': nutrition.carb,
+        'fat': nutrition.fat,
+      };
+    } on MealNutritionException catch (e) {
+      // Log error but return zeros to prevent UI crash
+      debugPrint('[ExploreMealPlanAdminEditorPage] ⚠️ Nutrition calculation error: $e');
+      return {
+        'calories': 0.0,
+        'protein': 0.0,
+        'carb': 0.0,
+        'fat': 0.0,
+      };
+    }
   }
 
   Widget _buildMealsList() {
@@ -1354,10 +1395,7 @@ class _AdminAddFoodDialogState extends ConsumerState<_AdminAddFoodDialog> {
       final carb = food.carbsPer100g * multiplier;
       final fat = food.fatPer100g * multiplier;
 
-      // For admin templates, we don't check user-specific kcal limits
-      // Templates are generic and will be personalized when users apply them
-
-      // Create meal item
+      // Create meal item for validation
       final mealItem = MealItem(
         id: '', // Will be auto-generated when saving to Firestore
         mealType: widget.mealType.value,
@@ -1368,6 +1406,27 @@ class _AdminAddFoodDialogState extends ConsumerState<_AdminAddFoodDialog> {
         carb: carb,
         fat: fat,
       );
+
+      // Validate nutrition using domain service
+      try {
+        MealNutritionCalculator.computeFromMealItem(
+          mealItem,
+          planId: widget.planId, // For admin templates, use planId
+          dayIndex: widget.dayIndex,
+        );
+      } on MealNutritionException catch (e) {
+        debugPrint('[AdminAddFoodDialog] ⚠️ Invalid nutrition values: $e');
+        if (mounted) {
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Giá trị dinh dưỡng không hợp lệ: ${e.message}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
 
       // Add to local state via callback
       widget.onMealAdded(mealItem);
@@ -1487,9 +1546,7 @@ class _AdminEditFoodDialogState extends ConsumerState<_AdminEditFoodDialog> {
       final carb = food.carbsPer100g * multiplier;
       final fat = food.fatPer100g * multiplier;
 
-      // For admin templates, no user-specific kcal validation
-
-      // Update meal item in local state
+      // Create updated meal item for validation
       final updatedMealItem = widget.item.copyWith(
         servingSize: servingSize,
         calories: calories,
@@ -1497,6 +1554,26 @@ class _AdminEditFoodDialogState extends ConsumerState<_AdminEditFoodDialog> {
         carb: carb,
         fat: fat,
       );
+
+      // Validate nutrition using domain service
+      try {
+        MealNutritionCalculator.computeFromMealItem(
+          updatedMealItem,
+          planId: widget.planId, // For admin templates, use planId
+          dayIndex: widget.dayIndex,
+        );
+      } on MealNutritionException catch (e) {
+        debugPrint('[AdminEditFoodDialog] ⚠️ Invalid nutrition values: $e');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Giá trị dinh dưỡng không hợp lệ: ${e.message}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
 
       // Update in local state via callback
       widget.onMealUpdated(updatedMealItem);

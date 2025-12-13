@@ -10,12 +10,11 @@ import '../../data/meal_plans/shared_prefs_explore_meal_plan_cache.dart';
 import 'profile_providers.dart'; // For sharedPreferencesProvider
 
 /// Provider for ExploreMealPlanCache implementation
-final exploreMealPlanCacheProvider = Provider<ExploreMealPlanCache?>((ref) {
-  final prefs = ref.watch(sharedPreferencesProvider).value;
-  if (prefs == null) {
-    debugPrint('[ExploreMealPlanCacheProvider] ⚠️ SharedPreferences not ready, returning null');
-    return null; // Service will handle null cache gracefully
-  }
+/// 
+/// SharedPreferences is guaranteed to be available since it's preloaded in main.dart
+/// and provided via ProviderScope.overrides. No null return needed.
+final exploreMealPlanCacheProvider = Provider<ExploreMealPlanCache>((ref) {
+  final prefs = ref.watch(sharedPreferencesProvider);
   return SharedPrefsExploreMealPlanCache(prefs);
 });
 
@@ -25,10 +24,12 @@ final exploreMealPlanRepositoryProvider = Provider<ExploreMealPlanRepository>((r
 });
 
 /// Provider for ExploreMealPlanService
+/// 
+/// Cache is guaranteed to be non-null since SharedPreferences is preloaded in main.dart
 final exploreMealPlanServiceProvider = Provider<ExploreMealPlanService>((ref) {
   final repository = ref.read(exploreMealPlanRepositoryProvider);
   final cache = ref.read(exploreMealPlanCacheProvider);
-  return ExploreMealPlanService(repository, cache);
+  return ExploreMealPlanService(repository, cache); // cache is now always non-null
 });
 
 /// Stream provider for published meal plans, with cache-first logic.

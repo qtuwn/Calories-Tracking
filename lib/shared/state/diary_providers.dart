@@ -10,12 +10,11 @@ import '../../data/diary/shared_prefs_diary_cache.dart';
 import 'profile_providers.dart'; // For sharedPreferencesProvider
 
 /// Provider for DiaryCache implementation
+/// 
+/// SharedPreferences is guaranteed to be available since it's preloaded in main.dart
+/// and provided via ProviderScope.overrides. No Dummy cache needed.
 final diaryCacheProvider = Provider<DiaryCache>((ref) {
-  final prefs = ref.watch(sharedPreferencesProvider).value;
-  if (prefs == null) {
-    debugPrint('[DiaryCacheProvider] ⚠️ SharedPreferences not ready, returning dummy cache');
-    return _DummyDiaryCache(); // Fallback
-  }
+  final prefs = ref.watch(sharedPreferencesProvider);
   return SharedPrefsDiaryCache(prefs);
 });
 
@@ -61,27 +60,4 @@ final diaryLoadOnceProvider = FutureProvider.autoDispose
   return service.loadEntriesForDayOnce(params.uid, params.day);
 });
 
-/// Dummy DiaryCache implementation for when SharedPreferences is not ready
-class _DummyDiaryCache implements DiaryCache {
-  @override
-  Future<void> clearAllForUser(String uid) async {
-    debugPrint('[DummyDiaryCache] clearAllForUser called (no-op)');
-  }
-
-  @override
-  Future<void> clearEntriesForDay(String uid, DateTime day) async {
-    debugPrint('[DummyDiaryCache] clearEntriesForDay called (no-op)');
-  }
-
-  @override
-  Future<List<DiaryEntry>> loadEntriesForDay(String uid, DateTime day) async {
-    debugPrint('[DummyDiaryCache] loadEntriesForDay called (no-op)');
-    return [];
-  }
-
-  @override
-  Future<void> saveEntriesForDay(String uid, DateTime day, List<DiaryEntry> entries) async {
-    debugPrint('[DummyDiaryCache] saveEntriesForDay called (no-op)');
-  }
-}
 

@@ -1,9 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import '../../domain/meal_plans/explore_meal_plan.dart';
 import '../../domain/meal_plans/explore_meal_plan_repository.dart';
 import '../../domain/meal_plans/meal_plan_goal_type.dart';
+import '../../domain/meal_plans/services/meal_nutrition_calculator.dart' show MealNutritionCalculator, MealNutrition;
 import 'explore_meal_plan_dto.dart';
+import 'explore_meal_plan_query_exception.dart';
 
 /// Firestore implementation of ExploreMealPlanRepository
 /// 
@@ -19,7 +22,9 @@ class FirestoreExploreMealPlanRepository implements ExploreMealPlanRepository {
 
   @override
   Stream<List<ExploreMealPlan>> watchPublishedPlans() {
-    debugPrint('[FirestoreExploreMealPlanRepository] 🔵 Watching published plans');
+    debugPrint(
+        '[FirestoreExploreMealPlanRepository] 🔵 Watching published plans '
+        '(query: meal_plans where isPublished==true, isEnabled==true orderBy name)');
 
     return _firestore
         .collection('meal_plans')
@@ -47,6 +52,41 @@ class FirestoreExploreMealPlanRepository implements ExploreMealPlanRepository {
     }).handleError((error) {
       debugPrint(
           '[FirestoreExploreMealPlanRepository] 🔥 Error watching published plans: $error');
+      
+      // Transform FirebaseException to typed exception with user-friendly message
+      if (error is FirebaseException) {
+        final code = error.code;
+        final message = error.message ?? '';
+        
+        debugPrint(
+            '[FirestoreExploreMealPlanRepository] 🔥 FirebaseException code=$code, message=$message');
+        
+        if (code == 'failed-precondition') {
+          // Composite index missing
+          throw ExploreMealPlanQueryException(
+            'Firestore index required for published plans query. '
+            'Create composite index: isPublished ASC, isEnabled ASC, name ASC.',
+            firebaseErrorCode: code,
+            queryContext: 'watchPublishedPlans',
+          );
+        } else if (code == 'permission-denied') {
+          throw ExploreMealPlanQueryException(
+            'Permission denied: Cannot read published meal plans. '
+            'Check Firestore security rules.',
+            firebaseErrorCode: code,
+            queryContext: 'watchPublishedPlans',
+          );
+        } else {
+          // Generic Firebase error - wrap with context
+          throw ExploreMealPlanQueryException(
+            'Failed to load published meal plans: $message',
+            firebaseErrorCode: code,
+            queryContext: 'watchPublishedPlans',
+          );
+        }
+      }
+      
+      // Re-throw non-Firebase exceptions as-is
       throw error;
     });
   }
@@ -248,9 +288,28 @@ class FirestoreExploreMealPlanRepository implements ExploreMealPlanRepository {
           .orderBy('mealType')
           .snapshots()
           .map((mealsSnapshot) {
-        final meals = mealsSnapshot.docs
-            .map((doc) => MealSlotDto.fromFirestore(doc).toDomain())
-            .toList();
+        final meals = <MealSlot>[];
+        for (final doc in mealsSnapshot.docs) {
+          try {
+            final dto = MealSlotDto.fromFirestore(doc);
+            final meal = dto.toDomain();
+            
+            // Additional validation: ensure foodId is non-empty and servingSize > 0
+            // (DTO parsing already validates servingSize, but defensive check)
+            if (meal.foodId != null && meal.foodId!.trim().isEmpty) {
+              debugPrint(
+                  '[FirestoreExploreMealPlanRepository] ⚠️ Empty foodId in meal ${doc.id}, skipping');
+              continue;
+            }
+            
+            meals.add(meal);
+          } catch (e) {
+            // Log error once per failing doc, then propagate
+            debugPrint(
+                '[FirestoreExploreMealPlanRepository] 🔥 Error parsing meal ${doc.id}: $e');
+            rethrow; // Propagate error instead of silently skipping
+          }
+        }
 
         debugPrint(
             '[FirestoreExploreMealPlanRepository] ✅ Loaded ${meals.length} meals');
@@ -391,25 +450,20 @@ class FirestoreExploreMealPlanRepository implements ExploreMealPlanRepository {
             .collection('days')
             .doc();
 
-        // Calculate day totals from meals
-        double totalCalories = 0.0;
-        double totalProtein = 0.0;
-        double totalCarb = 0.0;
-        double totalFat = 0.0;
-
-        for (final meal in mealsToSave) {
-          totalCalories += meal.calories;
-          totalProtein += meal.protein;
-          totalCarb += meal.carb;
-          totalFat += meal.fat;
-        }
+        // Calculate day totals from meals using domain service
+        // This validates all meals before any Firestore writes
+        final totals = MealNutritionCalculator.sumMealSlots(
+          mealsToSave,
+          planId: planId,
+          dayIndex: dayIndex,
+        );
 
         await dayRef.set({
           'dayIndex': dayIndex,
-          'totalCalories': totalCalories,
-          'protein': totalProtein,
-          'carb': totalCarb,
-          'fat': totalFat,
+          'totalCalories': totals.calories,
+          'protein': totals.protein,
+          'carb': totals.carb,
+          'fat': totals.fat,
         });
       } else {
         dayRef = daysQuery.docs.first.reference;
@@ -433,38 +487,43 @@ class FirestoreExploreMealPlanRepository implements ExploreMealPlanRepository {
         batch.set(mealRef, mealDto.toFirestore());
       }
 
-      // Recalculate day totals
-      double totalCalories = 0.0;
-      double totalProtein = 0.0;
-      double totalCarb = 0.0;
-      double totalFat = 0.0;
-
-      for (final meal in mealsToSave) {
-        totalCalories += meal.calories;
-        totalProtein += meal.protein;
-        totalCarb += meal.carb;
-        totalFat += meal.fat;
-      }
+      // Recalculate day totals using domain service
+      // First, compute totals from meals being saved
+      final savedTotals = MealNutritionCalculator.sumMealSlots(
+        mealsToSave,
+        planId: planId,
+        dayIndex: dayIndex,
+      );
 
       // Get existing meals that aren't being deleted
       final existingMealsSnapshot = await dayRef.collection('meals').get();
+      final existingMeals = <MealSlot>[];
       for (final mealDoc in existingMealsSnapshot.docs) {
         if (!mealsToDelete.contains(mealDoc.id) &&
             !mealsToSave.any((m) => m.id == mealDoc.id)) {
           final meal = MealSlotDto.fromFirestore(mealDoc).toDomain();
-          totalCalories += meal.calories;
-          totalProtein += meal.protein;
-          totalCarb += meal.carb;
-          totalFat += meal.fat;
+          existingMeals.add(meal);
         }
       }
 
-      // Update day totals
+      // Compute totals from existing meals
+      final existingTotals = existingMeals.isEmpty
+          ? MealNutrition.empty
+          : MealNutritionCalculator.sumMealSlots(
+              existingMeals,
+              planId: planId,
+              dayIndex: dayIndex,
+            );
+
+      // Combine totals (domain service handles validation)
+      final combinedTotals = savedTotals.add(existingTotals);
+
+      // Update day totals using domain-calculated values
       batch.update(dayRef, {
-        'totalCalories': totalCalories,
-        'protein': totalProtein,
-        'carb': totalCarb,
-        'fat': totalFat,
+        'totalCalories': combinedTotals.calories,
+        'protein': combinedTotals.protein,
+        'carb': combinedTotals.carb,
+        'fat': combinedTotals.fat,
       });
 
       await batch.commit();

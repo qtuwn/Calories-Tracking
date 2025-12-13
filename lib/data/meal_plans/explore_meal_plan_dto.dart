@@ -206,6 +206,7 @@ class MealSlotDto {
   final double fat;
   final String? foodId;
   final String? description;
+  final double servingSize; // Required: must be > 0
 
   MealSlotDto({
     required this.id,
@@ -217,10 +218,29 @@ class MealSlotDto {
     required this.fat,
     this.foodId,
     this.description,
+    required this.servingSize,
   });
 
   factory MealSlotDto.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
+    
+    // Parse servingSize with strict validation
+    final servingSizeValue = data['servingSize'];
+    if (servingSizeValue == null) {
+      throw FormatException(
+        'Missing servingSize in explore template slot (docId=${doc.id}). '
+        'Older templates without servingSize cannot be applied. Please update the template.',
+      );
+    }
+    
+    final servingSizeDouble = (servingSizeValue as num?)?.toDouble();
+    if (servingSizeDouble == null || servingSizeDouble <= 0) {
+      throw FormatException(
+        'Invalid servingSize in explore template slot (docId=${doc.id}): $servingSizeValue. '
+        'servingSize must be a positive number.',
+      );
+    }
+    
     return MealSlotDto(
       id: doc.id,
       name: data['name'] as String? ?? '',
@@ -231,6 +251,7 @@ class MealSlotDto {
       fat: (data['fat'] as num?)?.toDouble() ?? 0.0,
       foodId: data['foodId'] as String?,
       description: data['description'] as String?,
+      servingSize: servingSizeDouble,
     );
   }
 
@@ -242,6 +263,7 @@ class MealSlotDto {
       'protein': protein,
       'carb': carb,
       'fat': fat,
+      'servingSize': servingSize, // Required: always write servingSize
     };
 
     if (foodId != null) map['foodId'] = foodId;
@@ -261,6 +283,7 @@ class MealSlotDto {
       fat: fat,
       foodId: foodId,
       description: description,
+      servingSize: servingSize,
     );
   }
 
@@ -275,6 +298,7 @@ class MealSlotDto {
       fat: meal.fat,
       foodId: meal.foodId,
       description: meal.description,
+      servingSize: meal.servingSize,
     );
   }
 }

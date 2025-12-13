@@ -10,12 +10,11 @@ import '../../data/foods/shared_prefs_food_cache.dart';
 import 'profile_providers.dart'; // For sharedPreferencesProvider
 
 /// Provider for FoodCache implementation
+/// 
+/// SharedPreferences is guaranteed to be available since it's preloaded in main.dart
+/// and provided via ProviderScope.overrides. No Dummy cache needed.
 final foodCacheProvider = Provider<FoodCache>((ref) {
-  final prefs = ref.watch(sharedPreferencesProvider).value;
-  if (prefs == null) {
-    debugPrint('[FoodCacheProvider] ⚠️ SharedPreferences not ready, returning dummy cache');
-    return _DummyFoodCache(); // Fallback
-  }
+  final prefs = ref.watch(sharedPreferencesProvider);
   return SharedPrefsFoodCache(prefs);
 });
 
@@ -53,22 +52,27 @@ final foodSearchProvider = StreamProvider.family<List<Food>, String>((ref, query
   return service.searchWithCache(query);
 });
 
-/// Dummy FoodCache implementation for when SharedPreferences is not ready
-class _DummyFoodCache implements FoodCache {
-  @override
-  Future<void> clear() async {
-    debugPrint('[DummyFoodCache] clear called (no-op)');
+/// Future provider for getting a single food by ID, with memoization.
+/// 
+/// This provider caches results per foodId to prevent repeated lookups
+/// during a single page session. Use this instead of calling repository.getById directly.
+/// 
+/// Example:
+/// ```dart
+/// final foodAsync = ref.watch(foodByIdProvider('food-123'));
+/// foodAsync.when(
+///   data: (food) => Text(food?.name ?? 'Unknown'),
+///   loading: () => CircularProgressIndicator(),
+///   error: (e, s) => Text('Error: $e'),
+/// );
+/// ```
+final foodByIdProvider = FutureProvider.autoDispose.family<Food?, String>((ref, foodId) {
+  if (foodId.isEmpty) {
+    return Future.value(null);
   }
+  
+  final repository = ref.read(foodRepositoryProvider);
+  return repository.getById(foodId);
+});
 
-  @override
-  Future<List<Food>> loadAll() async {
-    debugPrint('[DummyFoodCache] loadAll called (no-op)');
-    return [];
-  }
-
-  @override
-  Future<void> saveAll(List<Food> foods) async {
-    debugPrint('[DummyFoodCache] saveAll called (no-op)');
-  }
-}
 

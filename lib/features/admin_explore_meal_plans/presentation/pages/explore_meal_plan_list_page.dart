@@ -4,6 +4,7 @@ import '../../../../domain/meal_plans/explore_meal_plan.dart';
 import '../../../../domain/meal_plans/meal_plan_goal_type.dart';
 import '../state/explore_meal_plan_providers.dart'; // For allMealPlansProvider and mealPlanSearchProvider
 import 'explore_meal_plan_form_page.dart';
+import '../../../../features/meal_plans/presentation/widgets/difficulty_helper.dart';
 
 /// Admin page for listing and managing explore meal plans
 class ExploreMealPlanListPage extends ConsumerStatefulWidget {
@@ -150,19 +151,53 @@ class _ExploreMealPlanListPageState
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            if (plan.description.isNotEmpty) ...[
+              Text(
+                plan.description,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Colors.grey[600],
+                ),
+              ),
+              const SizedBox(height: 4),
+            ],
             Text('${plan.goalType.displayName} • ${plan.templateKcal} kcal/ngày'),
             Text('${plan.durationDays} ngày • ${plan.mealsPerDay} bữa/ngày'),
-            if (plan.tags.isNotEmpty)
+            if (plan.tags.isNotEmpty || plan.difficulty != null) ...[
+              const SizedBox(height: 4),
               Wrap(
                 spacing: 4,
-                children: plan.tags
-                    .take(3)
-                    .map((tag) => Chip(
-                          label: Text(tag, style: const TextStyle(fontSize: 10)),
-                          padding: EdgeInsets.zero,
-                        ))
-                    .toList(),
+                runSpacing: 4,
+                children: [
+                  // Tags
+                  ...plan.tags.take(3).map((tag) => Chip(
+                        label: Text(tag, style: const TextStyle(fontSize: 10)),
+                        padding: EdgeInsets.zero,
+                      )),
+                  // Difficulty badge
+                  if (plan.difficulty != null)
+                    Chip(
+                      avatar: Icon(
+                        DifficultyHelper.difficultyToIcon(plan.difficulty),
+                        size: 12,
+                        color: DifficultyHelper.difficultyToColor(plan.difficulty),
+                      ),
+                      label: Text(
+                        DifficultyHelper.difficultyToLabel(plan.difficulty) ?? plan.difficulty!,
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: DifficultyHelper.difficultyToColor(plan.difficulty) ?? Colors.grey[700],
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      padding: EdgeInsets.zero,
+                      backgroundColor: (DifficultyHelper.difficultyToColor(plan.difficulty) ?? Colors.grey)
+                          .withValues(alpha: 0.18),
+                    ),
+                ],
               ),
+            ],
           ],
         ),
         trailing: Row(

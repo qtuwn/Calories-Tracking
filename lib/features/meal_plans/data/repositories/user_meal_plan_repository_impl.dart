@@ -2,13 +2,44 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:calories_app/domain/meal_plans/user_meal_plan.dart';
 import 'package:calories_app/domain/meal_plans/user_meal_plan_repository.dart' show MealItem, MealPlanDay, UserMealPlanRepository;
-import 'package:calories_app/domain/meal_plans/explore_meal_plan.dart' show ExploreMealPlan;
+import 'package:calories_app/domain/meal_plans/services/meal_nutrition_calculator.dart' show MealNutritionCalculator, MealNutrition;
+import 'package:calories_app/domain/meal_plans/services/meal_plan_invariants.dart' show MealPlanInvariants;
+import 'package:calories_app/domain/meal_plans/explore_meal_plan.dart' show ExploreMealPlan, MealSlot;
 import 'package:calories_app/domain/meal_plans/explore_meal_plan_repository.dart';
 import 'package:calories_app/data/meal_plans/firestore_explore_meal_plan_repository.dart' show FirestoreExploreMealPlanRepository;
 import 'package:calories_app/features/meal_plans/domain/services/apply_explore_template_service.dart';
 import 'package:calories_app/domain/profile/profile.dart';
 import 'package:calories_app/features/meal_plans/data/dto/user_meal_plan_dto.dart';
 import 'package:calories_app/features/meal_plans/data/dto/meal_item_dto.dart';
+
+/// Exception thrown when applying an explore template fails due to invalid data
+class MealPlanApplyException implements Exception {
+  final String message;
+  final String userId;
+  final String templateId;
+  final int dayIndex;
+  final int slotIndex;
+  final String mealType;
+  final Map<String, dynamic>? details;
+
+  MealPlanApplyException(
+    this.message, {
+    required this.userId,
+    required this.templateId,
+    required this.dayIndex,
+    required this.slotIndex,
+    required this.mealType,
+    this.details,
+  });
+
+  @override
+  String toString() {
+    final detailsStr = details != null ? ', details: $details' : '';
+    return 'MealPlanApplyException: $message '
+        '(userId=$userId, templateId=$templateId, dayIndex=$dayIndex, '
+        'slotIndex=$slotIndex, mealType=$mealType$detailsStr)';
+  }
+}
 
 /// Firestore implementation of UserMealPlanRepository
 /// 
@@ -35,6 +66,9 @@ class UserMealPlanRepositoryImpl implements UserMealPlanRepository {
       isActive: plan.isActive,
       createdAt: plan.createdAt,
       updatedAt: plan.updatedAt,
+      description: plan.description,
+      tags: plan.tags,
+      difficulty: plan.difficulty,
     );
   }
 
@@ -557,9 +591,6 @@ class UserMealPlanRepositoryImpl implements UserMealPlanRepository {
     String userId,
     int dayIndex,
   ) {
-    // Log only once when stream is created
-    debugPrint('[UserMealPlanRepository] 🔵 Setting up stream for meals: planId=$planId, userId=$userId, dayIndex=$dayIndex');
-    
     final daysRef = _firestore
         .collection('users')
         .doc(userId)
@@ -570,7 +601,14 @@ class UserMealPlanRepositoryImpl implements UserMealPlanRepository {
         .limit(1);
     
     // Use a class-level cache to track logged states per (planId, dayIndex)
-    final streamKey = '$planId:$dayIndex';
+    final streamKey = '$planId:$userId:$dayIndex';
+    
+    // Log only once per unique stream key to reduce spam
+    if (!_streamSetupLogged.containsKey(streamKey)) {
+      debugPrint('[UserMealPlanRepository] 🔵 Setting up stream for meals: planId=$planId, userId=$userId, dayIndex=$dayIndex');
+      _streamSetupLogged[streamKey] = true;
+    }
+    
     if (!_dayNotFoundLogged.containsKey(streamKey)) {
       _dayNotFoundLogged[streamKey] = false;
     }
@@ -597,7 +635,8 @@ class UserMealPlanRepositoryImpl implements UserMealPlanRepository {
       final dayDoc = daySnapshot.docs.first;
       
       // Day document exists - stream meals from its subcollection
-      // This stream will only emit when meals change, not when the day document changes
+      // IMPORTANT: Firestore snapshots() emits immediately with current state (even if empty)
+      // This ensures the stream always emits at least once, preventing infinite loading
       return dayDoc.reference
           .collection('meals')
           .orderBy('mealType')
@@ -628,6 +667,7 @@ class UserMealPlanRepositoryImpl implements UserMealPlanRepository {
   }
   
   // Class-level cache to prevent repeated logging
+  static final Map<String, bool> _streamSetupLogged = {};
   static final Map<String, bool> _dayNotFoundLogged = {};
   static final Map<String, int> _lastMealCounts = {};
 
@@ -675,6 +715,28 @@ class UserMealPlanRepositoryImpl implements UserMealPlanRepository {
         dayRef = daySnapshot.docs.first.reference;
       }
       
+      // Validate all meals using invariant validator BEFORE creating batch
+      // This ensures atomicity - if validation fails, no partial writes occur
+      final dayDocPath = 'users/$userId/user_meal_plans/$planId/days/$dayIndex';
+      for (final meal in mealsToSave) {
+        MealPlanInvariants.validateMealItem(
+          meal,
+          userId: userId,
+          planId: planId,
+          dayIndex: dayIndex,
+          docPath: '$dayDocPath/meals/${meal.id}',
+        );
+      }
+      
+      // Compute totals using domain service (also validates)
+      final totals = MealNutritionCalculator.sumMeals(
+        mealsToSave,
+        planId: planId,
+        userId: userId,
+        dayIndex: dayIndex,
+      );
+      
+      // Only create batch after validation succeeds
       final batch = _firestore.batch();
       
       // Create/update day document
@@ -712,25 +774,12 @@ class UserMealPlanRepositoryImpl implements UserMealPlanRepository {
         batch.delete(mealRef);
       }
       
-      // Calculate totals
-      double totalCalories = 0.0;
-      double totalProtein = 0.0;
-      double totalCarb = 0.0;
-      double totalFat = 0.0;
-      
-      for (final meal in mealsToSave) {
-        totalCalories += meal.calories;
-        totalProtein += meal.protein;
-        totalCarb += meal.carb;
-        totalFat += meal.fat;
-      }
-      
-      // Update day totals
+      // Update day totals using domain-calculated values
       batch.update(dayRef, {
-        'totalCalories': totalCalories,
-        'protein': totalProtein,
-        'carb': totalCarb,
-        'fat': totalFat,
+        'totalCalories': totals.calories,
+        'protein': totals.protein,
+        'carb': totals.carb,
+        'fat': totals.fat,
       });
       
       debugPrint('[UserMealPlanRepository] 💾 Committing batch for day $dayIndex...');
@@ -743,7 +792,7 @@ class UserMealPlanRepositoryImpl implements UserMealPlanRepository {
         debugPrint(
           '[UserMealPlanRepository] ✅ Batch committed: '
           '${mealsToSave.length} saved, ${mealsToDelete.length} deleted, '
-          'totals: ${totalCalories.toInt()} kcal',
+          'totals: ${totals.calories.toInt()} kcal',
         );
         debugPrint('[UserMealPlanRepository] ✅ Verified: meals saved to $collectionPath');
         
@@ -864,6 +913,8 @@ class UserMealPlanRepositoryImpl implements UserMealPlanRepository {
       
       debugPrint('[UserMealPlanRepository] [ApplyExplore] 🔄 Creating new active plan: $newPlanId');
       debugPrint('[UserMealPlanRepository] [ApplyExplore] Plan details: name="${planToSave.name}", type=${planToSave.type.value}, planTemplateId=${planToSave.planTemplateId}');
+      debugPrint('[UserMealPlanRepository] [ApplyExplore] 🧾 userPlan meta: desc="${planToSave.description}", tags=${planToSave.tags}, difficulty=${planToSave.difficulty}');
+      debugPrint('[UserMealPlanRepository] [ApplyExplore] 🧾 Firestore payload includes: description=${planData.containsKey('description') ? planData['description'] : 'null'}, tags=${planData['tags']}, difficulty=${planData.containsKey('difficulty') ? planData['difficulty'] : 'null'}');
       
       batch.set(newPlanRef, planData);
       debugPrint('[UserMealPlanRepository] [ApplyExplore] ✅ New plan $newPlanId will be created as active');
@@ -902,46 +953,103 @@ class UserMealPlanRepositoryImpl implements UserMealPlanRepository {
       final exploreRepo = _exploreRepo;
       
       int totalMealsCopied = 0;
-      int daysWithMeals = 0;
+      int totalDaysCreated = 0;
+      final writtenDayPaths = <String>[];
       
-      // Process days in batches to stay under Firestore limits (500 operations per batch)
-      const maxOperationsPerBatch = 500;
+      // Process days in batches to stay under Firestore limits (≤450 operations per batch for safety)
+      const maxOperationsPerBatch = 450;
       int currentBatchOperations = 0;
       WriteBatch? currentBatch;
       
       for (int dayIndex = 1; dayIndex <= template.durationDays; dayIndex++) {
-        debugPrint('[UserMealPlanRepository] [ApplyExplore] 📋 Loading meals for day $dayIndex from template...');
+        print('[UserMealPlanRepository] [ApplyExplore] 📋 Copying day $dayIndex...');
         
         // Get meals for this day from template (returns MealSlot)
         final templateMealsStream = exploreRepo.getDayMeals(templateId, dayIndex);
         final templateMealSlots = await templateMealsStream.first;
         
+        // Enforce invariant: each day MUST have at least 1 meal
+        // DO NOT skip missing days silently - fail-fast with exception
         if (templateMealSlots.isEmpty) {
-          debugPrint('[UserMealPlanRepository] [ApplyExplore] ℹ️ No meals found for day $dayIndex in template');
-          continue;
+          final errorMsg = 'Template day $dayIndex has no meals. Each day must have at least 1 meal. (templateId=$templateId, userId=$userId, planId=$newPlanId)';
+          debugPrint('[UserMealPlanRepository] [ApplyExplore] 🔥 ERROR: $errorMsg');
+          throw Exception(errorMsg);
         }
         
-        debugPrint('[UserMealPlanRepository] [ApplyExplore] 📋 Found ${templateMealSlots.length} meals for day $dayIndex');
+        print('[UserMealPlanRepository] [ApplyExplore] 📋 Found ${templateMealSlots.length} meals for day $dayIndex');
         
+        // STEP 2.1: Validate ALL slots for this day BEFORE any Firestore writes
+        // This ensures atomicity - if validation fails, no partial writes occur
+        // Use domain invariant validator (strict validation)
+        final validatedSlots = <({MealSlot slot, String foodId, double servingSize})>[];
+        final validationDocPath = 'users/$userId/user_meal_plans/$newPlanId/days/$dayIndex';
+        
+        for (var i = 0; i < templateMealSlots.length; i++) {
+          final mealSlot = templateMealSlots[i];
+          
+          // Validate using domain invariant validator
+          MealPlanInvariants.validateMealSlot(
+            mealSlot,
+            templateId: templateId,
+            dayIndex: dayIndex,
+            slotIndex: i,
+            docPath: '$validationDocPath/slots/$i',
+          );
+          
+          // Validate foodId (required, non-empty) using existing helper
+          final validatedFoodId = requireNonEmptyForTesting(
+            mealSlot.foodId,
+            'foodId',
+            userId: userId,
+            templateId: templateId,
+            dayIndex: dayIndex,
+            slotIndex: i,
+            mealType: mealSlot.mealType,
+          );
+          
+          // Validate servingSize (now required in MealSlot domain model)
+          final validatedServingSize = requirePositiveForTesting(
+            mealSlot.servingSize,
+            'servingSize',
+            userId: userId,
+            templateId: templateId,
+            dayIndex: dayIndex,
+            slotIndex: i,
+            mealType: mealSlot.mealType,
+          );
+          
+          // Store validated slot for later use
+          validatedSlots.add((
+            slot: mealSlot,
+            foodId: validatedFoodId,
+            servingSize: validatedServingSize,
+          ));
+        }
+        
+        // STEP 2.2: Only after validation succeeds, proceed with Firestore writes
         // Check if we need a new batch
-        // Each day needs: 1 day doc + N meal docs
-        final operationsNeeded = 1 + templateMealSlots.length;
+        // Each day needs: 1 day doc + N meal docs + 1 day update for totals = 2 + N operations
+        final operationsNeeded = 2 + validatedSlots.length;
         if (currentBatch == null || (currentBatchOperations + operationsNeeded) > maxOperationsPerBatch) {
           // Commit previous batch if exists
           if (currentBatch != null) {
-            debugPrint('[UserMealPlanRepository] [ApplyExplore] 💾 Committing batch with $currentBatchOperations operations...');
+            print('[UserMealPlanRepository] [ApplyExplore] 💾 Committing batch with $currentBatchOperations operations...');
             await currentBatch.commit();
-            debugPrint('[UserMealPlanRepository] [ApplyExplore] ✅ Batch committed');
+            print('[UserMealPlanRepository] [ApplyExplore] ✅ Batch committed');
           }
           // Start new batch
           currentBatch = _firestore.batch();
           currentBatchOperations = 0;
         }
         
-        // Create/update day document
+        // Create day document with dayIndex field (queryable by dayIndex)
+        final dayDocPathForLogging = 'users/$userId/user_meal_plans/$newPlanId/days/$dayIndex';
         final dayRef = newPlanRef
             .collection('days')
-            .doc(); // Use auto-generated ID
+            .doc(); // Use auto-generated ID (queryable via dayIndex field)
+        
+        writtenDayPaths.add(dayDocPathForLogging);
+        print('[UserMealPlanRepository] [ApplyExplore] 📋 Creating day document: $dayDocPathForLogging');
         
         currentBatch.set(dayRef, {
           'dayIndex': dayIndex,
@@ -953,29 +1061,42 @@ class UserMealPlanRepositoryImpl implements UserMealPlanRepository {
         currentBatchOperations++;
         
         // Copy meals (convert MealSlot to MealItem for storage)
-        double dayCalories = 0.0;
-        double dayProtein = 0.0;
-        double dayCarb = 0.0;
-        double dayFat = 0.0;
+        // All slots have been validated above, so we can safely proceed
+        final mealItems = <MealItem>[];
         
-        for (final mealSlot in templateMealSlots) {
+        for (var i = 0; i < validatedSlots.length; i++) {
+          final validated = validatedSlots[i];
+          final mealSlot = validated.slot;
+          final validatedFoodId = validated.foodId;
+          final validatedServingSize = validated.servingSize;
+          
+          // Create new meal document with auto-generated ID first
+          final mealRef = dayRef.collection('meals').doc();
+          final mealId = mealRef.id; // Use the auto-generated document ID
+          
+          // Assertions for invariants (defensive programming)
+          assert(validatedFoodId.isNotEmpty, 'foodId must be non-empty after validation');
+          assert(validatedServingSize > 0, 'servingSize must be positive after validation');
+          
           // Convert MealSlot to MealItem for storage
           final mealItem = MealItem(
-            id: '', // Will get auto-generated ID
+            id: mealId,
             mealType: mealSlot.mealType,
-            foodId: mealSlot.foodId ?? '',
-            servingSize: 1.0, // MealSlot doesn't have servingSize, use default
+            foodId: validatedFoodId,
+            servingSize: validatedServingSize,
             calories: mealSlot.calories,
             protein: mealSlot.protein,
             carb: mealSlot.carb,
             fat: mealSlot.fat,
           );
           
-          // Create DTO from MealItem
+          mealItems.add(mealItem);
+          
+          // Create DTO from MealItem with correct ID
           final mealDto = MealItemDto(
             id: mealItem.id,
             mealType: mealItem.mealType,
-            foodId: mealItem.foodId,
+            foodId: mealItem.foodId, // No need to check isEmpty - already validated
             servingSize: mealItem.servingSize,
             calories: mealItem.calories,
             protein: mealItem.protein,
@@ -983,39 +1104,43 @@ class UserMealPlanRepositoryImpl implements UserMealPlanRepository {
             fat: mealItem.fat,
           );
           
-          // Create new meal with auto-generated ID
-          final mealRef = dayRef.collection('meals').doc();
+          // Set the meal document with the DTO data
+          final mealDocPath = '$dayDocPathForLogging/meals/${mealRef.id}';
+          print('[UserMealPlanRepository] [ApplyExplore] 📋 Writing meal document: $mealDocPath (foodId=${mealItem.foodId}, servingSize=${mealItem.servingSize})');
           currentBatch.set(mealRef, mealDto.toFirestore());
           currentBatchOperations++;
-          
-          // Accumulate totals
-          dayCalories += mealSlot.calories;
-          dayProtein += mealSlot.protein;
-          dayCarb += mealSlot.carb;
-          dayFat += mealSlot.fat;
         }
         
-        // Update day totals
+        // Compute day totals using domain service (validates all meals)
+        // This will throw MealNutritionException if any meal is invalid
+        final dayTotals = MealNutritionCalculator.sumMeals(
+          mealItems,
+          planId: newPlanId,
+          userId: userId,
+          dayIndex: dayIndex,
+        );
+        
+        // Update day totals using domain-calculated values
         currentBatch.update(dayRef, {
-          'totalCalories': dayCalories.toDouble(),
-          'protein': dayProtein.toDouble(),
-          'carb': dayCarb.toDouble(),
-          'fat': dayFat.toDouble(),
+          'totalCalories': dayTotals.calories,
+          'protein': dayTotals.protein,
+          'carb': dayTotals.carb,
+          'fat': dayTotals.fat,
         });
         currentBatchOperations++;
         
-        totalMealsCopied += templateMealSlots.length;
-        daysWithMeals++;
-        debugPrint('[UserMealPlanRepository] [ApplyExplore] ✅ Prepared ${templateMealSlots.length} meals for day $dayIndex');
+        totalMealsCopied += validatedSlots.length;
+        totalDaysCreated++;
+        print('[UserMealPlanRepository] [ApplyExplore] ✅ Copied ${validatedSlots.length} meals for day $dayIndex');
       }
       
       // Commit final batch if exists
       if (currentBatch != null && currentBatchOperations > 0) {
-        debugPrint('[UserMealPlanRepository] [ApplyExplore] 💾 Committing final batch with $currentBatchOperations operations...');
-        debugPrint('[UserMealPlanRepository] [ApplyExplore] 💾 Final batch path: users/$userId/user_meal_plans/$newPlanId/days/.../meals');
+        print('[UserMealPlanRepository] [ApplyExplore] 💾 Committing final batch with $currentBatchOperations operations...');
+        print('[UserMealPlanRepository] [ApplyExplore] 💾 Final batch path: users/$userId/user_meal_plans/$newPlanId/days/.../meals');
         try {
           await currentBatch.commit();
-          debugPrint('[UserMealPlanRepository] [ApplyExplore] ✅ Final batch committed');
+          print('[UserMealPlanRepository] [ApplyExplore] ✅ Final batch committed');
         } catch (e, stackTrace) {
           debugPrint('[UserMealPlanRepository] [ApplyExplore] 🔥 ========== ERROR committing final meals batch ==========');
           debugPrint('[UserMealPlanRepository] [ApplyExplore] 🔥 Plan ID: $newPlanId');
@@ -1029,7 +1154,98 @@ class UserMealPlanRepositoryImpl implements UserMealPlanRepository {
         }
       }
       
-      debugPrint('[UserMealPlanRepository] [ApplyExplore] ✅ Copying complete: $totalMealsCopied total meals across $daysWithMeals days');
+      print('[UserMealPlanRepository] [ApplyExplore] ✅ Finished copying template → user plan: $totalMealsCopied total meals across $totalDaysCreated days');
+      
+      // STEP 2.3: Post-apply verification - ensure all days and meals were created
+      debugPrint('[UserMealPlanRepository] [ApplyExplore] 🔍 Post-apply verification: checking days and meals...');
+      
+      // Verify: user plan has exactly durationDays days
+      final daysSnapshot = await newPlanRef
+          .collection('days')
+          .get();
+      
+      if (daysSnapshot.docs.length != template.durationDays) {
+        final errorMsg = 'Post-apply verification failed: expected ${template.durationDays} days, found ${daysSnapshot.docs.length} (planId=$newPlanId, userId=$userId, templateId=$templateId)';
+        debugPrint('[UserMealPlanRepository] [ApplyExplore] 🔥 ERROR: $errorMsg');
+        throw Exception(errorMsg);
+      }
+      debugPrint('[UserMealPlanRepository] [ApplyExplore] ✅ Verified: plan has exactly ${template.durationDays} days');
+      
+      // Verify: each day has ≥ 1 meal
+      int totalVerifiedMeals = 0;
+      for (int dayIndex = 1; dayIndex <= template.durationDays; dayIndex++) {
+        final daySnapshot = await newPlanRef
+            .collection('days')
+            .where('dayIndex', isEqualTo: dayIndex)
+            .limit(1)
+            .get();
+        
+        if (daySnapshot.docs.isEmpty) {
+          final errorMsg = 'Post-apply verification failed: day $dayIndex not found (planId=$newPlanId, userId=$userId, templateId=$templateId)';
+          debugPrint('[UserMealPlanRepository] [ApplyExplore] 🔥 ERROR: $errorMsg');
+          throw Exception(errorMsg);
+        }
+        
+        final dayDoc = daySnapshot.docs.first;
+        final mealsSnapshot = await dayDoc.reference
+            .collection('meals')
+            .get();
+        
+        if (mealsSnapshot.docs.isEmpty) {
+          final errorMsg = 'Post-apply verification failed: day $dayIndex has no meals (planId=$newPlanId, userId=$userId, templateId=$templateId)';
+          debugPrint('[UserMealPlanRepository] [ApplyExplore] 🔥 ERROR: $errorMsg');
+          throw Exception(errorMsg);
+        }
+        
+        totalVerifiedMeals += mealsSnapshot.docs.length;
+        
+        // Verify: day totals match sum of meals
+        final dayData = dayDoc.data();
+        final storedTotals = MealNutrition(
+          calories: (dayData['totalCalories'] as num?)?.toDouble() ?? 0.0,
+          protein: (dayData['protein'] as num?)?.toDouble() ?? 0.0,
+          carb: (dayData['carb'] as num?)?.toDouble() ?? 0.0,
+          fat: (dayData['fat'] as num?)?.toDouble() ?? 0.0,
+        );
+        
+        // Load meals and compute totals
+        final dayMealsStream = getDayMeals(newPlanId, userId, dayIndex);
+        final dayMeals = await dayMealsStream.first;
+        
+        if (dayMeals.isEmpty) {
+          final errorMsg = 'Post-apply verification failed: day $dayIndex meals stream returned empty (planId=$newPlanId, userId=$userId, templateId=$templateId)';
+          debugPrint('[UserMealPlanRepository] [ApplyExplore] 🔥 ERROR: $errorMsg');
+          throw Exception(errorMsg);
+        }
+        
+        final computedTotals = MealNutritionCalculator.sumMeals(
+          dayMeals,
+          planId: newPlanId,
+          userId: userId,
+          dayIndex: dayIndex,
+        );
+        
+        // Compare totals with epsilon
+        const epsilon = 0.0001;
+        if ((storedTotals.calories - computedTotals.calories).abs() > epsilon ||
+            (storedTotals.protein - computedTotals.protein).abs() > epsilon ||
+            (storedTotals.carb - computedTotals.carb).abs() > epsilon ||
+            (storedTotals.fat - computedTotals.fat).abs() > epsilon) {
+          final errorMsg = 'Post-apply verification failed: day $dayIndex totals mismatch. Stored: $storedTotals, Computed: $computedTotals (planId=$newPlanId, userId=$userId, templateId=$templateId)';
+          debugPrint('[UserMealPlanRepository] [ApplyExplore] 🔥 ERROR: $errorMsg');
+          throw Exception(errorMsg);
+        }
+        
+        debugPrint('[UserMealPlanRepository] [ApplyExplore] ✅ Verified day $dayIndex: ${dayMeals.length} meals, totals match');
+      }
+      
+      if (totalVerifiedMeals != totalMealsCopied) {
+        final errorMsg = 'Post-apply verification failed: meal count mismatch. Expected: $totalMealsCopied, Found: $totalVerifiedMeals (planId=$newPlanId, userId=$userId, templateId=$templateId)';
+        debugPrint('[UserMealPlanRepository] [ApplyExplore] 🔥 ERROR: $errorMsg');
+        throw Exception(errorMsg);
+      }
+      
+      debugPrint('[UserMealPlanRepository] [ApplyExplore] ✅ Post-apply verification passed: all days have meals, totals match');
       
       // STEP 3: Load and return the newly created plan
       final newPlanDoc = await newPlanRef.get();
@@ -1045,7 +1261,8 @@ class UserMealPlanRepositoryImpl implements UserMealPlanRepository {
       debugPrint('[UserMealPlanRepository] [ApplyExplore] ✅ Plan templateId: ${newPlan.planTemplateId}');
       debugPrint('[UserMealPlanRepository] [ApplyExplore] ✅ ActiveMealPlanProvider will automatically emit this new plan');
       
-      // STEP 4: Sanity check - verify the new plan is actually active
+      // STEP 4: Post-write verification - ensure exactly ONE active plan exists
+      debugPrint('[UserMealPlanRepository] [ApplyExplore] 🔍 Post-write verification: checking active plans...');
       final activePlanCheck = await userPlansRef
           .where('isActive', isEqualTo: true)
           .limit(2)
@@ -1053,19 +1270,24 @@ class UserMealPlanRepositoryImpl implements UserMealPlanRepository {
       
       if (activePlanCheck.docs.length > 1) {
         final activePlanIds = activePlanCheck.docs.map((d) => d.id).toList();
-        debugPrint('[UserMealPlanRepository] [ApplyExplore] ⚠️ WARNING: Multiple active plans detected after apply!');
-        debugPrint('[UserMealPlanRepository] [ApplyExplore] ⚠️ Active plan IDs: ${activePlanIds.join(", ")}');
-        debugPrint('[UserMealPlanRepository] [ApplyExplore] ⚠️ This violates the invariant - should never happen');
+        debugPrint('[UserMealPlanRepository] [ApplyExplore] 🔥 ERROR: Multiple active plans detected after apply!');
+        debugPrint('[UserMealPlanRepository] [ApplyExplore] 🔥 Active plan IDs: ${activePlanIds.join(", ")}');
+        debugPrint('[UserMealPlanRepository] [ApplyExplore] 🔥 This violates the invariant - should never happen');
+        // Don't throw - log the error but return the plan we just created
+        // Admin repair tool can fix this later
       } else if (activePlanCheck.docs.isEmpty) {
-        debugPrint('[UserMealPlanRepository] [ApplyExplore] ⚠️ WARNING: No active plan found after apply!');
-        debugPrint('[UserMealPlanRepository] [ApplyExplore] ⚠️ This should not happen - new plan should be active');
+        debugPrint('[UserMealPlanRepository] [ApplyExplore] 🔥 ERROR: No active plan found after apply!');
+        debugPrint('[UserMealPlanRepository] [ApplyExplore] 🔥 This should not happen - new plan should be active');
+        // This is critical - throw an exception
+        throw Exception('Post-write verification failed: no active plan found after applying template');
       } else {
         final verifiedActiveId = activePlanCheck.docs.first.id;
         if (verifiedActiveId != newPlanId) {
-          debugPrint('[UserMealPlanRepository] [ApplyExplore] ⚠️ WARNING: Active plan mismatch!');
-          debugPrint('[UserMealPlanRepository] [ApplyExplore] ⚠️ Expected: $newPlanId, Got: $verifiedActiveId');
+          debugPrint('[UserMealPlanRepository] [ApplyExplore] 🔥 ERROR: Active plan mismatch!');
+          debugPrint('[UserMealPlanRepository] [ApplyExplore] 🔥 Expected: $newPlanId, Got: $verifiedActiveId');
+          throw Exception('Post-write verification failed: active plan ID mismatch (expected $newPlanId, got $verifiedActiveId)');
         } else {
-          debugPrint('[UserMealPlanRepository] [ApplyExplore] ✅ Sanity check passed: new plan is correctly active');
+          debugPrint('[UserMealPlanRepository] [ApplyExplore] ✅ Post-write verification passed: exactly 1 active plan (planId=$verifiedActiveId)');
         }
       }
       
@@ -1221,7 +1443,8 @@ class UserMealPlanRepositoryImpl implements UserMealPlanRepository {
       debugPrint('[UserMealPlanRepository] [ApplyCustom] ✅ ========== END applyCustomPlanAsActive (SUCCESS) ==========');
       debugPrint('[UserMealPlanRepository] [ApplyCustom] ✅ Activated plan: planId=${activatedPlan.id}, name="${activatedPlan.name}", type=${activatedPlan.type.value}, isActive=${activatedPlan.isActive}');
       
-      // STEP 3: Sanity check - verify the plan is actually active
+      // STEP 3: Post-write verification - ensure exactly ONE active plan exists
+      debugPrint('[UserMealPlanRepository] [ApplyCustom] 🔍 Post-write verification: checking active plans...');
       final activePlanCheck = await userPlansRef
           .where('isActive', isEqualTo: true)
           .limit(2)
@@ -1229,19 +1452,24 @@ class UserMealPlanRepositoryImpl implements UserMealPlanRepository {
       
       if (activePlanCheck.docs.length > 1) {
         final activePlanIds = activePlanCheck.docs.map((d) => d.id).toList();
-        debugPrint('[UserMealPlanRepository] [ApplyCustom] ⚠️ WARNING: Multiple active plans detected after apply!');
-        debugPrint('[UserMealPlanRepository] [ApplyCustom] ⚠️ Active plan IDs: ${activePlanIds.join(", ")}');
-        debugPrint('[UserMealPlanRepository] [ApplyCustom] ⚠️ This violates the invariant - should never happen');
+        debugPrint('[UserMealPlanRepository] [ApplyCustom] 🔥 ERROR: Multiple active plans detected after apply!');
+        debugPrint('[UserMealPlanRepository] [ApplyCustom] 🔥 Active plan IDs: ${activePlanIds.join(", ")}');
+        debugPrint('[UserMealPlanRepository] [ApplyCustom] 🔥 This violates the invariant - should never happen');
+        // Don't throw - log the error but return the plan we just activated
+        // Admin repair tool can fix this later
       } else if (activePlanCheck.docs.isEmpty) {
-        debugPrint('[UserMealPlanRepository] [ApplyCustom] ⚠️ WARNING: No active plan found after apply!');
-        debugPrint('[UserMealPlanRepository] [ApplyCustom] ⚠️ This should not happen - plan should be active');
+        debugPrint('[UserMealPlanRepository] [ApplyCustom] 🔥 ERROR: No active plan found after apply!');
+        debugPrint('[UserMealPlanRepository] [ApplyCustom] 🔥 This should not happen - plan should be active');
+        // This is critical - throw an exception
+        throw Exception('Post-write verification failed: no active plan found after applying custom plan');
       } else {
         final verifiedActiveId = activePlanCheck.docs.first.id;
         if (verifiedActiveId != planId) {
-          debugPrint('[UserMealPlanRepository] [ApplyCustom] ⚠️ WARNING: Active plan mismatch!');
-          debugPrint('[UserMealPlanRepository] [ApplyCustom] ⚠️ Expected: $planId, Got: $verifiedActiveId');
+          debugPrint('[UserMealPlanRepository] [ApplyCustom] 🔥 ERROR: Active plan mismatch!');
+          debugPrint('[UserMealPlanRepository] [ApplyCustom] 🔥 Expected: $planId, Got: $verifiedActiveId');
+          throw Exception('Post-write verification failed: active plan ID mismatch (expected $planId, got $verifiedActiveId)');
         } else {
-          debugPrint('[UserMealPlanRepository] [ApplyCustom] ✅ Sanity check passed: plan is correctly active');
+          debugPrint('[UserMealPlanRepository] [ApplyCustom] ✅ Post-write verification passed: exactly 1 active plan (planId=$verifiedActiveId)');
         }
       }
       
@@ -1256,4 +1484,70 @@ class UserMealPlanRepositoryImpl implements UserMealPlanRepository {
     }
   }
 }
+
+/// Helper to validate non-empty string fields
+/// 
+/// Made public for testing purposes.
+String requireNonEmptyForTesting(
+  String? value,
+  String fieldName, {
+  required String userId,
+  required String templateId,
+  required int dayIndex,
+  required int slotIndex,
+  required String mealType,
+}) {
+  final v = value?.trim() ?? '';
+  if (v.isEmpty) {
+    throw MealPlanApplyException(
+      'ApplyExploreTemplate failed: missing $fieldName',
+      userId: userId,
+      templateId: templateId,
+      dayIndex: dayIndex,
+      slotIndex: slotIndex,
+      mealType: mealType,
+    );
+  }
+  return v;
+}
+
+/// Helper to validate positive numeric fields
+/// 
+/// Made public for testing purposes.
+double requirePositiveForTesting(
+  num? value,
+  String fieldName, {
+  required String userId,
+  required String templateId,
+  required int dayIndex,
+  required int slotIndex,
+  required String mealType,
+}) {
+  if (value == null) {
+    throw MealPlanApplyException(
+      'ApplyExploreTemplate failed: MealSlot has no $fieldName; cannot safely apply template',
+      userId: userId,
+      templateId: templateId,
+      dayIndex: dayIndex,
+      slotIndex: slotIndex,
+      mealType: mealType,
+    );
+  }
+  
+  final doubleValue = value.toDouble();
+  if (doubleValue <= 0) {
+    throw MealPlanApplyException(
+      'ApplyExploreTemplate failed: $fieldName must be positive, got $doubleValue',
+      userId: userId,
+      templateId: templateId,
+      dayIndex: dayIndex,
+      slotIndex: slotIndex,
+      mealType: mealType,
+      details: {'value': doubleValue},
+    );
+  }
+  
+  return doubleValue;
+}
+
 
