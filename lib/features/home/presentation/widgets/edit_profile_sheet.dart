@@ -211,7 +211,7 @@ class _EditProfileSheetState extends ConsumerState<EditProfileSheet> {
       );
 
       // Update via ProfileService (updates both profile and cache)
-      final service = await ref.read(profile_providers.profileServiceProvider.future);
+      final service = ref.read(profile_providers.profileServiceProvider);
       
       // Get current profile ID
       final repository = ref.read(profile_providers.profileRepositoryProvider);

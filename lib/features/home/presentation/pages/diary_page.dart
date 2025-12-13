@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:calories_app/domain/diary/diary_entry.dart';
-import 'package:calories_app/features/home/domain/meal_item.dart';
-import 'package:calories_app/features/home/domain/meal_type.dart';
+import 'package:calories_app/features/home/domain/diary_meal_item.dart';
+import 'package:calories_app/features/meal_plans/domain/models/shared/meal_type.dart';
 import 'package:calories_app/features/home/presentation/providers/diary_provider.dart';
 import 'package:calories_app/features/home/presentation/widgets/add_meal_item_bottom_sheet.dart';
 import 'package:calories_app/features/home/presentation/widgets/daily_summary_card.dart';
@@ -426,7 +426,7 @@ class _DiaryPageState extends ConsumerState<DiaryPage> {
     BuildContext context,
     DiaryNotifier notifier,
     MealType mealType,
-    MealItem item,
+    DiaryMealItem item,
   ) {
     showModalBottomSheet(
       context: context,

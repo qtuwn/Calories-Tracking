@@ -168,16 +168,24 @@ class AdminExploreMealPlanController extends Notifier<AdminExploreMealPlanState>
         if (!ref.mounted) return;
         
         // Convert MealSlot to MealItem
-        final meals = mealSlots.map((slot) => MealItem(
-          id: slot.id,
-          mealType: slot.mealType,
-          foodId: slot.foodId ?? '',
-          servingSize: 1.0, // MealSlot doesn't have servingSize, use default
-          calories: slot.calories,
-          protein: slot.protein,
-          carb: slot.carb,
-          fat: slot.fat,
-        )).toList();
+        final meals = mealSlots.map((slot) {
+          // Validate foodId is non-empty (MealSlot.foodId is nullable but MealItem requires non-null)
+          final foodId = slot.foodId?.trim() ?? '';
+          if (foodId.isEmpty) {
+            throw Exception('MealSlot ${slot.id} has empty foodId - cannot convert to MealItem');
+          }
+          
+          return MealItem(
+            id: slot.id,
+            mealType: slot.mealType,
+            foodId: foodId,
+            servingSize: slot.servingSize, // Use servingSize from MealSlot (now required)
+            calories: slot.calories,
+            protein: slot.protein,
+            carb: slot.carb,
+            fat: slot.fat,
+          );
+        }).toList();
         
         final updatedMeals = Map<int, List<MealItem>>.from(state.editingDayMeals);
         // Always set the day entry, even if empty list (for empty templates)
@@ -301,6 +309,7 @@ class AdminExploreMealPlanController extends Notifier<AdminExploreMealPlanState>
         fat: item.fat,
         foodId: item.foodId,
         description: null,
+        servingSize: item.servingSize, // Required: copy from MealItem
       )).toList();
       
       await repository.saveDayMeals(

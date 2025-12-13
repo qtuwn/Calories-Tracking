@@ -16,7 +16,7 @@ import 'package:calories_app/domain/foods/food.dart';
 import 'package:calories_app/shared/state/diary_providers.dart';
 import 'package:calories_app/features/home/presentation/providers/weight_providers.dart';
 import 'package:calories_app/features/diary/domain/services/meal_time_classifier.dart';
-import 'package:calories_app/features/home/domain/meal_type.dart';
+import 'package:calories_app/features/meal_plans/domain/models/shared/meal_type.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});

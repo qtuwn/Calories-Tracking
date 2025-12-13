@@ -264,8 +264,8 @@ class DiaryEntry {
   /// Check if this is an exercise entry
   bool get isExercise => type == DiaryEntryType.exercise;
 
-  /// Convert DiaryEntry to MealItem (for backward compatibility with existing UI)
-  /// This allows the existing Meal/MealItem structure to work with DiaryEntry
+  /// Convert DiaryEntry to DiaryMealItem (for backward compatibility with existing UI)
+  /// This allows the existing Meal/DiaryMealItem structure to work with DiaryEntry
   /// Only works for food entries
   Map<String, dynamic> toMealItemJson() {
     if (!isFood || totalGrams == null) {

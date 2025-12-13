@@ -11,12 +11,11 @@ import 'profile_providers.dart'; // For sharedPreferencesProvider
 import 'auth_providers.dart'; // For authStateProvider
 
 /// Provider for UserMealPlanCache implementation
+/// 
+/// SharedPreferences is guaranteed to be available since it's preloaded in main.dart
+/// and provided via ProviderScope.overrides. No Dummy cache needed.
 final userMealPlanCacheProvider = Provider<UserMealPlanCache>((ref) {
-  final prefs = ref.watch(sharedPreferencesProvider).value;
-  if (prefs == null) {
-    debugPrint('[UserMealPlanCacheProvider] ⚠️ SharedPreferences not ready, returning dummy cache');
-    return _DummyUserMealPlanCache(); // Fallback
-  }
+  final prefs = ref.watch(sharedPreferencesProvider);
   return SharedPrefsUserMealPlanCache(prefs);
 });
 
@@ -91,57 +90,4 @@ final userMealPlansLoadOnceProvider = FutureProvider.autoDispose
   return service.loadPlansForUserOnce(uid);
 });
 
-/// Dummy UserMealPlanCache implementation for when SharedPreferences is not ready
-/// 
-/// This is a no-op implementation that silently returns empty/null values.
-/// Logging is removed to prevent console spam during normal operation.
-class _DummyUserMealPlanCache implements UserMealPlanCache {
-  @override
-  Future<void> clearAllForUser(String userId) async {
-    // Silent no-op
-  }
-
-  @override
-  Future<void> clearPlan(String userId, String planId) async {
-    // Silent no-op
-  }
-
-  @override
-  Future<void> clearActivePlan(String userId) async {
-    // Silent no-op
-  }
-
-  @override
-  Future<UserMealPlan?> loadActivePlan(String userId) async {
-    // Silent no-op
-    return null;
-  }
-
-  @override
-  Future<UserMealPlan?> loadPlanById(String userId, String planId) async {
-    // Silent no-op
-    return null;
-  }
-
-  @override
-  Future<List<UserMealPlan>> loadPlansForUser(String userId) async {
-    // Silent no-op
-    return [];
-  }
-
-  @override
-  Future<void> saveActivePlan(String userId, UserMealPlan? plan) async {
-    // Silent no-op
-  }
-
-  @override
-  Future<void> savePlan(String userId, UserMealPlan plan) async {
-    // Silent no-op
-  }
-
-  @override
-  Future<void> savePlansForUser(String userId, List<UserMealPlan> plans) async {
-    // Silent no-op
-  }
-}
 

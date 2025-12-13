@@ -55,4 +55,4 @@ devtools_options.yaml
 # Environment variables
 .env
 .env.*
-!.env
+!.env.example

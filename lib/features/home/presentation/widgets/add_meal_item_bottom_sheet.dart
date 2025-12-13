@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:calories_app/features/home/domain/meal_item.dart';
-import 'package:calories_app/features/home/domain/meal_type.dart';
+import 'package:calories_app/features/home/domain/diary_meal_item.dart';
+import 'package:calories_app/features/meal_plans/domain/models/shared/meal_type.dart';
 import 'package:calories_app/features/home/presentation/providers/diary_provider.dart';
 import 'package:calories_app/features/home/presentation/providers/food_search_providers.dart';
 import 'package:calories_app/domain/foods/food.dart';
@@ -10,7 +10,7 @@ import 'package:calories_app/domain/foods/food.dart';
 /// Bottom sheet để thêm/sửa món ăn với food search
 class AddMealItemBottomSheet extends ConsumerStatefulWidget {
   final MealType mealType;
-  final MealItem? existingItem; // null nếu thêm mới, có giá trị nếu edit
+  final DiaryMealItem? existingItem; // null nếu thêm mới, có giá trị nếu edit
 
   const AddMealItemBottomSheet({
     super.key,
@@ -551,7 +551,7 @@ class _AddMealItemBottomSheetState extends ConsumerState<AddMealItemBottomSheet>
 
       if (isEditing) {
         // Update existing entry
-        final item = MealItem(
+        final item = DiaryMealItem(
           id: widget.existingItem!.id,
           name: _nameController.text.trim(),
           servingSize: servingCount,
@@ -593,7 +593,7 @@ class _AddMealItemBottomSheetState extends ConsumerState<AddMealItemBottomSheet>
         }
       } else {
         // Add custom entry (no Food catalog reference)
-        final item = MealItem(
+        final item = DiaryMealItem(
           id: DateTime.now().millisecondsSinceEpoch.toString(),
           name: _nameController.text.trim(),
           servingSize: servingCount,

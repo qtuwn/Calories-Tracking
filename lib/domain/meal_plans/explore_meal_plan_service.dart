@@ -61,6 +61,10 @@ class ExploreMealPlanService {
       throw Exception('Macros cannot be negative');
     }
 
+    if (meal.servingSize <= 0) {
+      throw Exception('servingSize must be positive, got ${meal.servingSize}');
+    }
+
     final validMealTypes = ['breakfast', 'lunch', 'dinner', 'snack'];
     if (!validMealTypes.contains(meal.mealType)) {
       throw Exception('Invalid meal type: ${meal.mealType}');
