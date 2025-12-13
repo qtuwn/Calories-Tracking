@@ -12,14 +12,14 @@ class OnboardingPersistenceService {
   static Future<void> saveDraft(OnboardingModel model) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      
+
       // Convert model to JSON
       final json = _modelToJson(model);
       final jsonString = jsonEncode(json);
-      
+
       // Save to SharedPreferences
       await prefs.setString(_keyOnboardingDraft, jsonString);
-      
+
       // Save last step
       await prefs.setInt(_keyLastStep, model.currentStep);
     } catch (e) {
@@ -33,14 +33,14 @@ class OnboardingPersistenceService {
     try {
       final prefs = await SharedPreferences.getInstance();
       final jsonString = prefs.getString(_keyOnboardingDraft);
-      
+
       if (jsonString == null) {
         return null;
       }
-      
+
       // Parse JSON
       final json = jsonDecode(jsonString) as Map<String, dynamic>;
-      
+
       // Convert to model
       return _jsonToModel(json);
     } catch (e) {
@@ -125,4 +125,3 @@ class OnboardingPersistenceService {
     );
   }
 }
-

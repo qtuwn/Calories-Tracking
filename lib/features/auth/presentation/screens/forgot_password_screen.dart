@@ -23,13 +23,13 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   }
 
   Future<void> _handleResetPassword() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
 
     setState(() => _isLoading = true);
     try {
-      await _authService.sendPasswordResetEmail(
-        _emailController.text.trim(),
-      );
+      await _authService.sendPasswordResetEmail(_emailController.text.trim());
       if (mounted) {
         setState(() {
           _emailSent = true;
@@ -99,7 +99,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                       Container(
                         padding: const EdgeInsets.all(AuthTheme.spacingLarge),
                         decoration: BoxDecoration(
-                          color: AuthTheme.mintGreen.withOpacity(0.2),
+                          color: AuthTheme.mintGreen.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(
                             AuthTheme.borderRadius,
                           ),
@@ -225,7 +225,7 @@ class _CustomTextField extends StatelessWidget {
             decoration: InputDecoration(
               hintText: hint,
               hintStyle: AuthTheme.bodyStyle.copyWith(
-                color: AuthTheme.mediumGray.withOpacity(0.6),
+                color: AuthTheme.mediumGray.withValues(alpha: 0.6),
               ),
               prefixIcon: Icon(prefixIcon, color: AuthTheme.mintGreen),
               border: OutlineInputBorder(
@@ -239,9 +239,7 @@ class _CustomTextField extends StatelessWidget {
                 vertical: AuthTheme.spacingMedium,
               ),
             ),
-            style: AuthTheme.bodyStyle.copyWith(
-              color: AuthTheme.nearBlack,
-            ),
+            style: AuthTheme.bodyStyle.copyWith(color: AuthTheme.nearBlack),
           ),
         ),
       ],
@@ -293,10 +291,7 @@ class _PrimaryButton extends StatelessWidget {
               else
                 Icon(icon, color: Colors.white),
               if (!isLoading) const SizedBox(width: AuthTheme.spacingMedium),
-              Text(
-                text,
-                style: AuthTheme.buttonTextStyle,
-              ),
+              Text(text, style: AuthTheme.buttonTextStyle),
             ],
           ),
         ),
@@ -304,4 +299,3 @@ class _PrimaryButton extends StatelessWidget {
     );
   }
 }
-

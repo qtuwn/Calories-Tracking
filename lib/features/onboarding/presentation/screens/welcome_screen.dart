@@ -24,18 +24,19 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
     super.initState();
     // Guard: Check if user is authenticated, redirect to login if not
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
       final user = ref.read(authStateProvider).value;
       if (user == null) {
         // User is not authenticated - redirect to login
-        Navigator.of(context).pushNamedAndRemoveUntil(
-          '/login',
-          (route) => false,
-        );
+        Navigator.of(
+          context,
+        ).pushNamedAndRemoveUntil('/login', (route) => false);
         return;
       }
     });
-    
+
     // Track welcome screen view
     OnboardingLogger.logStepViewed(stepName: 'welcome', durationMs: 0);
   }
@@ -45,16 +46,14 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
     // Reset onboarding state and clear draft
     ref.read(onboardingControllerProvider.notifier).reset();
     OnboardingPersistenceService.clearDraft();
-    
+
     // Track step completion and navigate to next step
     OnboardingLogger.logStepViewed(stepName: 'nickname', durationMs: 0);
-    
+
     // Navigate to nickname step
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => const NicknameStepScreen(),
-      ),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const NicknameStepScreen()));
   }
 
   @override
@@ -74,28 +73,26 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
           child: Column(
             children: [
               const SizedBox(height: 20),
-              
+
               // Progress indicator (0%)
               ProgressIndicatorWidget(progress: 0.0),
-              
+
               const Spacer(),
-              
+
               // Speech bubble
               SpeechBubbleWidget(
-                text: 'Chào mừng bạn đến với Ăn Khỏe!\nHãy cùng tôi tạo hồ sơ dinh dưỡng cá nhân nhé! 🎉',
+                text:
+                    'Chào mừng bạn đến với Ăn Khỏe!\nHãy cùng tôi tạo hồ sơ dinh dưỡng cá nhân nhé! 🎉',
                 width: double.infinity,
               ),
-              
+
               const SizedBox(height: 40),
-              
+
               // Mascot
-              const MascotWidget(
-                size: 200,
-                color: AppColors.mintGreen,
-              ),
-              
+              const MascotWidget(size: 200, color: AppColors.mintGreen),
+
               const Spacer(),
-              
+
               // CTA Button
               SizedBox(
                 width: double.infinity,
@@ -106,7 +103,9 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                     backgroundColor: AppColors.mintGreen,
                     foregroundColor: AppColors.nearBlack,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+                      borderRadius: BorderRadius.circular(
+                        AppTheme.radiusMedium,
+                      ),
                     ),
                     elevation: 0,
                   ),
@@ -116,9 +115,9 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                       Text(
                         'Bắt đầu',
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              color: AppColors.nearBlack,
-                              fontWeight: FontWeight.w600,
-                            ),
+                          color: AppColors.nearBlack,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                       const SizedBox(width: 8),
                       const Icon(
@@ -129,7 +128,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                   ),
                 ),
               ),
-              
+
               const SizedBox(height: 32),
             ],
           ),
@@ -138,4 +137,3 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
     );
   }
 }
-

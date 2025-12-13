@@ -1,3 +1,5 @@
+import '../bmi_calculator.dart';
+
 /// Input model for BMR calculation
 class BmrInputs {
   final double weightKg;
@@ -72,7 +74,8 @@ class GoalResult {
 class GoalCalculator {
   // Constants
   static const double kcalPerKg = 7700.0; // 1 kg ≈ 7700 kcal
-  static const double kcalPerDayPerWeek = kcalPerKg / 7.0; // ~1100 kcal/day per 1 kg/week
+  static const double kcalPerDayPerWeek =
+      kcalPerKg / 7.0; // ~1100 kcal/day per 1 kg/week
 
   // Safety bounds
   static const double minDeficitKcal = 300.0;
@@ -99,13 +102,17 @@ class GoalCalculator {
   /// male: 10W + 6.25H − 5A + 5
   /// female: 10W + 6.25H − 5A − 161
   static double calculateBMR(BmrInputs inputs) {
-    final isMale = inputs.gender.toLowerCase() == 'male' || 
-                   inputs.gender.toLowerCase() == 'nam';
-    
+    final isMale =
+        inputs.gender.toLowerCase() == 'male' ||
+        inputs.gender.toLowerCase() == 'nam';
+
     if (isMale) {
       return 10 * inputs.weightKg + 6.25 * inputs.heightCm - 5 * inputs.age + 5;
     } else {
-      return 10 * inputs.weightKg + 6.25 * inputs.heightCm - 5 * inputs.age - 161;
+      return 10 * inputs.weightKg +
+          6.25 * inputs.heightCm -
+          5 * inputs.age -
+          161;
     }
   }
 
@@ -143,8 +150,10 @@ class GoalCalculator {
     double bmr,
     String gender,
   ) {
-    if (goalType == 'maintain') return 0.0;
-    
+    if (goalType == 'maintain') {
+      return 0.0;
+    }
+
     if (goalType == 'lose') {
       // Deficit: positive value, clamp to 300-1000 range
       final deficit = deltaKcal.abs();
@@ -168,8 +177,8 @@ class GoalCalculator {
 
   /// Calculate minimum safe calories
   static double calculateMinCalories(double bmr, String gender) {
-    final isMale = gender.toLowerCase() == 'male' || 
-                   gender.toLowerCase() == 'nam';
+    final isMale =
+        gender.toLowerCase() == 'male' || gender.toLowerCase() == 'nam';
     final minByBmr = bmr * minBmrMultiplier;
     final minByGender = isMale ? minCaloriesMale : minCaloriesFemale;
     return minByBmr > minByGender ? minByBmr : minByGender;
@@ -191,7 +200,7 @@ class GoalCalculator {
     String gender,
   ) {
     double target;
-    
+
     if (goalType == 'maintain') {
       target = tdee;
     } else {
@@ -240,17 +249,15 @@ class GoalCalculator {
     final clampedFat = fatGrams < 0 ? 0.0 : fatGrams;
     final clampedCarb = carbGrams < 0 ? 0.0 : carbGrams;
 
-    return {
-      'protein': clampedProtein,
-      'fat': clampedFat,
-      'carb': clampedCarb,
-    };
+    return {'protein': clampedProtein, 'fat': clampedFat, 'carb': clampedCarb};
   }
 
-  /// Calculate BMI
+  /// Calculate BMI using the shared BMI calculator utility.
+  /// 
+  /// This method delegates to [BmiCalculator] to ensure consistency
+  /// across the app.
   static double calculateBMI(double weightKg, int heightCm) {
-    final heightM = heightCm / 100.0;
-    return weightKg / (heightM * heightM);
+    return BmiCalculator.calculate(weightKg: weightKg, heightCm: heightCm);
   }
 
   /// Calculate ETA weeks
@@ -260,7 +267,9 @@ class GoalCalculator {
     double paceKgPerWeek,
     String goalType,
   ) {
-    if (goalType == 'maintain' || targetWeightKg == null || paceKgPerWeek <= 0) {
+    if (goalType == 'maintain' ||
+        targetWeightKg == null ||
+        paceKgPerWeek <= 0) {
       return 0;
     }
     final weightDiff = (targetWeightKg - currentWeightKg).abs();
@@ -280,17 +289,22 @@ class GoalCalculator {
   }) {
     // Calculate BMR (if not provided, recalculate)
     final bmr = goalInputs.bmr > 0 ? goalInputs.bmr : calculateBMR(bmrInputs);
-    
+
     // Calculate TDEE (if not provided, recalculate)
-    final tdee = goalInputs.tdee > 0 ? goalInputs.tdee : calculateTDEE(bmr, 1.2);
+    final tdee = goalInputs.tdee > 0
+        ? goalInputs.tdee
+        : calculateTDEE(bmr, 1.2);
 
     // Get pace (use provided or safe default)
-    final paceKgPerWeek = goalInputs.paceKgPerWeek ?? 
-                          getSafeDefaultPace(goalInputs.goalType);
+    final paceKgPerWeek =
+        goalInputs.paceKgPerWeek ?? getSafeDefaultPace(goalInputs.goalType);
 
     // Calculate daily delta
-    var dailyDeltaKcal = calculateDailyDeltaKcal(paceKgPerWeek, goalInputs.goalType);
-    
+    var dailyDeltaKcal = calculateDailyDeltaKcal(
+      paceKgPerWeek,
+      goalInputs.goalType,
+    );
+
     // Clamp deficit/surplus to safety bounds
     final clampedDelta = clampDeficitOrSurplus(
       dailyDeltaKcal,
@@ -298,7 +312,7 @@ class GoalCalculator {
       bmr,
       goalInputs.gender,
     );
-    
+
     final warnings = <String>[];
     if (clampedDelta != dailyDeltaKcal) {
       warnings.add('Điều chỉnh tốc độ để đảm bảo an toàn');
@@ -314,33 +328,36 @@ class GoalCalculator {
     );
 
     // Check if target calories were clamped
-    final expectedTarget = goalInputs.goalType == 'maintain' 
-        ? tdee 
+    final expectedTarget = goalInputs.goalType == 'maintain'
+        ? tdee
         : tdee + clampedDelta;
     if ((targetCalories - expectedTarget).abs() > 1.0) {
       warnings.add('Lượng calo mục tiêu đã được điều chỉnh để đảm bảo an toàn');
     }
 
     // Calculate macros
-    final macros = calculateMacros(targetCalories, currentWeightKg, goalInputs.goalType);
-    
+    final macros = calculateMacros(
+      targetCalories,
+      currentWeightKg,
+      goalInputs.goalType,
+    );
+
     // Calculate percentages
-    final totalKcal = macros['protein']! * 4 + 
-                      macros['fat']! * 9 + 
-                      macros['carb']! * 4;
-    final proteinPercent = totalKcal > 0 
+    final totalKcal =
+        macros['protein']! * 4 + macros['fat']! * 9 + macros['carb']! * 4;
+    final proteinPercent = totalKcal > 0
         ? ((macros['protein']! * 4 / totalKcal) * 100).round()
         : 0;
-    final fatPercent = totalKcal > 0 
+    final fatPercent = totalKcal > 0
         ? ((macros['fat']! * 9 / totalKcal) * 100).round()
         : 0;
-    final carbPercent = totalKcal > 0 
+    final carbPercent = totalKcal > 0
         ? ((macros['carb']! * 4 / totalKcal) * 100).round()
         : 0;
 
     // Calculate BMI
     final bmiCurrent = calculateBMI(currentWeightKg, heightCm);
-    final bmiTarget = targetWeightKg != null 
+    final bmiTarget = targetWeightKg != null
         ? calculateBMI(targetWeightKg, heightCm)
         : null;
 
@@ -371,4 +388,3 @@ class GoalCalculator {
     );
   }
 }
-

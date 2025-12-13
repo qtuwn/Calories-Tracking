@@ -39,9 +39,7 @@ class _AuthPageState extends ConsumerState<AuthPage> {
 
   void _navigateToForgotPassword() {
     Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => const ForgotPasswordScreen(),
-      ),
+      MaterialPageRoute(builder: (context) => const ForgotPasswordScreen()),
     );
   }
 
@@ -55,7 +53,7 @@ class _AuthPageState extends ConsumerState<AuthPage> {
   Widget build(BuildContext context) {
     // Watch auth state - if user signs in, show ProfileGate
     final authStateAsync = ref.watch(authStateProvider);
-    
+
     return authStateAsync.when(
       data: (user) {
         if (user != null) {
@@ -64,22 +62,19 @@ class _AuthPageState extends ConsumerState<AuthPage> {
         }
         // User not signed in -> show login/signup pages
         return PageView(
-      controller: _pageController,
-      physics: const NeverScrollableScrollPhysics(),
-      children: [
-        SignInScreen(
-          onSignUpPressed: _navigateToSignUp,
-          onForgotPasswordPressed: _navigateToForgotPassword,
-        ),
-        SignUpScreen(
-          onSignInPressed: _navigateToSignIn,
-        ),
-      ],
-    );
+          controller: _pageController,
+          physics: const NeverScrollableScrollPhysics(),
+          children: [
+            SignInScreen(
+              onSignUpPressed: _navigateToSignUp,
+              onForgotPasswordPressed: _navigateToForgotPassword,
+            ),
+            SignUpScreen(onSignInPressed: _navigateToSignIn),
+          ],
+        );
       },
-      loading: () => const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      ),
+      loading: () =>
+          const Scaffold(body: Center(child: CircularProgressIndicator())),
       error: (error, stack) => PageView(
         controller: _pageController,
         physics: const NeverScrollableScrollPhysics(),
@@ -88,12 +83,9 @@ class _AuthPageState extends ConsumerState<AuthPage> {
             onSignUpPressed: _navigateToSignUp,
             onForgotPasswordPressed: _navigateToForgotPassword,
           ),
-          SignUpScreen(
-            onSignInPressed: _navigateToSignIn,
-          ),
+          SignUpScreen(onSignInPressed: _navigateToSignIn),
         ],
       ),
     );
   }
 }
-

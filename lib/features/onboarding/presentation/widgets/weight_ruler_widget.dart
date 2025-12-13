@@ -38,15 +38,18 @@ class _WeightRulerWidgetState extends State<WeightRulerWidget> {
   @override
   void initState() {
     super.initState();
-    _currentWeight = widget.initialWeight.clamp(widget.minWeight, widget.maxWeight);
-    final weights = _weights;
-    final initialIndex = weights.indexWhere((w) => (w - _currentWeight).abs() < 0.1);
-    final initialOffset = (initialIndex >= 0 ? initialIndex : 0) * _itemHeight;
-    
-    _scrollController = ScrollController(
-      initialScrollOffset: initialOffset,
+    _currentWeight = widget.initialWeight.clamp(
+      widget.minWeight,
+      widget.maxWeight,
     );
-    
+    final weights = _weights;
+    final initialIndex = weights.indexWhere(
+      (w) => (w - _currentWeight).abs() < 0.1,
+    );
+    final initialOffset = (initialIndex >= 0 ? initialIndex : 0) * _itemHeight;
+
+    _scrollController = ScrollController(initialScrollOffset: initialOffset);
+
     _scrollController.addListener(_onScroll);
   }
 
@@ -107,19 +110,16 @@ class _WeightRulerWidgetState extends State<WeightRulerWidget> {
               },
             ),
           ),
-          
+
           // Selection indicator
           Center(
             child: Container(
               height: _itemHeight,
               decoration: BoxDecoration(
-                color: AppColors.mintGreen.withOpacity(0.15),
+                color: AppColors.mintGreen.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(AppTheme.radiusSmall),
                 border: Border.symmetric(
-                  horizontal: BorderSide(
-                    color: AppColors.mintGreen,
-                    width: 2,
-                  ),
+                  horizontal: BorderSide(color: AppColors.mintGreen, width: 2),
                 ),
               ),
             ),
@@ -146,10 +146,10 @@ class _WeightRulerWidgetState extends State<WeightRulerWidget> {
             height: isMajorTick ? 2 : 1,
             color: isSelected
                 ? AppColors.mintGreen
-                : AppColors.charmingGreen.withOpacity(0.5),
+                : AppColors.charmingGreen.withValues(alpha: 0.5),
           ),
           const SizedBox(width: 16),
-          
+
           // Weight label (only for major ticks or selected)
           if (isMajorTick || isSelected)
             Text(
@@ -157,14 +157,12 @@ class _WeightRulerWidgetState extends State<WeightRulerWidget> {
               style: TextStyle(
                 fontSize: isSelected ? 20 : 14,
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                color: isSelected
-                    ? AppColors.mintGreen
-                    : AppColors.mediumGray,
+                color: isSelected ? AppColors.mintGreen : AppColors.mediumGray,
               ),
             ),
-          
+
           const Spacer(),
-          
+
           // Unit label
           if (isSelected)
             Text(
@@ -180,4 +178,3 @@ class _WeightRulerWidgetState extends State<WeightRulerWidget> {
     );
   }
 }
-

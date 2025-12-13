@@ -14,7 +14,7 @@ class CommunityScreen extends StatelessWidget {
           end: Alignment.bottomCenter,
           colors: [
             OnboardingTheme.backgroundColor,
-            OnboardingTheme.backgroundColor.withOpacity(0.8),
+            OnboardingTheme.backgroundColor.withValues(alpha: 0.8),
           ],
         ),
       ),
@@ -25,10 +25,7 @@ class CommunityScreen extends StatelessWidget {
             children: [
               const SizedBox(height: 40),
               // App Name
-              Text(
-                'Ăn Khoẻ',
-                style: OnboardingTheme.appNameStyle,
-              ),
+              Text('Ăn Khoẻ', style: OnboardingTheme.appNameStyle),
               const SizedBox(height: 60),
               // Membership card
               const MembershipCardWidget(),
@@ -53,5 +50,3 @@ class CommunityScreen extends StatelessWidget {
     );
   }
 }
-
-

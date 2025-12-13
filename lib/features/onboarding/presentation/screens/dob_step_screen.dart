@@ -42,8 +42,12 @@ class _DobStepScreenState extends ConsumerState<DobStepScreen> {
     _selectedDay = initialDate.day;
 
     _dayController = FixedExtentScrollController(initialItem: _selectedDay - 1);
-    _monthController = FixedExtentScrollController(initialItem: _selectedMonth - 1);
-    _yearController = FixedExtentScrollController(initialItem: _years.indexOf(_selectedYear));
+    _monthController = FixedExtentScrollController(
+      initialItem: _selectedMonth - 1,
+    );
+    _yearController = FixedExtentScrollController(
+      initialItem: _years.indexOf(_selectedYear),
+    );
 
     _recalculateAge();
   }
@@ -129,7 +133,8 @@ class _DobStepScreenState extends ConsumerState<DobStepScreen> {
 
     int age = today.year - dob.year;
     final hasNotHadBirthday =
-        today.month < dob.month || (today.month == dob.month && today.day < dob.day);
+        today.month < dob.month ||
+        (today.month == dob.month && today.day < dob.day);
     if (hasNotHadBirthday) {
       age--;
     }
@@ -154,16 +159,16 @@ class _DobStepScreenState extends ConsumerState<DobStepScreen> {
   }
 
   void _onContinuePressed() {
-    if (!_isValid) return;
+    if (!_isValid) {
+      return;
+    }
 
     ref.read(onboardingControllerProvider.notifier).updateDob(_selectedDate);
 
     // Navigate to height step
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => const HeightStepScreen(),
-      ),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const HeightStepScreen()));
   }
 
   @override
@@ -199,20 +204,21 @@ class _DobStepScreenState extends ConsumerState<DobStepScreen> {
               ),
               const SizedBox(height: 24),
 
-              ProgressIndicatorWidget(
-                progress: 3 / OnboardingModel.totalSteps,
-              ),
+              ProgressIndicatorWidget(progress: 3 / OnboardingModel.totalSteps),
               const SizedBox(height: 32),
 
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 24,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.white,
                   borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: Colors.black.withValues(alpha: 0.05),
                       blurRadius: 16,
                       offset: const Offset(0, 8),
                     ),
@@ -264,7 +270,8 @@ class _DobStepScreenState extends ConsumerState<DobStepScreen> {
                         ),
                         Text(
                           '$_calculatedAge',
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(
                                 fontWeight: FontWeight.w700,
                                 color: AppColors.nearBlack,
                               ),
@@ -276,9 +283,9 @@ class _DobStepScreenState extends ConsumerState<DobStepScreen> {
                       Text(
                         _warningText!,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: AppColors.error,
-                              fontWeight: FontWeight.w600,
-                            ),
+                          color: AppColors.error,
+                          fontWeight: FontWeight.w600,
+                        ),
                         textAlign: TextAlign.center,
                       ),
                     ],
@@ -294,20 +301,23 @@ class _DobStepScreenState extends ConsumerState<DobStepScreen> {
                 child: ElevatedButton(
                   onPressed: _isValid ? _onContinuePressed : null,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor:
-                        _isValid ? AppColors.mintGreen : AppColors.charmingGreen,
+                    backgroundColor: _isValid
+                        ? AppColors.mintGreen
+                        : AppColors.charmingGreen,
                     foregroundColor: AppColors.nearBlack,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+                      borderRadius: BorderRadius.circular(
+                        AppTheme.radiusMedium,
+                      ),
                     ),
                   ),
                   child: Text(
                     'Tiếp tục',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: AppColors.nearBlack,
-                          fontWeight: FontWeight.w600,
-                        ),
+                      color: AppColors.nearBlack,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ),
@@ -330,13 +340,13 @@ class _DobStepScreenState extends ConsumerState<DobStepScreen> {
       children: [
         Text(
           heading,
-          style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                color: AppColors.mediumGray,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.labelLarge?.copyWith(color: AppColors.mediumGray),
         ),
         const SizedBox(height: 8),
         Expanded(
-            child: CupertinoPicker.builder(
+          child: CupertinoPicker.builder(
             scrollController: controller,
             itemExtent: 44,
             magnification: 1.08,
@@ -344,7 +354,7 @@ class _DobStepScreenState extends ConsumerState<DobStepScreen> {
             onSelectedItemChanged: onSelectedItemChanged,
             selectionOverlay: Container(
               decoration: BoxDecoration(
-                color: AppColors.mintGreen.withOpacity(0.12),
+                color: AppColors.mintGreen.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(AppTheme.radiusSmall),
               ),
             ),
@@ -368,4 +378,3 @@ class _DobStepScreenState extends ConsumerState<DobStepScreen> {
     );
   }
 }
-

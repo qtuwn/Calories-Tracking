@@ -5,10 +5,7 @@ import 'package:calories_app/core/theme/theme.dart';
 class ProgressIndicatorWidget extends StatelessWidget {
   final double progress; // 0.0 to 1.0
 
-  const ProgressIndicatorWidget({
-    super.key,
-    required this.progress,
-  });
+  const ProgressIndicatorWidget({super.key, required this.progress});
 
   @override
   Widget build(BuildContext context) {
@@ -18,9 +15,9 @@ class ProgressIndicatorWidget extends StatelessWidget {
         Text(
           '${(progress * 100).toInt()}%',
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppColors.mediumGray,
-                fontWeight: FontWeight.w600,
-              ),
+            color: AppColors.mediumGray,
+            fontWeight: FontWeight.w600,
+          ),
         ),
         const SizedBox(height: 8),
         // Progress bar
@@ -29,12 +26,13 @@ class ProgressIndicatorWidget extends StatelessWidget {
           child: LinearProgressIndicator(
             value: progress,
             minHeight: 8,
-            backgroundColor: AppColors.charmingGreen.withOpacity(0.3),
-            valueColor: const AlwaysStoppedAnimation<Color>(AppColors.mintGreen),
+            backgroundColor: AppColors.charmingGreen.withValues(alpha: 0.3),
+            valueColor: const AlwaysStoppedAnimation<Color>(
+              AppColors.mintGreen,
+            ),
           ),
         ),
       ],
     );
   }
 }
-

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:calories_app/core/theme/theme.dart';
 import '../providers/home_dashboard_providers.dart';
+import '../providers/water_intake_provider.dart';
 
 class HomeCalorieCard extends ConsumerWidget {
   const HomeCalorieCard({super.key});
@@ -10,6 +11,8 @@ class HomeCalorieCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final summary = ref.watch(homeDailySummaryProvider);
+    final waterState = ref.watch(dailyWaterIntakeProvider);
+    final todayWaterMl = waterState.totalMl;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -19,12 +22,14 @@ class HomeCalorieCard extends ConsumerWidget {
         Widget content = Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(child: _CalorieTextBlock(summary: summary)),
-            SizedBox(width: isCompact ? 12 : 16),
-            _CalorieProgressRing(
-              summary: summary,
-              diameter: ringSize,
+            Expanded(
+              child: _CalorieTextBlock(
+                summary: summary,
+                todayWaterMl: todayWaterMl,
+              ),
             ),
+            SizedBox(width: isCompact ? 12 : 16),
+            _CalorieProgressRing(summary: summary, diameter: ringSize),
           ],
         );
 
@@ -32,7 +37,7 @@ class HomeCalorieCard extends ConsumerWidget {
           content = Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _CalorieTextBlock(summary: summary),
+              _CalorieTextBlock(summary: summary, todayWaterMl: todayWaterMl),
               const SizedBox(height: 16),
               Align(
                 alignment: Alignment.center,
@@ -54,13 +59,13 @@ class HomeCalorieCard extends ConsumerWidget {
               colors: [
                 const Color(0xFF1E2432),
                 const Color(0xFF2A3040),
-                AppColors.nearBlack.withOpacity(0.85),
+                AppColors.nearBlack.withValues(alpha: 0.85),
               ],
             ),
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.15),
+                color: Colors.black.withValues(alpha: 0.15),
                 blurRadius: 20,
                 offset: const Offset(0, 8),
               ),
@@ -74,44 +79,55 @@ class HomeCalorieCard extends ConsumerWidget {
 }
 
 class _CalorieTextBlock extends StatelessWidget {
-  const _CalorieTextBlock({required this.summary});
+  const _CalorieTextBlock({required this.summary, this.todayWaterMl = 0});
 
   final DailySummary summary;
+  final int todayWaterMl;
 
   @override
   Widget build(BuildContext context) {
+    // Use computed properties from DailySummary model (business logic moved out of widget)
+    final exceeded = summary.exceeded;
+    final remaining = summary.remaining;
+    final isOverGoal = summary.isOverGoal;
+
+    // Pink color for Fat macro (same as used in nutrition bars)
+    const pinkFat = Color(0xFFF48FB1);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           'Mục tiêu calo',
-          style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                color: Colors.white70,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.labelLarge?.copyWith(color: Colors.white70),
         ),
         const SizedBox(height: 8),
         Text(
-          summary.remaining > 0 ? 'Còn lại' : 'Vượt mục tiêu',
+          isOverGoal ? 'Vượt mục tiêu' : 'Còn lại',
           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         const SizedBox(height: 12),
         Text.rich(
           TextSpan(
-            text: summary.remaining > 0
-                ? summary.remaining.toStringAsFixed(0)
-                : summary.remaining.abs().toStringAsFixed(0),
+            text: isOverGoal
+                ? exceeded.toStringAsFixed(0)
+                : remaining.toStringAsFixed(0),
             style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                ),
-            children: const [
+              color: isOverGoal ? pinkFat : Colors.white,
+              fontWeight: FontWeight.w700,
+            ),
+            children: [
               TextSpan(
                 text: ' kcal',
                 style: TextStyle(
-                  color: Colors.white70,
+                  color: isOverGoal
+                      ? pinkFat.withValues(alpha: 0.8)
+                      : Colors.white70,
                   fontSize: 18,
                   fontWeight: FontWeight.w500,
                 ),
@@ -119,25 +135,62 @@ class _CalorieTextBlock extends StatelessWidget {
             ],
           ),
         ),
+        // Show exceeded message when over goal
+        if (isOverGoal) ...[
+          const SizedBox(height: 8),
+          Text(
+            'Dư ${exceeded.toStringAsFixed(0)} kcal so với mục tiêu',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: pinkFat.withValues(alpha: 0.8),
+              fontSize: 14,
+            ),
+          ),
+        ],
         const SizedBox(height: 20),
-        Wrap(
-          spacing: 28,
-          runSpacing: 12,
+        // 2x2 grid layout: Row 1 = Mục tiêu | Đã nạp, Row 2 = Tập luyện | Nước
+        Column(
           children: [
-            _CalorieStat(
-              label: 'Mục tiêu',
-              value: summary.goal,
-              color: Colors.white70,
+            // Row 1: Mục tiêu | Đã nạp
+            Row(
+              children: [
+                Expanded(
+                  child: _CalorieStat(
+                    label: 'Mục tiêu',
+                    value: summary.goal,
+                    color: Colors.white70,
+                  ),
+                ),
+                Expanded(
+                  child: _CalorieStat(
+                    label: 'Đã nạp',
+                    value: summary.consumed,
+                    color: const Color(
+                      0xFFF48FB1,
+                    ), // Pink color matching Fat macro
+                  ),
+                ),
+              ],
             ),
-            _CalorieStat(
-              label: 'Đã nạp',
-              value: summary.consumed,
-              color: AppColors.mintGreen,
-            ),
-            _CalorieStat(
-              label: 'Tập luyện',
-              value: summary.burned,
-              color: const Color(0xFF81D4FA),
+            const SizedBox(height: 12),
+            // Row 2: Tập luyện | Nước
+            Row(
+              children: [
+                Expanded(
+                  child: _CalorieStat(
+                    label: 'Tập luyện',
+                    value: summary.burned,
+                    color: const Color(0xFF81D4FA), // Blue color for exercise
+                  ),
+                ),
+                Expanded(
+                  child: _CalorieStat(
+                    label: 'Nước',
+                    value: null, // Water doesn't have a kcal value
+                    waterMl: todayWaterMl,
+                    color: AppColors.mintGreen, // Mint green for water
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -149,43 +202,50 @@ class _CalorieTextBlock extends StatelessWidget {
 class _CalorieStat extends StatelessWidget {
   const _CalorieStat({
     required this.label,
-    required this.value,
     required this.color,
+    this.value,
+    this.waterMl,
   });
 
   final String label;
-  final double value;
+  final double? value; // Nullable for water stat
   final Color color;
+  final int? waterMl;
 
   @override
   Widget build(BuildContext context) {
+    // All labels use the same style
+    final labelStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
+      fontSize: 12,
+      fontWeight: FontWeight.w400,
+      color: Colors.white70,
+    );
+
+    // All values use the same base style
+    final valueStyle = Theme.of(
+      context,
+    ).textTheme.bodyLarge?.copyWith(fontSize: 14, fontWeight: FontWeight.w600);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Colors.white60,
-              ),
-        ),
+        Text(label, style: labelStyle),
         const SizedBox(height: 4),
-        Text(
-          '${value.toStringAsFixed(0)} kcal',
-          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: color,
-                fontWeight: FontWeight.w600,
-              ),
-        ),
+        // Show water value if waterMl is provided, otherwise show kcal value
+        if (waterMl != null)
+          Text('$waterMl ml', style: valueStyle?.copyWith(color: color))
+        else if (value != null)
+          Text(
+            '${value!.toStringAsFixed(0)} kcal',
+            style: valueStyle?.copyWith(color: color),
+          ),
       ],
     );
   }
 }
 
 class _CalorieProgressRing extends StatelessWidget {
-  const _CalorieProgressRing({
-    required this.summary,
-    this.diameter = 140,
-  });
+  const _CalorieProgressRing({required this.summary, this.diameter = 140});
 
   final DailySummary summary;
   final double diameter;
@@ -204,9 +264,8 @@ class _CalorieProgressRing extends StatelessWidget {
             child: CircularProgressIndicator(
               value: summary.progress,
               strokeWidth: 14,
-              backgroundColor: Colors.white.withOpacity(0.12),
-              valueColor:
-                  AlwaysStoppedAnimation<Color>(AppColors.mintGreen),
+              backgroundColor: Colors.white.withValues(alpha: 0.12),
+              valueColor: AlwaysStoppedAnimation<Color>(AppColors.mintGreen),
             ),
           ),
           Column(
@@ -215,15 +274,15 @@ class _CalorieProgressRing extends StatelessWidget {
               Text(
                 summary.netIntake.toStringAsFixed(0),
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               Text(
                 'nạp ròng',
-                style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                      color: Colors.white70,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.labelLarge?.copyWith(color: Colors.white70),
               ),
             ],
           ),
@@ -232,4 +291,3 @@ class _CalorieProgressRing extends StatelessWidget {
     );
   }
 }
-
