@@ -7,6 +7,7 @@ import 'package:calories_app/features/home/presentation/pages/profile_page.dart'
 import 'package:calories_app/core/notifications/notification_scheduler.dart';
 import 'package:calories_app/core/notifications/push_notifications_service.dart';
 import 'package:calories_app/core/notifications/fcm_token_provider.dart';
+import 'package:calories_app/core/bootstrap/startup_orchestrator.dart';
 import 'package:calories_app/features/voice_input/presentation/widgets/voice_input_button.dart';
 import 'package:calories_app/features/voice_input/domain/entities/recognized_food.dart';
 import 'package:calories_app/features/voice_input/presentation/controllers/voice_controller.dart';
@@ -27,57 +28,64 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   int _currentIndex = 0;
-  bool _notificationsInitialized = false;
+  bool _fcmInitialized = false;
 
   @override
   void initState() {
     super.initState();
-    // Initialize notification schedules when user first lands on home screen
-    _initializeNotifications();
-    // Initialize FCM token update
-    _initializeFCMToken();
+    
+    // PHASE A: Mark first frame and start deferred initialization
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      StartupOrchestrator.markFirstFrame();
+      
+      // OPTIMIZATION: Defer FCM token manager to after first frame
+      // This prevents blocking the initial render
+      if (!_fcmInitialized) {
+        _fcmInitialized = true;
+        ref.read(fcmTokenManagerProvider);
+        debugPrint('[HomeScreen] ✅ FCM token manager initialized (post-frame)');
+      }
+      
+      // Delay background services by 5-10 seconds to allow UI to stabilize
+      Future.delayed(const Duration(seconds: 5), () {
+        StartupOrchestrator.ensureDeferredInitialized(ref);
+      });
+    });
   }
 
-  Future<void> _initializeNotifications() async {
-    if (_notificationsInitialized) return;
-    try {
-      final scheduler = ref.read(notificationSchedulerProvider);
-      await scheduler.initDefaultSchedules();
-      _notificationsInitialized = true;
-    } catch (e) {
-      debugPrint('[HomeScreen] Error initializing notifications: $e');
+  // OPTIMIZATION: Build pages lazily only when navigated to
+  // This prevents creating all 4 pages and their providers during first frame
+  Widget _buildPage(int index) {
+    switch (index) {
+      case 0:
+        return DashboardPage(
+          onNavigateToDiary: () {
+            setState(() {
+              _currentIndex = 1; // Diary tab index
+            });
+          },
+        );
+      case 1:
+        return const DiaryPage();
+      case 2:
+        return const MenuPage();
+      case 3:
+        return const AccountPage();
+      default:
+        return DashboardPage(
+          onNavigateToDiary: () {
+            setState(() {
+              _currentIndex = 1;
+            });
+          },
+        );
     }
   }
-
-  Future<void> _initializeFCMToken() async {
-    try {
-      // Update FCM token for current user
-      final pushService = ref.read(pushNotificationsServiceProvider);
-      await pushService.updateTokenForCurrentUser();
-      debugPrint('[HomeScreen] ✅ FCM token updated');
-    } catch (e) {
-      debugPrint('[HomeScreen] Error updating FCM token: $e');
-    }
-  }
-
-  // Cache pages list to avoid recreating widgets on every build
-  late final List<Widget> _pages = [
-    DashboardPage(
-      onNavigateToDiary: () {
-        setState(() {
-          _currentIndex = 1; // Diary tab index
-        });
-      },
-    ),
-    const DiaryPage(),
-    const MenuPage(),
-    const AccountPage(),
-  ];
 
   @override
   Widget build(BuildContext context) {
-    // Watch FCM token manager to ensure token is updated on auth state changes
-    ref.watch(fcmTokenManagerProvider);
+    // OPTIMIZATION: FCM token manager moved to postFrameCallback
+    // No longer blocking initial build
     
     // Listen to voice controller state changes
     ref.listen<VoiceState>(
@@ -134,10 +142,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
 
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _pages,
-      ),
+      body: _buildPage(_currentIndex),
       floatingActionButton: VoiceInputButton(
         onFoodRecognized: (RecognizedFood food) {
           // This callback is kept for backward compatibility

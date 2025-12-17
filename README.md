@@ -382,7 +382,7 @@ This is an academic and production-oriented project. Contributions should:
 This project is developed for academic purposes. All rights reserved.
 
 ## 👤 Author
-QuocTuan_dev_in_hcm/contact me: tuquoctuan201@gmail.com
+QuocTuan_dev_in_hcm/contact me: www.linkedin.com/in/tuấn-quốc-866a63251
 ---
 Developed as part of academic coursework with a focus on software engineering best practices, Clean Architecture, and Domain-Driven Design.
 

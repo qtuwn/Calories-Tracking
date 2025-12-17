@@ -5,12 +5,67 @@ import 'package:intl/intl.dart';
 import 'package:calories_app/core/theme/theme.dart';
 import '../providers/diary_provider.dart';
 
-class HomeHeaderSection extends ConsumerWidget {
+class HomeHeaderSection extends ConsumerStatefulWidget {
   const HomeHeaderSection({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    // Use the same selected date as the Diary tab for consistency
+  ConsumerState<HomeHeaderSection> createState() => _HomeHeaderSectionState();
+}
+
+class _HomeHeaderSectionState extends ConsumerState<HomeHeaderSection> {
+  bool _initialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // OPTIMIZATION: Defer provider watch to after first frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && !_initialized) {
+        setState(() {
+          _initialized = true;
+        });
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Use lightweight default until initialized
+    if (!_initialized) {
+      final now = DateTime.now();
+      final dateLabel = DateFormat('EEEE, dd/MM', 'vi')
+          .format(now)
+          .replaceFirstMapped(RegExp(r'^\w'), (m) => m[0]!.toUpperCase());
+      
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Hôm nay',
+            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                  color: AppColors.mediumGray,
+                ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Tổng quan',
+            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  color: AppColors.nearBlack,
+                  fontWeight: FontWeight.w700,
+                ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            dateLabel,
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  color: AppColors.mediumGray,
+                ),
+          ),
+        ],
+      );
+    }
+
+    // Now safe to watch providers
     final diaryState = ref.watch(diaryProvider);
     final selectedDate = diaryState.selectedDate;
     final weekDays = _generateWeekDays(selectedDate);

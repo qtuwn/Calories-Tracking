@@ -73,9 +73,18 @@ class PushNotificationsService {
 
   final FirebaseMessaging _messaging = FirebaseMessaging.instance;
   bool _initialized = false;
+  static bool _staticInitialized = false;
+  Future<void>? _inFlightTokenUpdate;
 
   /// Initialize the push notifications service
   Future<void> init() async {
+    // PHASE 3: Static guard to prevent double initialization
+    if (_staticInitialized) {
+      debugPrint('[PushNotificationsService] ⏭️ init skipped (already initialized this session)');
+      return;
+    }
+    _staticInitialized = true;
+    
     if (_initialized) {
       debugPrint('[PushNotificationsService] Already initialized');
       return;
@@ -213,7 +222,23 @@ class PushNotificationsService {
   }
 
   /// Update FCM token in Firestore if user is logged in
+  /// Only writes if token changed OR last sync > 24h
   Future<void> _updateTokenIfLoggedIn() async {
+    // PHASE 3: Prevent concurrent duplicate writes
+    if (_inFlightTokenUpdate != null) {
+      debugPrint('[PushNotificationsService] ⏭️ Token update already in flight, skipping');
+      return;
+    }
+    
+    _inFlightTokenUpdate = _doUpdateTokenIfLoggedIn();
+    try {
+      await _inFlightTokenUpdate;
+    } finally {
+      _inFlightTokenUpdate = null;
+    }
+  }
+  
+  Future<void> _doUpdateTokenIfLoggedIn() async {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) {
@@ -229,6 +254,26 @@ class PushNotificationsService {
           '[PushNotificationsService] ⚠️ No token available to store',
         );
         return;
+      }
+
+      // PHASE 3: Check if token changed or last sync > 24h
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+      
+      final existingToken = userDoc.data()?['fcmToken'] as String?;
+      final lastUpdated = userDoc.data()?['fcmTokenUpdatedAt'] as Timestamp?;
+      
+      if (existingToken == token && lastUpdated != null) {
+        final lastUpdatedDate = lastUpdated.toDate();
+        final hoursSinceUpdate = DateTime.now().difference(lastUpdatedDate).inHours;
+        if (hoursSinceUpdate < 24) {
+          debugPrint(
+            '[PushNotificationsService] ⏭️ Token unchanged and recent (${hoursSinceUpdate}h ago), skipping update',
+          );
+          return;
+        }
       }
 
       await FirebaseFirestore.instance

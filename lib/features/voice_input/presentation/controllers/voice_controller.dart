@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
+import 'package:permission_handler/permission_handler.dart';
 import '../../domain/entities/recognized_food.dart';
 import '../../../../domain/foods/food.dart';
 import '../providers/voice_providers.dart';
@@ -99,10 +100,16 @@ class VoiceController extends Notifier<VoiceState> {
       final available = await _speech.initialize(
         onError: (error) {
           debugPrint('[VoiceController] ❌ Speech recognition error: SpeechRecognitionError msg: ${error.errorMsg}, permanent: ${error.permanent}');
-          state = state.copyWith(
-            status: VoiceStatus.error,
-            errorMessage: 'Speech recognition error: ${error.errorMsg}',
-          );
+          
+          // Check if the error is due to missing permission (error_network often indicates permission issue)
+          if (error.errorMsg == 'error_network' && error.permanent) {
+            _handlePermissionDeniedError();
+          } else {
+            state = state.copyWith(
+              status: VoiceStatus.error,
+              errorMessage: 'Không thể nhận dạng giọng nói. Vui lòng kiểm tra kết nối mạng.',
+            );
+          }
         },
         onStatus: (status) {
           debugPrint('[VoiceController] 🔵 Speech status: $status');
@@ -121,7 +128,7 @@ class VoiceController extends Notifier<VoiceState> {
         debugPrint('[VoiceController] ❌ Speech recognition not available');
         state = state.copyWith(
           status: VoiceStatus.error,
-          errorMessage: 'Speech recognition is not available on this device',
+          errorMessage: 'Nhận dạng giọng nói không khả dụng trên thiết bị này.',
         );
       }
     } catch (e, stackTrace) {
@@ -129,7 +136,88 @@ class VoiceController extends Notifier<VoiceState> {
       debugPrint('[VoiceController] Stack trace: $stackTrace');
       state = state.copyWith(
         status: VoiceStatus.error,
-        errorMessage: 'Failed to initialize speech recognition: $e',
+        errorMessage: 'Không thể khởi tạo nhận dạng giọng nói.',
+      );
+    }
+  }
+
+  /// Ensure microphone permission is granted before starting speech recognition
+  /// Returns true if permission is granted, false otherwise
+  Future<bool> _ensureMicrophonePermission() async {
+    try {
+      debugPrint('[VoiceController] 🔵 Checking microphone permission...');
+      
+      final status = await Permission.microphone.status;
+      debugPrint('[VoiceController] 🔵 Current permission status: $status');
+      
+      if (status.isGranted) {
+        debugPrint('[VoiceController] ✅ Microphone permission already granted');
+        return true;
+      }
+      
+      // If permanently denied, show appropriate message
+      if (status.isPermanentlyDenied) {
+        debugPrint('[VoiceController] ❌ Microphone permission permanently denied');
+        state = state.copyWith(
+          status: VoiceStatus.error,
+          errorMessage: 'Quyền Microphone bị tắt vĩnh viễn. Vui lòng bật trong Cài đặt.',
+        );
+        // Offer to open settings
+        await openAppSettings();
+        return false;
+      }
+      
+      // Request permission
+      debugPrint('[VoiceController] 🔵 Requesting microphone permission...');
+      final result = await Permission.microphone.request();
+      debugPrint('[VoiceController] 🔵 Permission request result: $result');
+      
+      if (result.isGranted) {
+        debugPrint('[VoiceController] ✅ Microphone permission granted');
+        return true;
+      }
+      
+      // Permission denied
+      if (result.isPermanentlyDenied) {
+        debugPrint('[VoiceController] ❌ Microphone permission permanently denied after request');
+        state = state.copyWith(
+          status: VoiceStatus.error,
+          errorMessage: 'Quyền Microphone bị tắt vĩnh viễn. Vui lòng bật trong Cài đặt.',
+        );
+        // Offer to open settings
+        await openAppSettings();
+      } else {
+        debugPrint('[VoiceController] ❌ Microphone permission denied');
+        state = state.copyWith(
+          status: VoiceStatus.error,
+          errorMessage: 'Cần quyền Microphone để nhận dạng giọng nói.',
+        );
+      }
+      
+      return false;
+    } catch (e, stackTrace) {
+      debugPrint('[VoiceController] ❌ Error checking microphone permission: $e');
+      debugPrint('[VoiceController] Stack trace: $stackTrace');
+      state = state.copyWith(
+        status: VoiceStatus.error,
+        errorMessage: 'Không thể kiểm tra quyền Microphone.',
+      );
+      return false;
+    }
+  }
+
+  /// Handle permission denied error
+  void _handlePermissionDeniedError() async {
+    final status = await Permission.microphone.status;
+    if (status.isPermanentlyDenied) {
+      state = state.copyWith(
+        status: VoiceStatus.error,
+        errorMessage: 'Quyền Microphone bị tắt vĩnh viễn. Vui lòng bật trong Cài đặt.',
+      );
+    } else {
+      state = state.copyWith(
+        status: VoiceStatus.error,
+        errorMessage: 'Cần quyền Microphone để nhận dạng giọng nói.',
       );
     }
   }
@@ -138,6 +226,17 @@ class VoiceController extends Notifier<VoiceState> {
   /// 
   /// [onFoodRecognized] Optional callback that will be invoked when food is successfully recognized.
   Future<void> startListening({void Function(RecognizedFood food)? onFoodRecognized}) async {
+    // CRITICAL: Check microphone permission BEFORE attempting to listen
+    // This prevents the "error_network, permanent: true" error on Android
+    debugPrint('[VoiceController] 🔵 Ensuring microphone permission before starting...');
+    final hasPermission = await _ensureMicrophonePermission();
+    
+    if (!hasPermission) {
+      debugPrint('[VoiceController] ❌ Cannot start listening: microphone permission not granted');
+      // Error message already set by _ensureMicrophonePermission
+      return;
+    }
+    
     if (!_isInitialized) {
       await _initializeSpeech();
       if (!_isInitialized) {
@@ -197,7 +296,7 @@ class VoiceController extends Notifier<VoiceState> {
       debugPrint('[VoiceController] Stack trace: $stackTrace');
       state = state.copyWith(
         status: VoiceStatus.error,
-        errorMessage: 'Failed to start listening: $e',
+        errorMessage: 'Không thể bắt đầu nhận dạng giọng nói.',
       );
     }
   }
@@ -223,7 +322,7 @@ class VoiceController extends Notifier<VoiceState> {
         debugPrint('[VoiceController] ⚠️ No transcript to process');
         state = state.copyWith(
           status: VoiceStatus.error,
-          errorMessage: 'No speech detected. Please try again.',
+          errorMessage: 'Không nhận dạng được giọng nói. Vui lòng thử lại.',
         );
         return;
       }
@@ -244,7 +343,7 @@ class VoiceController extends Notifier<VoiceState> {
       debugPrint('[VoiceController] Stack trace: $stackTrace');
       state = state.copyWith(
         status: VoiceStatus.error,
-        errorMessage: 'Failed to stop listening: $e',
+        errorMessage: 'Không thể dừng nhận dạng giọng nói.',
       );
     } finally {
       _onFoodRecognizedCallback = null;
