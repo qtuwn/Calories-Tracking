@@ -113,8 +113,150 @@ class HealthRepositoryHealthPlugin implements HealthRepository {
     required DateTime startDate,
     required DateTime endDate,
   }) async {
-    // TODO: Implement actual date-range query when step-data source is ready
-    return 0;
+    if (kDebugMode) {
+      debugPrint('[HealthRepo] ▶ getStepsForDateRange() called: $startDate to $endDate');
+    }
+    
+    try {
+      // Normalize dates to start of day
+      final normalizedStart = DateTime(startDate.year, startDate.month, startDate.day);
+      final normalizedEnd = DateTime(
+        endDate.year,
+        endDate.month,
+        endDate.day,
+        23,
+        59,
+        59,
+        999,
+      );
+      
+      if (kDebugMode) {
+        debugPrint('[HealthRepo] Querying steps from $normalizedStart to $normalizedEnd');
+      }
+      
+      final steps = await _health.getTotalStepsInInterval(normalizedStart, normalizedEnd);
+      final stepCount = steps ?? 0;
+      
+      if (kDebugMode) {
+        debugPrint('[HealthRepo] ✅ Total steps in range: $stepCount');
+      }
+      
+      return stepCount;
+    } catch (e, stackTrace) {
+      if (kDebugMode) {
+        debugPrint('[HealthRepo] ❌ Error getting steps for date range: $e');
+        debugPrint('[HealthRepo] Stack trace: $stackTrace');
+      }
+      developer.log(
+        'Error getting steps for date range',
+        name: 'HealthRepo',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      return 0;
+    }
+  }
+
+  @override
+  Future<Map<DateTime, int>> getDailySteps({
+    required DateTime startDate,
+    required DateTime endDate,
+  }) async {
+    if (kDebugMode) {
+      debugPrint('[HealthRepo] ▶ getDailySteps() called: $startDate to $endDate');
+    }
+    
+    try {
+      // Normalize start to beginning of day
+      final normalizedStart = DateTime(startDate.year, startDate.month, startDate.day);
+      final normalizedEnd = DateTime(endDate.year, endDate.month, endDate.day);
+      
+      final result = <DateTime, int>{};
+      var currentDay = normalizedStart;
+      
+      // Iterate day by day and query steps for each day
+      while (currentDay.isBefore(normalizedEnd) || currentDay.isAtSameMomentAs(normalizedEnd)) {
+        final dayStart = DateTime(currentDay.year, currentDay.month, currentDay.day);
+        final dayEnd = DateTime(
+          currentDay.year,
+          currentDay.month,
+          currentDay.day,
+          23,
+          59,
+          59,
+          999,
+        );
+        
+        try {
+          final daySteps = await _health.getTotalStepsInInterval(dayStart, dayEnd);
+          result[dayStart] = daySteps ?? 0;
+        } catch (e) {
+          if (kDebugMode) {
+            debugPrint('[HealthRepo] ⚠️ Error getting steps for day $dayStart: $e');
+          }
+          result[dayStart] = 0;
+        }
+        
+        // Move to next day
+        currentDay = DateTime(currentDay.year, currentDay.month, currentDay.day + 1);
+      }
+      
+      if (kDebugMode) {
+        debugPrint('[HealthRepo] ✅ Generated ${result.length} daily step entries');
+      }
+      
+      return result;
+    } catch (e, stackTrace) {
+      if (kDebugMode) {
+        debugPrint('[HealthRepo] ❌ Error getting daily steps: $e');
+        debugPrint('[HealthRepo] Stack trace: $stackTrace');
+      }
+      developer.log(
+        'Error getting daily steps',
+        name: 'HealthRepo',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      return {};
+    }
+  }
+
+  @override
+  Future<bool> hasStepsPermission() async {
+    if (kDebugMode) {
+      debugPrint('[HealthRepo] ▶ hasStepsPermission() called');
+    }
+    
+    try {
+      // Check Android runtime permission
+      final activityStatus = await Permission.activityRecognition.status;
+      if (!activityStatus.isGranted) {
+        if (kDebugMode) {
+          debugPrint('[HealthRepo] ❌ ACTIVITY_RECOGNITION permission not granted');
+        }
+        return false;
+      }
+      
+      // Check Health Connect permission
+      final hasPerm = await _health.hasPermissions(_types) ?? false;
+      if (kDebugMode) {
+        debugPrint('[HealthRepo] Health Connect permission: $hasPerm');
+      }
+      
+      return hasPerm;
+    } catch (e, stackTrace) {
+      if (kDebugMode) {
+        debugPrint('[HealthRepo] ❌ Error checking permission: $e');
+        debugPrint('[HealthRepo] Stack trace: $stackTrace');
+      }
+      developer.log(
+        'Error checking steps permission',
+        name: 'HealthRepo',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      return false;
+    }
   }
 }
 
