@@ -5,11 +5,65 @@ import 'package:calories_app/core/theme/theme.dart';
 import '../providers/home_dashboard_providers.dart';
 import '../providers/water_intake_provider.dart';
 
-class HomeCalorieCard extends ConsumerWidget {
+class HomeCalorieCard extends ConsumerStatefulWidget {
   const HomeCalorieCard({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HomeCalorieCard> createState() => _HomeCalorieCardState();
+}
+
+class _HomeCalorieCardState extends ConsumerState<HomeCalorieCard> {
+  bool _initialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // OPTIMIZATION: Defer heavy provider watches to after first frame
+    // This prevents blocking initial render with Firestore streams
+    Future.microtask(() {
+      if (mounted && !_initialized) {
+        setState(() {
+          _initialized = true;
+        });
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Show skeleton/placeholder until providers are ready
+    if (!_initialized) {
+      return Container(
+        height: 200,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              const Color(0xFF1E2432),
+              const Color(0xFF2A3040),
+              AppColors.nearBlack.withValues(alpha: 0.85),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.15),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: const Center(
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFAAF0D1)),
+          ),
+        ),
+      );
+    }
+
+    // Now safe to watch heavy providers
     final summary = ref.watch(homeDailySummaryProvider);
     final waterState = ref.watch(dailyWaterIntakeProvider);
     final todayWaterMl = waterState.totalMl;

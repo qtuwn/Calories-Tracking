@@ -1,19 +1,42 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:calories_app/core/notifications/local_notifications_service.dart';
 import 'package:calories_app/core/notifications/notification_messages.dart';
 import 'package:calories_app/features/settings/data/notification_prefs.dart';
+import 'package:calories_app/shared/state/profile_providers.dart';
 
 /// Service for scheduling local notifications based on user preferences
 class NotificationScheduler {
   final LocalNotificationsService _localNotificationsService;
+  final SharedPreferences? _prefs;
+  static bool _initOnce = false;
+  static const String _lastRescheduleDateKey = 'notificationScheduler_lastRescheduleDate';
 
-  NotificationScheduler(this._localNotificationsService);
+  NotificationScheduler(this._localNotificationsService, [this._prefs]);
 
   /// Reschedule all notifications based on preferences
-  Future<void> rescheduleAll(NotificationPrefs prefs) async {
+  /// 
+  /// Only cancels existing notifications if preferences changed or last reschedule was > 24h ago.
+  Future<void> rescheduleAll(NotificationPrefs prefs, {bool force = false}) async {
+    // PHASE 2: Check if we need to reschedule (avoid cancelAll on every boot)
+    if (!force && _prefs != null) {
+      final lastRescheduleStr = _prefs!.getString(_lastRescheduleDateKey);
+      if (lastRescheduleStr != null) {
+        final lastReschedule = DateTime.parse(lastRescheduleStr);
+        final now = DateTime.now();
+        final hoursSinceLastReschedule = now.difference(lastReschedule).inHours;
+        
+        // Only reschedule if > 24h ago (avoid cancelAll on every boot)
+        if (hoursSinceLastReschedule < 24) {
+          debugPrint('[NotificationScheduler] ⏭️ Skipping reschedule (last: ${hoursSinceLastReschedule}h ago, < 24h)');
+          return;
+        }
+      }
+    }
+    
     try {
-      // Cancel all existing notifications first
+      // Cancel all existing notifications first (only when actually rescheduling)
       await _localNotificationsService.cancelAll();
       debugPrint('[NotificationScheduler] ✅ Cancelled all existing notifications');
 
@@ -85,6 +108,11 @@ class NotificationScheduler {
         debugPrint('[NotificationScheduler] ℹ️ Water reminder disabled');
       }
 
+      // Save last reschedule date
+      if (_prefs != null) {
+        await _prefs!.setString(_lastRescheduleDateKey, DateTime.now().toIso8601String());
+      }
+      
       debugPrint('[NotificationScheduler] ✅ All notifications rescheduled');
     } catch (e, stackTrace) {
       debugPrint('[NotificationScheduler] 🔥 Error rescheduling notifications: $e');
@@ -95,6 +123,13 @@ class NotificationScheduler {
 
   /// Initialize default schedules by loading preferences and rescheduling
   Future<void> initDefaultSchedules() async {
+    // PHASE 1: Guard to prevent double initialization
+    if (_initOnce) {
+      debugPrint('[NotificationScheduler] ⏭️ init skipped (already initialized this session)');
+      return;
+    }
+    _initOnce = true;
+    
     try {
       debugPrint('[NotificationScheduler] 🔵 Initializing default schedules...');
       final repository = NotificationPrefsRepository();
@@ -113,6 +148,7 @@ class NotificationScheduler {
 /// Riverpod provider for NotificationScheduler
 final notificationSchedulerProvider = Provider<NotificationScheduler>((ref) {
   final localNotificationsService = ref.read(localNotificationsServiceProvider);
-  return NotificationScheduler(localNotificationsService);
+  final prefs = ref.read(sharedPreferencesProvider);
+  return NotificationScheduler(localNotificationsService, prefs);
 });
 

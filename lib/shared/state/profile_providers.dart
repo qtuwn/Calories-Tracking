@@ -7,20 +7,46 @@ import '../../domain/profile/profile_service.dart';
 import '../../data/profile/firestore_profile_repository.dart';
 import '../../data/profile/shared_prefs_profile_cache.dart';
 
-/// Provider for SharedPreferences instance
+/// FutureProvider for SharedPreferences instance
 /// 
-/// IMPORTANT: This provider should be overridden in main.dart with a preloaded instance.
-/// If not overridden, it will attempt to get SharedPreferences, but this should never happen
-/// in production since main.dart preloads it before runApp().
+/// IMPORTANT: This provider is overridden in main.dart with a preloaded instance
+/// before runApp() to ensure it's available synchronously during routing.
 /// 
-/// The override ensures SharedPreferences is always available synchronously,
-/// eliminating the need for Dummy caches and preventing race conditions.
+/// Override is required because IntroGate -> ProfileGate -> onboardingCacheProvider
+/// needs SharedPreferences immediately during initial routing (before first frame).
+/// 
+/// The override in main.dart looks like:
+/// ```dart
+/// final prefs = await SharedPreferences.getInstance();
+/// ProviderScope(
+///   overrides: [
+///     sharedPreferencesFutureProvider.overrideWithValue(AsyncValue.data(prefs)),
+///   ],
+///   ...
+/// )
+/// ```
+final sharedPreferencesFutureProvider = FutureProvider<SharedPreferences>((ref) async {
+  // This implementation should never be called in production because main.dart
+  // overrides this provider with a preloaded instance.
+  // However, we provide a fallback for tests or edge cases.
+  return await SharedPreferences.getInstance();
+});
+
+/// Synchronous provider that unwraps the FutureProvider
+/// 
+/// This maintains backward compatibility with existing code that expects synchronous access.
+/// Safe to use because main.dart ensures the FutureProvider is overridden with preloaded data.
 final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
-  // This should never be called if main.dart properly overrides it
-  // But we provide a fallback for safety
-  throw StateError(
-    'sharedPreferencesProvider must be overridden in main.dart with a preloaded instance. '
-    'Ensure SharedPreferences.getInstance() is called before runApp() and passed via ProviderScope.overrides.',
+  final asyncValue = ref.watch(sharedPreferencesFutureProvider);
+  return asyncValue.when(
+    data: (prefs) => prefs,
+    loading: () => throw StateError(
+      'SharedPreferences not yet loaded. This should not happen because main.dart '
+      'preloads SharedPreferences and overrides sharedPreferencesFutureProvider before runApp().'
+    ),
+    error: (error, stack) => throw StateError(
+      'Failed to load SharedPreferences: $error'
+    ),
   );
 });
 

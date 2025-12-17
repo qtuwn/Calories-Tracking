@@ -3,13 +3,31 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers/home_dashboard_providers.dart';
 
-class HomeMacroSection extends ConsumerWidget {
+class HomeMacroSection extends ConsumerStatefulWidget {
   const HomeMacroSection({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final macros = ref.watch(homeMacroSummaryProvider);
+  ConsumerState<HomeMacroSection> createState() => _HomeMacroSectionState();
+}
 
+class _HomeMacroSectionState extends ConsumerState<HomeMacroSection> {
+  bool _initialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // OPTIMIZATION: Defer provider watch to after first frame
+    Future.microtask(() {
+      if (mounted && !_initialized) {
+        setState(() {
+          _initialized = true;
+        });
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -33,14 +51,67 @@ class HomeMacroSection extends ConsumerWidget {
                 ),
           ),
           const SizedBox(height: 16),
-          ...macros.map(
-            (macro) => Padding(
-              padding: const EdgeInsets.only(bottom: 16),
-              child: _MacroProgressRow(macro: macro),
+          // Show skeleton until initialized
+          if (!_initialized)
+            ...List.generate(
+              3,
+              (index) => Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: _MacroSkeleton(),
+              ),
+            )
+          else
+            ...ref.watch(homeMacroSummaryProvider).map(
+              (macro) => Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: _MacroProgressRow(macro: macro),
+              ),
             ),
-          ),
         ],
       ),
+    );
+  }
+}
+
+class _MacroSkeleton extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 42,
+          height: 42,
+          decoration: BoxDecoration(
+            color: Colors.grey[200],
+            shape: BoxShape.circle,
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                height: 16,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: Colors.grey[200],
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                height: 10,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
