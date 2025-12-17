@@ -17,14 +17,21 @@ abstract class HealthRepository {
 
   /// Get total steps for a date range (from startDate to endDate, inclusive).
   /// Returns 0 if no data is available or if there's an error.
-  /// 
-  /// TODO: Implement actual date-range query when step-data source is ready
   Future<int> getStepsForDateRange({
     required DateTime startDate,
     required DateTime endDate,
-  }) async {
-    // TODO: Implement actual date-range query when step-data source is ready
-    return 0;
-  }
+  });
+
+  /// Get steps for each day in a date range.
+  /// Returns a map of normalized date (midnight) to step count for that day.
+  /// Useful for displaying daily breakdowns in charts.
+  Future<Map<DateTime, int>> getDailySteps({
+    required DateTime startDate,
+    required DateTime endDate,
+  });
+
+  /// Check if steps permission is currently granted.
+  /// Returns true if both ACTIVITY_RECOGNITION and Health Connect permissions are granted.
+  Future<bool> hasStepsPermission();
 }
 

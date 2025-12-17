@@ -1,4 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
+
+import '../../providers/statistics_providers.dart';
+import '../../../domain/statistics_models.dart';
+import '../../../../../core/theme/theme.dart';
 
 /// Steps Report Screen
 /// 
@@ -8,11 +14,16 @@ import 'package:flutter/material.dart';
 /// - Step trends and patterns
 /// 
 /// Navigation: Accessed from Account page "Xem báo cáo thống kê" > "Số bước"
-class StepsReportScreen extends StatelessWidget {
+class StepsReportScreen extends ConsumerWidget {
   const StepsReportScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final todayStatsAsync = ref.watch(todayStepsStatsProvider);
+    final weekStatsAsync = ref.watch(weekStepsStatsProvider);
+    final monthStatsAsync = ref.watch(monthStepsStatsProvider);
+    final weekDailyAsync = ref.watch(weekDailyStepsProvider);
+    final monthDailyAsync = ref.watch(monthDailyStepsProvider);
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
@@ -76,38 +87,10 @@ class StepsReportScreen extends StatelessWidget {
             _buildSection(
               context,
               title: 'Hôm nay',
-              child: Column(
-                children: [
-                  // TODO: Add today's steps summary card (total steps, goal progress)
-                  // TODO: Add today's step chart (hourly breakdown)
-                  // TODO: Add today's activity timeline
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(40),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[100],
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Column(
-                      children: [
-                        Icon(
-                          Icons.directions_walk,
-                          size: 48,
-                          color: Colors.grey[400],
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          'Dữ liệu số bước hôm nay sẽ được hiển thị tại đây',
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 14,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+              child: todayStatsAsync.when(
+                data: (stats) => _buildTodayCard(context, stats),
+                loading: () => _buildLoadingCard(context),
+                error: (error, stack) => _buildErrorCard(context, error.toString()),
               ),
             ),
             const SizedBox(height: 24),
@@ -118,34 +101,16 @@ class StepsReportScreen extends StatelessWidget {
               title: 'Tuần này',
               child: Column(
                 children: [
-                  // TODO: Add weekly steps trends chart
-                  // TODO: Add weekly average steps
-                  // TODO: Add weekly step goal achievements
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(40),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[100],
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Column(
-                      children: [
-                        Icon(
-                          Icons.show_chart,
-                          size: 48,
-                          color: Colors.grey[400],
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          'Biểu đồ xu hướng số bước tuần này sẽ được hiển thị tại đây',
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 14,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
+                  weekStatsAsync.when(
+                    data: (stats) => _buildPeriodSummaryCard(context, stats, 'Tổng số bước tuần này'),
+                    loading: () => _buildLoadingCard(context),
+                    error: (error, stack) => _buildErrorCard(context, error.toString()),
+                  ),
+                  const SizedBox(height: 16),
+                  weekDailyAsync.when(
+                    data: (dailySteps) => _buildDailyStepsList(context, dailySteps, isWeek: true),
+                    loading: () => _buildLoadingCard(context),
+                    error: (error, stack) => _buildErrorCard(context, error.toString()),
                   ),
                 ],
               ),
@@ -158,34 +123,16 @@ class StepsReportScreen extends StatelessWidget {
               title: 'Tháng này',
               child: Column(
                 children: [
-                  // TODO: Add monthly steps summary
-                  // TODO: Add monthly trends and patterns
-                  // TODO: Add monthly goals vs actual comparison
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(40),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[100],
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Column(
-                      children: [
-                        Icon(
-                          Icons.calendar_month,
-                          size: 48,
-                          color: Colors.grey[400],
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          'Thống kê số bước tháng này sẽ được hiển thị tại đây',
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 14,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
+                  monthStatsAsync.when(
+                    data: (stats) => _buildPeriodSummaryCard(context, stats, 'Tổng số bước tháng này'),
+                    loading: () => _buildLoadingCard(context),
+                    error: (error, stack) => _buildErrorCard(context, error.toString()),
+                  ),
+                  const SizedBox(height: 16),
+                  monthDailyAsync.when(
+                    data: (dailySteps) => _buildDailyStepsList(context, dailySteps, isWeek: false),
+                    loading: () => _buildLoadingCard(context),
+                    error: (error, stack) => _buildErrorCard(context, error.toString()),
                   ),
                 ],
               ),
@@ -211,6 +158,222 @@ class StepsReportScreen extends StatelessWidget {
         const SizedBox(height: 16),
         child,
       ],
+    );
+  }
+
+  Widget _buildTodayCard(BuildContext context, StepsStats stats) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Tổng số bước',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            '${stats.totalSteps}',
+            style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.charmingGreen,
+                ),
+          ),
+          if (stats.targetSteps != null) ...[
+            const SizedBox(height: 8),
+            LinearProgressIndicator(
+              value: stats.progress.clamp(0.0, 1.0),
+              backgroundColor: Colors.grey[200],
+              valueColor: AlwaysStoppedAnimation<Color>(AppColors.charmingGreen),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Mục tiêu: ${stats.targetSteps} bước',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Colors.grey[600],
+                  ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPeriodSummaryCard(BuildContext context, StepsStats stats, String label) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            '${stats.totalSteps}',
+            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.charmingGreen,
+                ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDailyStepsList(BuildContext context, Map<DateTime, int> dailySteps, {required bool isWeek}) {
+    if (dailySteps.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.grey[100],
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Text(
+          'Chưa có dữ liệu',
+          style: TextStyle(color: Colors.grey[600]),
+          textAlign: TextAlign.center,
+        ),
+      );
+    }
+
+    final sortedDays = dailySteps.keys.toList()..sort();
+    final dateFormat = DateFormat('dd/MM');
+    final weekdayFormat = DateFormat('EEE', 'vi');
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            isWeek ? 'Số bước theo ngày trong tuần' : 'Số bước theo ngày trong tháng',
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+          ),
+          const SizedBox(height: 12),
+          ...sortedDays.map((day) {
+            final steps = dailySteps[day] ?? 0;
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Row(
+                      children: [
+                        SizedBox(
+                          width: 60,
+                          child: Text(
+                            isWeek ? weekdayFormat.format(day) : dateFormat.format(day),
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  color: Colors.grey[700],
+                                ),
+                          ),
+                        ),
+                        Expanded(
+                          child: LinearProgressIndicator(
+                            value: steps > 0 ? (steps / 10000).clamp(0.0, 1.0) : 0.0,
+                            backgroundColor: Colors.grey[200],
+                            valueColor: AlwaysStoppedAnimation<Color>(AppColors.charmingGreen),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    '$steps',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                  ),
+                ],
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLoadingCard(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(40),
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: const Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+  }
+
+  Widget _buildErrorCard(BuildContext context, String error) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.red[50],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.red[200]!),
+      ),
+      child: Column(
+        children: [
+          Icon(Icons.error_outline, color: Colors.red[400]),
+          const SizedBox(height: 8),
+          Text(
+            'Lỗi: $error',
+            style: TextStyle(color: Colors.red[700]),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
     );
   }
 }
