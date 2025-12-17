@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:calories_app/domain/diary/diary_entry.dart';
 import 'package:calories_app/shared/state/diary_providers.dart' as diary_providers;
@@ -346,20 +347,101 @@ final todayStepsStatsProvider = FutureProvider<StepsStats>((ref) async {
 
 /// Get steps statistics for this week (last 7 days)
 final weekStepsStatsProvider = FutureProvider<StepsStats>((ref) async {
-  // TODO: Implement weekly step aggregation once HealthRepository supports date-range queries
-  return StepsStats(
-    totalSteps: 0,
-    targetSteps: null,
-  );
+  final healthRepo = ref.read(healthRepositoryProvider);
+  
+  try {
+    final now = DateTime.now();
+    final startOfWeek = now.subtract(const Duration(days: 6));
+    final normalizedStart = DateTime(startOfWeek.year, startOfWeek.month, startOfWeek.day);
+    
+    final totalSteps = await healthRepo.getStepsForDateRange(
+      startDate: normalizedStart,
+      endDate: now,
+    );
+    
+    // TODO: Get step goal from profile or settings if available
+    const targetSteps = null;
+    
+    return StepsStats(
+      totalSteps: totalSteps,
+      targetSteps: targetSteps,
+    );
+  } catch (e) {
+    if (kDebugMode) {
+      debugPrint('[WeekStepsStats] Error: $e');
+    }
+    return StepsStats(totalSteps: 0, targetSteps: null);
+  }
 });
 
 /// Get steps statistics for this month
 final monthStepsStatsProvider = FutureProvider<StepsStats>((ref) async {
-  // TODO: Implement monthly step aggregation once HealthRepository supports date-range queries
-  return StepsStats(
-    totalSteps: 0,
-    targetSteps: null,
-  );
+  final healthRepo = ref.read(healthRepositoryProvider);
+  
+  try {
+    final now = DateTime.now();
+    final startOfMonth = DateTime(now.year, now.month, 1);
+    
+    final totalSteps = await healthRepo.getStepsForDateRange(
+      startDate: startOfMonth,
+      endDate: now,
+    );
+    
+    // TODO: Get step goal from profile or settings if available
+    const targetSteps = null;
+    
+    return StepsStats(
+      totalSteps: totalSteps,
+      targetSteps: targetSteps,
+    );
+  } catch (e) {
+    if (kDebugMode) {
+      debugPrint('[MonthStepsStats] Error: $e');
+    }
+    return StepsStats(totalSteps: 0, targetSteps: null);
+  }
+});
+
+/// Get daily steps breakdown for this week (Mon-Sun)
+final weekDailyStepsProvider = FutureProvider<Map<DateTime, int>>((ref) async {
+  final healthRepo = ref.read(healthRepositoryProvider);
+  
+  try {
+    final now = DateTime.now();
+    final weekday = now.weekday; // 1 = Monday, 7 = Sunday
+    final startOfWeek = now.subtract(Duration(days: weekday - 1));
+    final normalizedStart = DateTime(startOfWeek.year, startOfWeek.month, startOfWeek.day);
+    
+    return await healthRepo.getDailySteps(
+      startDate: normalizedStart,
+      endDate: now,
+    );
+  } catch (e) {
+    if (kDebugMode) {
+      debugPrint('[WeekDailySteps] Error: $e');
+    }
+    return {};
+  }
+});
+
+/// Get daily steps breakdown for this month
+final monthDailyStepsProvider = FutureProvider<Map<DateTime, int>>((ref) async {
+  final healthRepo = ref.read(healthRepositoryProvider);
+  
+  try {
+    final now = DateTime.now();
+    final startOfMonth = DateTime(now.year, now.month, 1);
+    
+    return await healthRepo.getDailySteps(
+      startDate: startOfMonth,
+      endDate: now,
+    );
+  } catch (e) {
+    if (kDebugMode) {
+      debugPrint('[MonthDailySteps] Error: $e');
+    }
+    return {};
+  }
 });
 
 // ============================================================================
