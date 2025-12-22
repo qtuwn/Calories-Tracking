@@ -17,16 +17,26 @@ class HealthRepositoryHealthPlugin implements HealthRepository {
     debugPrint('[HealthRepo] Requesting permission for types: $_types');
 
     try {
-      // Step 1: Request Android runtime permission for activity recognition
-      debugPrint('[HealthRepo] Step 1: requesting ACTIVITY_RECOGNITION runtime permission');
-      final activityStatus = await Permission.activityRecognition.request();
-      debugPrint('[HealthRepo] ACTIVITY_RECOGNITION permission result: ${activityStatus.name}');
-      
-      if (!activityStatus.isGranted) {
-        debugPrint('[HealthRepo] ❌ ACTIVITY_RECOGNITION permission denied');
-        return false;
+      // Step 0: Configure Health plugin (required before requesting authorization)
+      debugPrint('[HealthRepo] Step 0: Configuring Health plugin');
+      await _health.configure();
+      debugPrint('[HealthRepo] ✅ Health plugin configured');
+
+      // Step 1: Check and request Android runtime permission for activity recognition
+      debugPrint('[HealthRepo] Step 1: Checking ACTIVITY_RECOGNITION permission status');
+      if (await Permission.activityRecognition.isDenied) {
+        debugPrint('[HealthRepo] ACTIVITY_RECOGNITION is denied, requesting...');
+        final activityStatus = await Permission.activityRecognition.request();
+        debugPrint('[HealthRepo] ACTIVITY_RECOGNITION permission result: ${activityStatus.name}');
+        
+        if (!activityStatus.isGranted) {
+          debugPrint('[HealthRepo] ❌ ACTIVITY_RECOGNITION permission denied');
+          return false;
+        }
+        debugPrint('[HealthRepo] ✅ ACTIVITY_RECOGNITION permission granted');
+      } else {
+        debugPrint('[HealthRepo] ✅ ACTIVITY_RECOGNITION permission already granted');
       }
-      debugPrint('[HealthRepo] ✅ ACTIVITY_RECOGNITION permission granted');
 
       // Step 2: Check if Health Connect permissions are already granted
       debugPrint('[HealthRepo] Step 2: Health.hasPermissions(...)');
@@ -54,6 +64,9 @@ class HealthRepositoryHealthPlugin implements HealthRepository {
         debugPrint('[HealthRepo] ✅ Health Connect permissions granted successfully');
       } else {
         debugPrint('[HealthRepo] ❌ Health Connect permissions denied or not granted');
+        debugPrint('⚠️ Authorization failed');
+        // TODO: On Xiaomi/Redmi devices with MIUI, users may need to manually enable
+        // pop-up or background permissions in device settings, as popups can be silently blocked.
       }
       
       return granted;

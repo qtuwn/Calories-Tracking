@@ -7,8 +7,12 @@
     <!-- Required for fitness data such as steps -->
     <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
     
-    <!-- Health Connect – Steps (READ only, as per your code) -->
+    <!-- Health Connect – Steps (READ and WRITE) -->
     <uses-permission android:name="android.permission.health.READ_STEPS" />
+    <uses-permission android:name="android.permission.health.WRITE_STEPS" />
+    
+    <!-- Health Connect – MANAGE_HEALTH_DATA (required for Android 14+) -->
+    <uses-permission android:name="android.permission.health.MANAGE_HEALTH_DATA" />
     
     <!-- Required for flutter_local_notifications 19.5.0+ -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
@@ -27,11 +31,10 @@
             android:name=".MainActivity"
             android:exported="true"
             android:launchMode="singleTop"
-            android:taskAffinity=""
-            android:theme="@style/LaunchTheme"
+            android:windowSoftInputMode="adjustResize"
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
-            android:hardwareAccelerated="true"
-            android:windowSoftInputMode="adjustResize">
+            android:theme="@style/LaunchTheme"
+            android:hardwareAccelerated="true">
             <!-- Specifies an Android theme to apply to this Activity as soon as
                  the Android process has started. This theme is visible to the user
                  while the Flutter UI initializes. After that, this theme continues
@@ -43,6 +46,10 @@
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+            <!-- Health Connect permission rationale intent filter -->
+            <intent-filter>
+                <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
             </intent-filter>
         </activity>
         
@@ -84,17 +91,18 @@
 
          In particular, this is used by the Flutter engine in io.flutter.plugin.text.ProcessTextPlugin. -->
     <queries>
-        <intent>
-            <action android:name="android.intent.action.PROCESS_TEXT"/>
-            <data android:mimeType="text/plain"/>
-        </intent>
-        
         <!-- Health Connect package detection (required for Android 11+) -->
         <package android:name="com.google.android.apps.healthdata" />
         
         <!-- Health Connect intent actions -->
         <intent>
             <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
+        </intent>
+        
+        <!-- Flutter text processing -->
+        <intent>
+            <action android:name="android.intent.action.PROCESS_TEXT"/>
+            <data android:mimeType="text/plain"/>
         </intent>
     </queries>
 </manifest>
