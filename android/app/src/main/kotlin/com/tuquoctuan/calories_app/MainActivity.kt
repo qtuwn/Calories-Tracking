@@ -1,4 +1,4 @@
-package com.example.calories_app
+package com.tuquoctuan.calories_app
 
 import io.flutter.embedding.android.FlutterFragmentActivity
 

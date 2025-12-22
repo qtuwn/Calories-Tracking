@@ -1,4 +1,5 @@
 import 'package:calories_app/core/utils/bmi_calculator.dart';
+import 'package:calories_app/features/onboarding/domain/macro_utils.dart';
 import 'package:calories_app/features/onboarding/domain/nutrition_result.dart';
 import 'package:calories_app/features/onboarding/domain/onboarding_model.dart';
 
@@ -86,16 +87,43 @@ class NutritionCalculator {
 
   /// Calculate macros in grams
   /// grams = (pct * kcal) / calPerGram
+  /// 
+  /// Normalizes macro percentages before calculation to ensure total = exactly 100%
   static Map<String, double> calcMacros({
     required double targetKcal,
     double proteinPercent = defaultProteinPercent,
     double carbPercent = defaultCarbPercent,
     double fatPercent = defaultFatPercent,
   }) {
+    // Validate and normalize macro percentages
+    // Guard against negative or non-finite values
+    if (!proteinPercent.isFinite || !carbPercent.isFinite || !fatPercent.isFinite) {
+      throw ArgumentError(
+        'Macro percentages must be finite numbers',
+      );
+    }
+
+    if (proteinPercent < 0 || carbPercent < 0 || fatPercent < 0) {
+      throw ArgumentError(
+        'Macro percentages cannot be negative',
+      );
+    }
+
+    // Normalize to ensure total = exactly 100%
+    final normalized = MacroUtils.normalizeMacros(
+      proteinPercent: proteinPercent,
+      carbPercent: carbPercent,
+      fatPercent: fatPercent,
+    );
+
+    final normalizedProtein = normalized['proteinPercent']!;
+    final normalizedCarb = normalized['carbPercent']!;
+    final normalizedFat = normalized['fatPercent']!;
+
     return {
-      'protein': (proteinPercent / 100 * targetKcal) / calPerGramProtein,
-      'carb': (carbPercent / 100 * targetKcal) / calPerGramCarb,
-      'fat': (fatPercent / 100 * targetKcal) / calPerGramFat,
+      'protein': (normalizedProtein / 100 * targetKcal) / calPerGramProtein,
+      'carb': (normalizedCarb / 100 * targetKcal) / calPerGramCarb,
+      'fat': (normalizedFat / 100 * targetKcal) / calPerGramFat,
     };
   }
 
@@ -154,9 +182,20 @@ class NutritionCalculator {
     );
 
     // Use provided macros or defaults
-    final proteinPercent = model.proteinPercent ?? defaultProteinPercent;
-    final carbPercent = model.carbPercent ?? defaultCarbPercent;
-    final fatPercent = model.fatPercent ?? defaultFatPercent;
+    var proteinPercent = model.proteinPercent ?? defaultProteinPercent;
+    var carbPercent = model.carbPercent ?? defaultCarbPercent;
+    var fatPercent = model.fatPercent ?? defaultFatPercent;
+
+    // Normalize macro percentages before calculating grams
+    // This ensures total = exactly 100% and guards against invalid values
+    final normalized = MacroUtils.normalizeMacros(
+      proteinPercent: proteinPercent,
+      carbPercent: carbPercent,
+      fatPercent: fatPercent,
+    );
+    proteinPercent = normalized['proteinPercent']!;
+    carbPercent = normalized['carbPercent']!;
+    fatPercent = normalized['fatPercent']!;
 
     // Calculate macros in grams
     final macros = calcMacros(
