@@ -71,9 +71,9 @@ class _ResultSummaryStepScreenState
               ),
               const SizedBox(height: 32),
 
-              // Progress indicator
+              // Progress indicator - use dynamic step from state
               ProgressIndicatorWidget(
-                progress: 11 / OnboardingModel.totalSteps,
+                progress: state.currentStep / OnboardingModel.totalSteps,
               ),
               const SizedBox(height: 32),
 

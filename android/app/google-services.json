@@ -37,6 +37,57 @@
             {
               "client_id": "319980957517-5kc7ho0r5q3q9e839be4rar5ad9rjtku.apps.googleusercontent.com",
               "client_type": 3
+            },
+            {
+              "client_id": "319980957517-uhdctfjrekqu4gid4offhsoo4lv27m3q.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.caloriesApp"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:319980957517:android:b2602c208303f83ae6d104",
+        "android_client_info": {
+          "package_name": "com.tuquoctuan.calories_app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "319980957517-gg87j9o54uqjtd3tti1lvatqh8b3bcp6.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.tuquoctuan.calories_app",
+            "certificate_hash": "e159a251a99ba41a755bf64bdeb32b59cc504ef0"
+          }
+        },
+        {
+          "client_id": "319980957517-5kc7ho0r5q3q9e839be4rar5ad9rjtku.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDuoMQ9qk1D3DlN36SQTkQ_67a5zZw0I_I"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "319980957517-5kc7ho0r5q3q9e839be4rar5ad9rjtku.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "319980957517-uhdctfjrekqu4gid4offhsoo4lv27m3q.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.caloriesApp"
+              }
             }
           ]
         }

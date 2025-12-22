@@ -1,6 +1,9 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
+// Small epsilon to prevent seams between adjacent arcs
+const double _arcEpsilon = 0.001; // radians
+
 class DonutChartWidget extends StatelessWidget {
   final double proteinPercent;
   final double carbPercent;
@@ -53,54 +56,76 @@ class _DonutChartPainter extends CustomPainter {
     const carbColor = Color(0xFF2196F3); // Blue
     const fatColor = Color(0xFFFF9800); // Orange
 
-    // Normalize percentages to 360 degrees
-    final total = proteinPercent + carbPercent + fatPercent;
-    final proteinAngle = (proteinPercent / total) * 360;
-    final carbAngle = (carbPercent / total) * 360;
-    final fatAngle = (fatPercent / total) * 360;
+    // Guard against non-finite or invalid values
+    final safeProtein = proteinPercent.isFinite && proteinPercent > 0
+        ? proteinPercent
+        : 0.0;
+    final safeCarb = carbPercent.isFinite && carbPercent > 0
+        ? carbPercent
+        : 0.0;
+    final safeFat = fatPercent.isFinite && fatPercent > 0
+        ? fatPercent
+        : 0.0;
 
-    double startAngle = -90 * (3.14159 / 180); // Start from top
+    // Compute sweep angles using percent/100 * 2π (radians directly)
+    // This avoids precision issues from degree-to-radian conversion
+    final proteinSweep = (safeProtein / 100.0) * (2 * math.pi);
+    final carbSweep = (safeCarb / 100.0) * (2 * math.pi);
+    final fatSweep = (safeFat / 100.0) * (2 * math.pi);
+
+    // Debug assertion to ensure macro total is ~100% in debug mode
+    assert(() {
+      final total = proteinPercent + carbPercent + fatPercent;
+      if ((total - 100.0).abs() > 1.0) {
+        debugPrint(
+          '⚠️ DonutChart: Macro total is ${total.toStringAsFixed(1)}% (expected ~100%)',
+        );
+      }
+      return true;
+    }());
+
+    // Start from top (-π/2 radians = -90 degrees)
+    double startAngle = -math.pi / 2;
 
     // Draw Protein segment
-    if (proteinPercent > 0) {
-      final proteinSweepAngle = proteinAngle * (3.14159 / 180);
+    if (safeProtein > 0 && proteinSweep > _arcEpsilon) {
       _drawArc(
         canvas,
         center,
         radius,
         innerRadius,
         startAngle,
-        proteinSweepAngle,
+        proteinSweep,
         proteinColor,
       );
-      startAngle += proteinSweepAngle;
+      // Add small epsilon to prevent seams between adjacent arcs
+      startAngle += proteinSweep + _arcEpsilon;
     }
 
     // Draw Carb segment
-    if (carbPercent > 0) {
-      final carbSweepAngle = carbAngle * (3.14159 / 180);
+    if (safeCarb > 0 && carbSweep > _arcEpsilon) {
       _drawArc(
         canvas,
         center,
         radius,
         innerRadius,
         startAngle,
-        carbSweepAngle,
+        carbSweep,
         carbColor,
       );
-      startAngle += carbSweepAngle;
+      // Add small epsilon to prevent seams between adjacent arcs
+      startAngle += carbSweep + _arcEpsilon;
     }
 
     // Draw Fat segment
-    if (fatPercent > 0) {
-      final fatSweepAngle = fatAngle * (3.14159 / 180);
+    if (safeFat > 0 && fatSweep > _arcEpsilon) {
       _drawArc(
         canvas,
         center,
         radius,
         innerRadius,
         startAngle,
-        fatSweepAngle,
+        fatSweep,
         fatColor,
       );
     }
@@ -115,9 +140,11 @@ class _DonutChartPainter extends CustomPainter {
     double sweepAngle,
     Color color,
   ) {
+    // Use anti-aliasing for smooth edges
     final paint = Paint()
       ..color = color
-      ..style = PaintingStyle.fill;
+      ..style = PaintingStyle.fill
+      ..isAntiAlias = true;
 
     final path = Path();
 
