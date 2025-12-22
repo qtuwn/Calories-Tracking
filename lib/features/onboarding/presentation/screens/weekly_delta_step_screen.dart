@@ -24,12 +24,12 @@ class _WeeklyDeltaStepScreenState extends ConsumerState<WeeklyDeltaStepScreen> {
   @override
   void initState() {
     super.initState();
+    // Only read provider state in initState - do NOT mutate
+    // Provider mutations should only happen in user actions (onChanged/onPressed)
     final onboardingState = ref.read(onboardingControllerProvider);
     _weeklyDelta = onboardingState.weeklyDeltaKg ?? 0.5;
-    // Save initial value
-    ref
-        .read(onboardingControllerProvider.notifier)
-        .updateWeeklyDelta(_weeklyDelta);
+    // Note: Initial persistence removed to prevent "modify provider during build" crash
+    // Value will be persisted when user interacts with slider or continues
   }
 
   void _onDeltaChanged(double value) {
@@ -65,6 +65,8 @@ class _WeeklyDeltaStepScreenState extends ConsumerState<WeeklyDeltaStepScreen> {
   }
 
   void _onContinuePressed() {
+    // Persist final value before navigation
+    ref.read(onboardingControllerProvider.notifier).updateWeeklyDelta(_weeklyDelta);
     // Navigate to activity level step
     Navigator.of(
       context,
