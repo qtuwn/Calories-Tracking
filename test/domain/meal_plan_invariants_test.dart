@@ -131,6 +131,7 @@ void main() {
     test('throws on empty foodId string (if provided)', () {
       final slot = MealSlot(
         id: 'slot1',
+        name: 'Test Meal',
         mealType: 'breakfast',
         foodId: '', // Empty string (invalid)
         servingSize: 1.0,
@@ -149,6 +150,7 @@ void main() {
     test('does not throw on null foodId', () {
       final slot = MealSlot(
         id: 'slot1',
+        name: 'Test Meal',
         mealType: 'breakfast',
         foodId: null, // Null is allowed
         servingSize: 1.0,
@@ -167,6 +169,7 @@ void main() {
     test('throws on servingSize <= 0', () {
       final slot = MealSlot(
         id: 'slot1',
+        name: 'Test Meal',
         mealType: 'breakfast',
         foodId: 'food1',
         servingSize: 0.0, // Invalid
@@ -185,6 +188,7 @@ void main() {
     test('does not throw on valid values', () {
       final slot = MealSlot(
         id: 'slot1',
+        name: 'Test Meal',
         mealType: 'breakfast',
         foodId: 'food1',
         servingSize: 1.0,

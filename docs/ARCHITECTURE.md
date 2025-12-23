@@ -17,47 +17,47 @@ The system follows a layered architecture with unidirectional dependency flow:
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│              Presentation Layer                      │
-│         (Flutter UI, Riverpod Providers)             │
-│                                                       │
-│  • Widgets and Screens                               │
-│  • State Management (Riverpod)                       │
-│  • UI Controllers                                     │
-│         │                                             │
-│         └─── Depends on ───┐                         │
-└────────────────────────────┼─────────────────────────┘
-                              │
-┌─────────────────────────────▼─────────────────────────┐
-│            Application Layer                          │
+│              Presentation Layer                     │
+│         (Flutter UI, Riverpod Providers)            │
+│                                                     │
+│  • Widgets and Screens                              │
+│  • State Management (Riverpod)                      │
+│  • UI Controllers                                   │
+│         │                                           │
+│         └─── Depends on ───┐                        │
+└────────────────────────────┼────────────────────────┘
+                             │
+┌────────────────────────────▼─────────────────────────┐
+│            Application Layer                         │
 │      (Use Cases, Orchestration, Services)            │
-│                                                       │
-│  • Business Workflows                                 │
+│                                                      │
+│  • Business Workflows                                │
 │  • Use Case Implementation                           │
-│  • Service Coordination                               │
-│         │                                             │
+│  • Service Coordination                              │
+│         │                                            │
 │         └─── Depends on ───┐                         │
 └────────────────────────────┼─────────────────────────┘
-                              │
-┌─────────────────────────────▼─────────────────────────┐
+                             │
+┌────────────────────────────▼─────────────────────────┐
 │              Domain Layer                            │
 │        (Pure Dart - No Dependencies)                 │
-│                                                       │
+│                                                      │
 │  • Entities (Business Models)                        │
-│  • Repository Interfaces (Contracts)                  │
-│  • Domain Services (Business Logic)                   │
-│                                                       │
+│  • Repository Interfaces (Contracts)                 │
+│  • Domain Services (Business Logic)                  │
+│                                                      │
 │  ←─── Implemented by ────┐                           │
 └──────────────────────────┼───────────────────────────┘
                            │
 ┌──────────────────────────▼───────────────────────────┐
-│              Data Layer                               │
-│    (Firestore, DTOs, Cache, External APIs)          │
-│                                                       │
-│  • Repository Implementations                         │
+│              Data Layer                              │
+│    (Firestore, DTOs, Cache, External APIs)           │
+│                                                      │
+│  • Repository Implementations                        │
 │  • Data Transfer Objects (DTOs)                      │
 │  • Firestore Integration                             │
 │  • Local Cache (SharedPreferences)                   │
-└───────────────────────────────────────────────────────┘
+└──────────────────────────────────────────────────────┘
 ```
 
 ### Dependency Direction
