@@ -49,7 +49,15 @@ class _DonutChartPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width / 2;
-    final innerRadius = radius * 0.6; // Donut hole
+    
+    // Use stroke width to create donut hole effect (matches previous ~0.6 radius inner hole)
+    final strokeWidth = radius * 0.40;
+    
+    // Define rect centered on the donut ring (radius adjusted for stroke width)
+    final rect = Rect.fromCircle(
+      center: center,
+      radius: radius - strokeWidth / 2,
+    );
 
     // Colors for each macro
     const proteinColor = Color(0xFF4CAF50); // Green
@@ -58,20 +66,21 @@ class _DonutChartPainter extends CustomPainter {
 
     // Guard against non-finite or invalid values
     final safeProtein = proteinPercent.isFinite && proteinPercent > 0
-        ? proteinPercent
+        ? proteinPercent.clamp(0.0, 100.0)
         : 0.0;
     final safeCarb = carbPercent.isFinite && carbPercent > 0
-        ? carbPercent
+        ? carbPercent.clamp(0.0, 100.0)
         : 0.0;
     final safeFat = fatPercent.isFinite && fatPercent > 0
-        ? fatPercent
+        ? fatPercent.clamp(0.0, 100.0)
         : 0.0;
 
-    // Compute sweep angles using percent/100 * 2π (radians directly)
-    // This avoids precision issues from degree-to-radian conversion
-    final proteinSweep = (safeProtein / 100.0) * (2 * math.pi);
-    final carbSweep = (safeCarb / 100.0) * (2 * math.pi);
-    final fatSweep = (safeFat / 100.0) * (2 * math.pi);
+    // Compute sweeps in radians using tau (2π)
+    const tau = 2 * math.pi;
+    final proteinSweep = (safeProtein / 100.0) * tau;
+    final carbSweep = (safeCarb / 100.0) * tau;
+    // Fat sweep is the remainder to ensure total sweep equals tau exactly
+    final fatSweep = (tau - proteinSweep - carbSweep).clamp(0.0, tau);
 
     // Debug assertion to ensure macro total is ~100% in debug mode
     assert(() {
@@ -89,89 +98,71 @@ class _DonutChartPainter extends CustomPainter {
 
     // Draw Protein segment
     if (safeProtein > 0 && proteinSweep > _arcEpsilon) {
-      _drawArc(
+      final effectiveSweep = (proteinSweep - _arcEpsilon).clamp(0.0, tau);
+      _drawStrokeArc(
         canvas,
-        center,
-        radius,
-        innerRadius,
+        rect,
         startAngle,
-        proteinSweep,
+        effectiveSweep,
         proteinColor,
+        strokeWidth,
       );
-      // Add small epsilon to prevent seams between adjacent arcs
-      startAngle += proteinSweep + _arcEpsilon;
+      startAngle += proteinSweep; // No epsilon added to startAngle
     }
 
     // Draw Carb segment
     if (safeCarb > 0 && carbSweep > _arcEpsilon) {
-      _drawArc(
+      final effectiveSweep = (carbSweep - _arcEpsilon).clamp(0.0, tau);
+      _drawStrokeArc(
         canvas,
-        center,
-        radius,
-        innerRadius,
+        rect,
         startAngle,
-        carbSweep,
+        effectiveSweep,
         carbColor,
+        strokeWidth,
       );
-      // Add small epsilon to prevent seams between adjacent arcs
-      startAngle += carbSweep + _arcEpsilon;
+      startAngle += carbSweep; // No epsilon added to startAngle
     }
 
     // Draw Fat segment
     if (safeFat > 0 && fatSweep > _arcEpsilon) {
-      _drawArc(
+      final effectiveSweep = (fatSweep - _arcEpsilon).clamp(0.0, tau);
+      _drawStrokeArc(
         canvas,
-        center,
-        radius,
-        innerRadius,
+        rect,
         startAngle,
-        fatSweep,
+        effectiveSweep,
         fatColor,
+        strokeWidth,
       );
     }
   }
 
-  void _drawArc(
+  /// Draw a donut segment using stroke-based rendering
+  /// 
+  /// This approach prevents tearing/seam artifacts by using stroke instead of filled paths.
+  void _drawStrokeArc(
     Canvas canvas,
-    Offset center,
-    double outerRadius,
-    double innerRadius,
+    Rect rect,
     double startAngle,
     double sweepAngle,
     Color color,
+    double strokeWidth,
   ) {
-    // Use anti-aliasing for smooth edges
     final paint = Paint()
       ..color = color
-      ..style = PaintingStyle.fill
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.butt // Preferred to avoid seams
       ..isAntiAlias = true;
 
-    final path = Path();
-
-    // Outer arc
-    path.addArc(
-      Rect.fromCircle(center: center, radius: outerRadius),
+    canvas.drawArc(
+      rect,
       startAngle,
       sweepAngle,
+      false, // useCenter = false for arc, not pie slice
+      paint,
     );
-
-    // Line to inner arc
-    final endAngle = startAngle + sweepAngle;
-    final endX = center.dx + innerRadius * math.cos(endAngle);
-    final endY = center.dy + innerRadius * math.sin(endAngle);
-    path.lineTo(endX, endY);
-
-    // Inner arc (reverse direction)
-    path.addArc(
-      Rect.fromCircle(center: center, radius: innerRadius),
-      endAngle,
-      -sweepAngle,
-    );
-
-    // Close path
-    path.close();
-
-    canvas.drawPath(path, paint);
   }
 
   @override
