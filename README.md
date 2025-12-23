@@ -2,70 +2,54 @@
 
 <div align="center">
 
-![Flutter](https://img.shields.io/badge/Flutter-3.8+-02569B?logo=flutter&logoColor=white)
-![Dart](https://img.shields.io/badge/Dart-3.8+-0175C2?logo=dart&logoColor=white)
+![Flutter](https://img.shields.io/badge/Flutter-3.38.5-02569B?logo=flutter&logoColor=white)
+![Dart](https://img.shields.io/badge/Dart-3.5.0-0175C2?logo=dart&logoColor=white)
 ![Riverpod](https://img.shields.io/badge/Riverpod-3.0-FF6B6B?logo=flutter&logoColor=white)
 ![Firebase](https://img.shields.io/badge/Firebase-Enabled-FFCA28?logo=firebase&logoColor=black)
 ![Architecture](https://img.shields.io/badge/Architecture-Clean%20%2B%20DDD-4ECDC4)
 
 **A production-grade Flutter application for comprehensive calorie tracking, meal planning, and nutrition management**
 
-[Features](#-features) • [Architecture](#-architecture) • [Getting Started](#-getting-started) • [Tech Stack](#-tech-stack)
+[Features](#-key-features) • [Architecture](#-architecture) • [Getting Started](#-getting-started) • [Tech Stack](#-tech-stack)
 
 </div>
 
 ---
 
-## 📖 Overview
+## Overview
 
-Calories App is a sophisticated mobile application designed to help users track their daily nutrition, manage meal plans, and achieve their health goals. Built with Clean Architecture and Domain-Driven Design principles, the application demonstrates enterprise-level software engineering practices with strict separation of concerns, testable business logic, and a scalable architecture that supports both online and offline functionality.
+Calories App is a sophisticated mobile application designed to help users track daily nutrition, manage meal plans, and achieve health goals. Built with Clean Architecture and Domain-Driven Design principles, the application demonstrates enterprise-level software engineering practices with strict separation of concerns, testable business logic, and a scalable architecture that supports both online and offline functionality.
 
 The project has undergone multiple refactoring phases to achieve a mature, maintainable codebase that adheres to SOLID principles. Business logic is completely isolated from UI and infrastructure concerns, making the codebase highly testable and adaptable to changing requirements.
 
-## 📑 Table of Contents
-
-- [Features](#-features)
-  - [Core Features](#core-features)
-  - [Engineering Features](#engineering-features)
-- [Screenshots](#-screenshots)
-- [Architecture](#-architecture)
-- [Project Structure](#-project-structure)
-- [Tech Stack](#-tech-stack)
-- [Getting Started](#-getting-started)
-- [Firebase Setup](#-firebase-setup)
-- [Testing](#-testing)
-- [Roadmap](#-roadmap)
-- [Contributing](#-contributing)
-- [License](#-license)
-
-## ✨ Features
+## Key Features
 
 ### Core Features
 
-- **📊 Daily Calorie Tracking** - Track food consumption and exercise with real-time calorie calculations
-- **🍽️ Meal Planning** - Create custom meal plans or explore curated templates
-- **📝 Diary Management** - Log meals and exercises with automatic meal type classification
-- **🎤 Voice Input** - Add foods to your diary using voice recognition powered by Google Gemini AI
-- **💪 Exercise Logging** - Track workouts and activities with calorie burn calculations
-- **📈 Statistics & Reports** - View detailed nutrition summaries and progress analytics
-- **💧 Water & Weight Tracking** - Monitor hydration and body weight over time
-- **🔔 Smart Notifications** - Receive reminders for meals and hydration goals
-- **🏥 Health Connect Integration** - Sync step data from Android Health Connect
-- **👤 User Profiles** - Personalized profiles with TDEE calculations and goal setting
-- **🔐 Secure Authentication** - Firebase Authentication with Google Sign-In support
+- **Daily Calorie Tracking** - Track food consumption and exercise with real-time calorie calculations
+- **Meal Planning** - Create custom meal plans or explore curated templates
+- **Diary Management** - Log meals and exercises with automatic meal type classification
+- **Voice Input** - Add foods to your diary using voice recognition powered by Google Gemini AI
+- **Exercise Logging** - Track workouts and activities with calorie burn calculations
+- **Statistics & Reports** - View detailed nutrition summaries and progress analytics
+- **Water & Weight Tracking** - Monitor hydration and body weight over time
+- **Smart Notifications** - Receive reminders for meals and hydration goals
+- **Health Connect Integration** - Sync step data from Android Health Connect
+- **User Profiles** - Personalized profiles with TDEE calculations and goal setting
+- **Secure Authentication** - Firebase Authentication with Google Sign-In support
 
 ### Engineering Features
 
-- **🏗️ Clean Architecture** - Strict layered architecture with clear boundaries
-- **📦 Domain-Driven Design** - Business logic drives the architecture
-- **💾 Hybrid Cache-First** - Instant loading with offline support
-- **🔄 Real-time Sync** - Firestore real-time updates with optimistic UI
-- **🧪 Testable Design** - Pure domain logic with mockable interfaces
-- **📱 Offline Support** - Full functionality without network connectivity
-- **🔒 Type Safety** - Full null-safety and strong typing
-- **📚 Comprehensive Documentation** - Inline documentation and architecture guides
+- **Clean Architecture** - Strict layered architecture with clear boundaries
+- **Domain-Driven Design** - Business logic drives the architecture
+- **Hybrid Cache-First** - Instant loading with offline support
+- **Real-time Sync** - Firestore real-time updates with optimistic UI
+- **Testable Design** - Pure domain logic with mockable interfaces
+- **Offline Support** - Full functionality without network connectivity
+- **Type Safety** - Full null-safety and strong typing
+- **Comprehensive Documentation** - Inline documentation and architecture guides
 
-## 📸 Screenshots
+## Screenshots
 
 > **Note:** Screenshots should be placed in `docs/screenshots/` directory
 
@@ -77,7 +61,7 @@ The project has undergone multiple refactoring phases to achieve a mature, maint
 ![Statistics](docs/screenshots/statistics.png)
 -->
 
-## 🏗️ Architecture
+## Architecture
 
 ### Clean Architecture & Domain-Driven Design
 
@@ -143,15 +127,9 @@ The application implements a sophisticated caching strategy:
 3. **Offline Support** - Full functionality without network connectivity
 4. **Cache Invalidation** - Smart cache management ensures data consistency
 
-Services implement cache-first patterns:
-```dart
-// 1. Emit cached data immediately
-// 2. Fetch from Firestore in background
-// 3. Update cache and emit new data
-// 4. UI reacts to stream updates
-```
+Services implement cache-first patterns where cached data is emitted immediately, followed by background Firestore synchronization and cache updates.
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 lib/
@@ -200,12 +178,12 @@ lib/
     └── utils/             # Shared utilities
 ```
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 | Category | Technology | Version | Purpose |
 |----------|-----------|---------|---------|
-| **Framework** | Flutter | 3.8+ | Cross-platform UI framework |
-| **Language** | Dart | 3.8+ | Programming language |
+| **Framework** | Flutter | 3.38.5 | Cross-platform UI framework |
+| **Language** | Dart | 3.5.0 | Programming language |
 | **State Management** | Riverpod | 3.0.3 | Reactive state management |
 | **Backend** | Firebase | - | Backend-as-a-Service |
 | **Authentication** | Firebase Auth | 5.3.1 | User authentication |
@@ -220,12 +198,12 @@ lib/
 | **Environment** | flutter_dotenv | 5.1.0 | Environment variable management |
 | **Speech** | speech_to_text | 7.0.0 | Voice recognition |
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 
-- Flutter SDK 3.8.1 or higher
-- Dart SDK 3.8.1 or higher
+- Flutter SDK 3.38.5 or higher
+- Dart SDK 3.5.0 or higher
 - Android Studio / Xcode for mobile development
 - Firebase project with required services enabled
 - Google Gemini API key (for voice input feature)
@@ -243,18 +221,32 @@ lib/
    flutter pub get
    ```
 
-3. **Set up environment variables**
-   ```bash
-   cp .env.example .env
-   # Edit .env and add your GEMINI_API_KEY
-   ```
+3. **Set up environment variables** (see [Environment & Secrets](#-environment--secrets))
 
 4. **Run the application**
    ```bash
    flutter run
    ```
 
-## 🔥 Firebase Setup
+## Environment & Secrets
+
+The application requires environment variables for API keys and configuration. These are managed through a `.env` file that is excluded from version control for security.
+
+### Required Environment Variables
+
+Create a `.env` file in the project root:
+
+```env
+GEMINI_API_KEY=your_gemini_api_key_here
+```
+
+### Security Notes
+
+- The `.env` file is gitignored and should never be committed
+- For CI/CD, environment variables are injected via GitHub Secrets
+- See `docs/ANDROID_SIGNING_SECRETS.md` for production build secrets setup
+
+## Firebase Setup
 
 ### Required Firebase Services
 
@@ -293,16 +285,7 @@ The application uses the following Firebase services:
    - The app uses `lib/app/config/firebase_options.dart`
    - Regenerate if needed using FlutterFire CLI: `flutterfire configure`
 
-### Environment Variables
-
-Create a `.env` file in the project root:
-```
-GEMINI_API_KEY=your_gemini_api_key_here
-```
-
-The `.env` file is gitignored for security. See `.env.example` for the template.
-
-## 🧪 Testing
+## Testing Strategy
 
 The architecture is designed for testability with clear separation of concerns:
 
@@ -337,60 +320,91 @@ flutter test --coverage
 flutter test test/features/meal_plans/domain/services/kcal_calculator_test.dart
 ```
 
-## 🗺️ Roadmap
+## CI/CD Overview
+
+The project implements a professional continuous integration and continuous deployment pipeline using GitHub Actions.
+
+### Continuous Integration (CI)
+
+All Pull Requests to `main` or `master` are automatically validated through a CI pipeline that:
+
+- Runs Flutter static analysis (`flutter analyze`)
+- Executes the full test suite (`flutter test`)
+- Verifies Android debug builds succeed
+- Ensures code quality standards are met before merge
+
+CI checks must pass before any PR can be merged, maintaining code quality and preventing regressions.
+
+### Continuous Deployment (CD)
+
+After code is merged to the main branch, the release workflow automatically:
+
+- Builds signed Android App Bundles (AAB) for Google Play distribution
+- Generates signed APK artifacts for testing
+- Uploads release artifacts for download
+- Ensures production-ready builds are available immediately after merge
+
+The CD pipeline uses secure secret management to handle signing credentials and API keys without exposing sensitive information in the repository.
+
+For detailed setup instructions, see `docs/ANDROID_SIGNING_SECRETS.md`.
+
+## Roadmap
 
 ### Planned Features
 
-- [ ] Advanced meal plan templates with AI recommendations
-- [ ] Barcode scanning for food entry
-- [ ] Enhanced analytics and insights dashboard
-- [ ] Meal prep planning and shopping lists
-- [ ] Social features for sharing meal plans
-- [ ] Integration with additional health platforms
-- [ ] Multi-language support expansion
+- Advanced meal plan templates with AI recommendations
+- Barcode scanning for food entry
+- Enhanced analytics and insights dashboard
+- Meal prep planning and shopping lists
+- Social features for sharing meal plans
+- Integration with additional health platforms
+- Multi-language support expansion
 
 ### Technical Improvements
 
-- [ ] Complete migration of legacy code to DDD architecture
-- [ ] Expanded test coverage for domain and application layers
-- [ ] Performance optimizations for large datasets
-- [ ] Enhanced offline synchronization strategies
-- [ ] Advanced caching strategies with TTL management
-- [ ] GraphQL API integration option
-- [ ] Microservices architecture exploration
+- Complete migration of legacy code to DDD architecture
+- Expanded test coverage for domain and application layers
+- Performance optimizations for large datasets
+- Enhanced offline synchronization strategies
+- Advanced caching strategies with TTL management
 
-## 🤝 Contributing
+## Contributing
 
-This is an academic and production-oriented project. Contributions should:
+We welcome contributions that align with the project's architecture and coding standards. Please review our contribution guidelines before submitting changes.
 
-- Follow the existing architecture patterns
-- Maintain Clean Architecture principles
-- Include appropriate tests
+For detailed information on:
+- Development workflow and branching strategy
+- Code review process
+- Testing requirements
+- Architecture rules and patterns
+
+See **[CONTRIBUTING.md](docs/CONTRIBUTING.md)** for complete guidelines.
+
+### Key Principles
+
+- Follow Clean Architecture and Domain-Driven Design patterns
+- Maintain strict layer separation (Domain must remain pure Dart)
+- Include appropriate tests for new features
 - Update documentation as needed
-- Follow the project's coding standards
+- Ensure all CI checks pass before requesting review
 
-### Architecture Rules
-
-- **Domain Layer**: Must remain pure Dart with no Flutter/Firebase dependencies
-- **Dependency Direction**: Dependencies flow inward (Presentation → Application → Domain ← Data)
-- **Repository Pattern**: Use abstract interfaces in domain, implementations in data
-- **Service Layer**: Business logic belongs in services, not repositories or UI
-- **State Management**: Use Riverpod providers, keep UI logic minimal
-
-## 📄 License
+## License
 
 This project is developed for academic purposes. All rights reserved.
 
-## 👤 Author
-QuocTuan_dev_in_hcm/contact me: www.linkedin.com/in/tuấn-quốc-866a63251
----
-Developed as part of academic coursework with a focus on software engineering best practices, Clean Architecture, and Domain-Driven Design.
+## Author
+
+**QuocTuan_dev_in_hcm**
+
+- LinkedIn: [www.linkedin.com/in/tuấn-quốc-866a63251](https://www.linkedin.com/in/tuấn-quốc-866a63251)
 
 ---
 
 <div align="center">
 
-**Built with ❤️ using Flutter and Firebase**
+**Built with Flutter and Firebase**
+
+Developed as part of academic coursework with a focus on software engineering best practices, Clean Architecture, and Domain-Driven Design.
 
 [⬆ Back to Top](#calories-app)
 
