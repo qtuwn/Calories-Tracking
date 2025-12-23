@@ -57,7 +57,7 @@ void main() {
         final content = file.readAsStringSync();
         
         // Check for foodId ?? '' pattern
-        final pattern = RegExp(r'foodId\s*\?\?\s*[\'"]{2}');
+        final pattern = RegExp("foodId\\s*\\?\\?\\s*['\"]{2}");
         if (pattern.hasMatch(content)) {
           violations.add(file.path);
         }
