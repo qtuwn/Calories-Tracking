@@ -39,6 +39,11 @@ jobs:
       - name: Verify Flutter installation
         run: flutter doctor -v
 
+      - name: Reconstruct .env file
+        shell: bash
+        run: |
+          printf 'GEMINI_API_KEY=%s\n' "${{ secrets.GEMINI_API_KEY }}" > .env
+
       - name: Get Flutter dependencies
         run: flutter pub get
 
