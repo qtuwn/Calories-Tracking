@@ -6,14 +6,14 @@ on:
       - main
       - master
     tags:
-      - 'v*'
+      - "v*"
   workflow_dispatch:
 
 jobs:
   build:
     name: Build Android Release
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -21,15 +21,20 @@ jobs:
       - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: '17'
-          cache: 'gradle'
+          distribution: "temurin"
+          java-version: "17"
+          cache: "gradle"
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.38.5'
+          flutter-version: "3.38.5"
           cache: true
+
+      - name: Show Flutter & Dart versions
+        run: |
+          flutter --version
+          dart --version
 
       - name: Verify Flutter installation
         run: flutter doctor -v
@@ -39,63 +44,45 @@ jobs:
 
       - name: Run Flutter tests (optional)
         if: ${{ env.RUN_TESTS != 'false' }}
-        run: flutter test || echo "Tests failed but continuing build"
+        run: flutter test
         continue-on-error: true
 
       - name: Reconstruct keystore from secret
+        shell: bash
         run: |
           mkdir -p android/app/keystore
-          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > android/app/keystore/upload-keystore.jks
-        env:
-          # Suppress secret echo in logs
-          ACTIONS_STEP_DEBUG: false
+          printf '%s' "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | tr -d '\r\n ' | base64 --decode > android/app/keystore/upload-keystore.jks
+
+      - name: Debug keystore file size (safe)
+        run: |
+          ls -lah android/app/keystore || true
+          wc -c android/app/keystore/upload-keystore.jks
 
       - name: Reconstruct key.properties from secrets
+        shell: bash
         run: |
-          mkdir -p android
-          cat > android/key.properties << EOF
+          cat > android/key.properties << 'EOF'
           storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
           keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
           storeFile=keystore/upload-keystore.jks
           EOF
-        env:
-          # Suppress secret echo in logs
-          ACTIONS_STEP_DEBUG: false
-
-      - name: Verify keystore file exists
-        run: |
-          if [ ! -f android/app/keystore/upload-keystore.jks ]; then
-            echo "Error: Keystore file not found"
-            exit 1
-          fi
-          echo "Keystore file verified"
 
       - name: Verify key.properties exists
         run: |
-          if [ ! -f android/key.properties ]; then
-            echo "Error: key.properties file not found"
-            exit 1
-          fi
-          # Verify file contains expected keys (without printing values)
-          grep -q "storePassword=" android/key.properties || exit 1
-          grep -q "keyPassword=" android/key.properties || exit 1
-          grep -q "keyAlias=" android/key.properties || exit 1
-          grep -q "storeFile=" android/key.properties || exit 1
+          test -f android/key.properties
+          grep -q "storePassword=" android/key.properties
+          grep -q "keyPassword=" android/key.properties
+          grep -q "keyAlias=" android/key.properties
+          grep -q "storeFile=" android/key.properties
           echo "key.properties verified"
 
       - name: Build Android App Bundle (AAB)
         run: flutter build appbundle --release
-        env:
-          # Suppress secret echo in logs
-          ACTIONS_STEP_DEBUG: false
 
       - name: Build Android APK (optional)
         run: flutter build apk --release
         continue-on-error: true
-        env:
-          # Suppress secret echo in logs
-          ACTIONS_STEP_DEBUG: false
 
       - name: Upload AAB artifact
         uses: actions/upload-artifact@v4
@@ -112,20 +99,13 @@ jobs:
           path: build/app/outputs/flutter-apk/app-release.apk
           retention-days: 30
           if-no-files-found: ignore
-        continue-on-error: true
 
       - name: Build summary
         run: |
           echo "## Android Release Build Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "✅ **Build completed successfully**" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Build completed" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Artifacts" >> $GITHUB_STEP_SUMMARY
-          echo "- **AAB**: Available in workflow artifacts" >> $GITHUB_STEP_SUMMARY
-          echo "- **APK**: Available in workflow artifacts (if built)" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Next Steps" >> $GITHUB_STEP_SUMMARY
-          echo "1. Download artifacts from the Actions tab" >> $GITHUB_STEP_SUMMARY
-          echo "2. Upload AAB to Google Play Console" >> $GITHUB_STEP_SUMMARY
-          echo "3. Test APK on devices before distribution" >> $GITHUB_STEP_SUMMARY
-
+          echo "- AAB: android-release-aab" >> $GITHUB_STEP_SUMMARY
+          echo "- APK: android-release-apk (if built)" >> $GITHUB_STEP_SUMMARY
