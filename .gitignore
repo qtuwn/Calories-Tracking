@@ -56,3 +56,11 @@ devtools_options.yaml
 .env
 .env.*
 !.env.example
+
+# Android signing
+android/key.properties
+android/**/key.properties
+android/app/keystore/
+**/*.jks
+**/*.keystore
+
