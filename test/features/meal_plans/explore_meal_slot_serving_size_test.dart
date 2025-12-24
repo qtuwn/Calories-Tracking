@@ -3,15 +3,14 @@ import 'package:calories_app/features/meal_plans/data/repositories/user_meal_pla
     show MealPlanApplyException, requirePositiveForTesting;
 
 /// Unit tests for explore meal slot servingSize validation
-/// 
+///
 /// Tests DTO parsing and apply validation to ensure servingSize is required and validated.
 /// No Firestore emulator - uses map-based DTO parsing.
 void main() {
   group('MealSlotDto.fromFirestore - servingSize validation', () {
     test('parse fails when servingSize is missing', () {
-      // Test the validation logic that fromFirestore uses
-      // Since we can't easily mock DocumentSnapshot, we test the core validation
-      final fakeData = <String, dynamic>{
+      // Simulate the fromFirestore logic
+      final servingSizeValue = const <String, dynamic>{
         'name': 'Test Meal',
         'mealType': 'breakfast',
         'calories': 300.0,
@@ -20,12 +19,10 @@ void main() {
         'fat': 10.0,
         'foodId': 'food-123',
         // servingSize is missing
-      };
+      }['servingSize'];
 
-      // Simulate the fromFirestore logic
-      final servingSizeValue = fakeData['servingSize'];
       expect(servingSizeValue, isNull);
-      
+
       // This is what fromFirestore does - throws FormatException
       expect(
         () {
@@ -41,19 +38,7 @@ void main() {
     });
 
     test('parse fails when servingSize is 0', () {
-      final fakeData = <String, dynamic>{
-        'name': 'Test Meal',
-        'mealType': 'breakfast',
-        'calories': 300.0,
-        'protein': 20.0,
-        'carb': 30.0,
-        'fat': 10.0,
-        'foodId': 'food-123',
-        'servingSize': 0.0,
-      };
-
-      // Test that fromFirestore throws FormatException for invalid servingSize
-      // We'll simulate this by testing the validation logic
+      // Validate servingSize using the same core validation logic used during apply
       expect(
         () => requirePositiveForTesting(
           0.0,
@@ -93,7 +78,7 @@ void main() {
         slotIndex: 0,
         mealType: 'breakfast',
       );
-      
+
       expect(result, equals(2.5));
     });
 
@@ -106,14 +91,16 @@ void main() {
         dayIndex: 1,
         slotIndex: 0,
         mealType: 'breakfast',
-      );
-      
+      ).toDouble();
+
       expect(result, equals(1.0));
     });
   });
 
   group('Apply validation - MealPlanApplyException context', () {
-    test('exception includes dayIndex, slotIndex, templateId, and servingSize field name', () {
+    test(
+        'exception includes dayIndex, slotIndex, templateId, and servingSize field name',
+        () {
       try {
         requirePositiveForTesting(
           null,
@@ -137,7 +124,8 @@ void main() {
       }
     });
 
-    test('exception includes invalid value in details when servingSize is non-positive', () {
+    test('exception includes invalid value in details when servingSize is non-positive',
+        () {
       try {
         requirePositiveForTesting(
           -2.0,
@@ -158,4 +146,3 @@ void main() {
     });
   });
 }
-
