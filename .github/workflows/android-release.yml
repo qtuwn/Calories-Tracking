@@ -1,0 +1,116 @@
+name: Android Release
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build Android Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
+          cache: "gradle"
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.38.5"
+          cache: true
+
+      - name: Show Flutter & Dart versions
+        run: |
+          flutter --version
+          dart --version
+
+      - name: Verify Flutter installation
+        run: flutter doctor -v
+
+      - name: Reconstruct .env file
+        shell: bash
+        run: |
+          printf 'GEMINI_API_KEY=%s\n' "${{ secrets.GEMINI_API_KEY }}" > .env
+
+      - name: Get Flutter dependencies
+        run: flutter pub get
+
+      - name: Run Flutter tests (optional)
+        if: ${{ env.RUN_TESTS != 'false' }}
+        run: flutter test
+        continue-on-error: true
+
+      - name: Reconstruct keystore from secret
+        shell: bash
+        run: |
+          mkdir -p android/app/keystore
+          printf '%s' "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | tr -d '\r\n ' | base64 --decode > android/app/keystore/upload-keystore.jks
+
+      - name: Debug keystore file size (safe)
+        run: |
+          ls -lah android/app/keystore || true
+          wc -c android/app/keystore/upload-keystore.jks
+
+      - name: Reconstruct key.properties from secrets
+        shell: bash
+        run: |
+          cat > android/key.properties << 'EOF'
+          storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
+          keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
+          storeFile=keystore/upload-keystore.jks
+          EOF
+
+      - name: Verify key.properties exists
+        run: |
+          test -f android/key.properties
+          grep -q "storePassword=" android/key.properties
+          grep -q "keyPassword=" android/key.properties
+          grep -q "keyAlias=" android/key.properties
+          grep -q "storeFile=" android/key.properties
+          echo "key.properties verified"
+
+      - name: Build Android App Bundle (AAB)
+        run: flutter build appbundle --release
+
+      - name: Build Android APK (optional)
+        run: flutter build apk --release
+        continue-on-error: true
+
+      - name: Upload AAB artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-release-aab
+          path: build/app/outputs/bundle/release/app-release.aab
+          retention-days: 30
+          if-no-files-found: error
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-release-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 30
+          if-no-files-found: ignore
+
+      - name: Build summary
+        run: |
+          echo "## Android Release Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Build completed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Artifacts" >> $GITHUB_STEP_SUMMARY
+          echo "- AAB: android-release-aab" >> $GITHUB_STEP_SUMMARY
+          echo "- APK: android-release-apk (if built)" >> $GITHUB_STEP_SUMMARY

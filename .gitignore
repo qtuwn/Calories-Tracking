@@ -43,3 +43,24 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Firebase emulator files
+firebase.json
+.firebaserc
+apphosting.emulator.yaml
+devtools_options.yaml
+**/firebase-debug.log
+**/*-debug.log
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Android signing
+android/key.properties
+android/**/key.properties
+android/app/keystore/
+**/*.jks
+**/*.keystore
+
