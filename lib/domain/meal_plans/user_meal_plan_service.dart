@@ -34,37 +34,74 @@ class UserMealPlanService {
     print('[UserMealPlanService] [ActivePlan] 🔵 Setting up active plan stream for userId=$userId');
     
     // Subscribe to Firestore stream (source of truth)
-    // NOTE: We do NOT load cache here as fallback - if Firestore times out, we emit null
-    // This prevents stale cache from being emitted after apply operations
     final firestoreStream = _repository.getActivePlan(userId);
     
-    // Use a Completer to wait for first Firestore emission with timeout
-    final firstEmissionCompleter = Completer<UserMealPlan?>();
-    StreamSubscription<UserMealPlan?>? subscription;
+    // Use a single subscription with gating to avoid double-emission
+    final controller = StreamController<UserMealPlan?>();
+    String? lastEmittedPlanId;
+    UserMealPlan? firstRemotePlan;
+    UserMealPlan? pendingFirstPlan;
     bool firstEmissionReceived = false;
+    bool firstValueDecisionMade = false;
+    final firstEmissionCompleter = Completer<UserMealPlan?>();
     
-    // Set up subscription to capture first emission
-    subscription = firestoreStream.listen(
+    // Set up single subscription to capture all events without dropping
+    final subscription = firestoreStream.listen(
       (plan) {
+        final planId = plan?.id;
+        
+        // Capture first emission for timeout logic
         if (!firstEmissionReceived) {
           firstEmissionReceived = true;
+          firstRemotePlan = plan;
           if (!firstEmissionCompleter.isCompleted) {
             firstEmissionCompleter.complete(plan);
           }
+        }
+        
+        // Gate: only forward to controller after first-value decision is made
+        // If decision not made yet, store latest plan to avoid losing it
+        if (!firstValueDecisionMade) {
+          pendingFirstPlan = plan; // Store instead of losing
+          return;
+        }
+        
+        // Deduplicate: only add to controller if planId changed
+        if (planId != lastEmittedPlanId) {
+          lastEmittedPlanId = planId;
+          if (!controller.isClosed) {
+            controller.add(plan);
+          }
+          // Save to cache
+          _cache.saveActivePlan(userId, plan).then((_) {
+            if (plan != null) {
+              print('[UserMealPlanService] [ActivePlan] 💾 Saved to cache: planId=${plan.id}');
+            }
+          });
+        } else {
+          print('[UserMealPlanService] [ActivePlan] ⏭️ Skipping duplicate emission: planId=$planId');
+          // Still update cache even if we skip emission
+          _cache.saveActivePlan(userId, plan);
         }
       },
       onError: (error, stackTrace) {
         if (!firstEmissionCompleter.isCompleted) {
           firstEmissionCompleter.completeError(error, stackTrace);
         }
+        if (!controller.isClosed) {
+          controller.addError(error, stackTrace);
+        }
+      },
+      onDone: () {
+        if (!controller.isClosed) {
+          controller.close();
+        }
       },
       cancelOnError: false,
     );
     
     // Wait for first Firestore emission with timeout (300ms)
-    // If Firestore times out, emit cached plan if available, otherwise emit null
     const timeout = Duration(milliseconds: 300);
-    UserMealPlan? firstRemotePlan;
     bool firestoreEmittedQuickly = false;
     
     print('[ActivePlanCache] ⏳ waiting first Firestore emission timeout=${timeout.inMilliseconds}ms');
@@ -75,9 +112,7 @@ class UserMealPlanService {
       print('[ActivePlanCache] ✅ Firestore first emission received planId=${firstRemotePlan?.id ?? "null"}');
     } catch (e) {
       if (e is TimeoutException) {
-        // CRITICAL FIX: Never yield stale cache here - emit null instead
-        print('[ActivePlanCache] ⚠️ Firestore timeout → emitting NULL (no cache fallback)');
-        print('[ActivePlanCache] 🔁 Will continue streaming Firestore emissions...');
+        print('[ActivePlanCache] ⚠️ Firestore timeout → will emit cached plan if available');
       } else {
         print('[UserMealPlanService] [ActivePlan] ⚠️ Firestore stream error: $e');
       }
@@ -85,16 +120,14 @@ class UserMealPlanService {
     }
     
     // Emit first value based on Firestore availability
-    String? lastEmittedPlanId;
     if (firestoreEmittedQuickly) {
       // Firestore emitted quickly - emit it first (no cache flicker)
       if (firstRemotePlan != null) {
-        print('[UserMealPlanService] [ActivePlan] 🔥 Emitting from Firestore (first): planId=${firstRemotePlan.id}, name="${firstRemotePlan.name}"');
+        print('[UserMealPlanService] [ActivePlan] 🔥 Emitting from Firestore (first): planId=${firstRemotePlan!.id}, name="${firstRemotePlan!.name}"');
       } else {
         print('[UserMealPlanService] [ActivePlan] 🔥 Emitting from Firestore (first): null (no active plan)');
       }
       yield firstRemotePlan;
-      await _cache.saveActivePlan(userId, firstRemotePlan);
       lastEmittedPlanId = firstRemotePlan?.id;
     } else {
       // Firestore timeout - emit cached plan if available, otherwise emit null
@@ -111,60 +144,31 @@ class UserMealPlanService {
       print('[UserMealPlanService] [ActivePlan] 📡 Will continue streaming Firestore emissions...');
     }
     
-    // Continue streaming Firestore updates (deduplicated)
-    // Cancel the old subscription and create a new one for remaining events
-    await subscription.cancel();
+    // Now allow controller to forward events (gate is open)
+    firstValueDecisionMade = true;
     
-    // Create a new subscription for remaining events
-    final controller = StreamController<UserMealPlan?>();
-    bool skipFirst = firestoreEmittedQuickly;
-    bool controllerClosed = false;
-    
-    final remainingSubscription = firestoreStream.listen(
-      (remotePlan) {
-        if (skipFirst) {
-          skipFirst = false;
-          return; // Skip the first emission we already handled
-        }
-        
-        // Deduplicate: only emit if planId changed
-        final remotePlanId = remotePlan?.id;
-        if (remotePlanId == lastEmittedPlanId) {
-          print('[UserMealPlanService] [ActivePlan] ⏭️ Skipping duplicate emission: planId=$remotePlanId');
-          // Still update cache even if we skip emission
-          _cache.saveActivePlan(userId, remotePlan);
-          return;
-        }
-        
-        lastEmittedPlanId = remotePlanId;
-        print('[ActivePlanCache] 🔁 Firestore subsequent emission planId=${remotePlanId ?? "null"}');
-        
-        if (!controllerClosed) {
-          controller.add(remotePlan);
-        }
-        
-        // Save to cache
-        _cache.saveActivePlan(userId, remotePlan).then((_) {
-          if (remotePlan != null) {
-            print('[UserMealPlanService] [ActivePlan] 💾 Saved to cache: planId=${remotePlan.id}');
+    // Flush pending plan if timeout occurred (firestoreEmittedQuickly == false)
+    // Use pendingFirstPlan if available (latest), otherwise fall back to firstRemotePlan
+    if (!firestoreEmittedQuickly) {
+      final planToFlush = pendingFirstPlan ?? firstRemotePlan;
+      if (planToFlush != null) {
+        final planId = planToFlush.id;
+        if (planId != lastEmittedPlanId) {
+          lastEmittedPlanId = planId;
+          if (!controller.isClosed) {
+            controller.add(planToFlush);
           }
-        });
-      },
-      onError: (error, stackTrace) {
-        if (!controllerClosed) {
-          controller.addError(error, stackTrace);
+          _cache.saveActivePlan(userId, planToFlush).then((_) {
+            print('[UserMealPlanService] [ActivePlan] 💾 Saved to cache: planId=${planToFlush.id}');
+          });
+        } else {
+          // Still update cache even if duplicate
+          _cache.saveActivePlan(userId, planToFlush);
         }
-      },
-      onDone: () {
-        if (!controllerClosed) {
-          controller.close();
-          controllerClosed = true;
-        }
-      },
-      cancelOnError: false,
-    );
+      }
+    }
     
-    // Yield from controller stream
+    // Continue streaming remaining Firestore updates (already deduplicated in listener)
     await for (final remotePlan in controller.stream) {
       if (remotePlan != null) {
         print('[UserMealPlanService] [ActivePlan] 🔥 Emitting from Firestore: planId=${remotePlan.id}, name="${remotePlan.name}", isActive=${remotePlan.isActive}');
@@ -175,7 +179,7 @@ class UserMealPlanService {
     }
     
     // Cleanup
-    await remainingSubscription.cancel();
+    await subscription.cancel();
   }
 
   /// Load active plan once, prioritizing cache.

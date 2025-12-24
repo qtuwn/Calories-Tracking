@@ -1,40 +1,63 @@
 import 'dart:async';
 import 'package:calories_app/domain/meal_plans/user_meal_plan.dart';
 import 'package:calories_app/domain/meal_plans/meal_plan_goal_type.dart';
-import 'package:calories_app/domain/meal_plans/user_meal_plan_repository.dart' as user_meal_plan_repository;
+import 'package:calories_app/domain/meal_plans/user_meal_plan_repository.dart'
+    as user_meal_plan_repository;
 import 'package:calories_app/domain/meal_plans/explore_meal_plan.dart';
 
 /// Fake repository for testing UserMealPlanService
-/// 
+///
 /// Allows controlling stream emissions and timing for testing stream policies.
-class FakeUserMealPlanRepository implements user_meal_plan_repository.UserMealPlanRepository {
+class FakeUserMealPlanRepository
+    implements user_meal_plan_repository.UserMealPlanRepository {
   final Map<String, StreamController<UserMealPlan?>> _activePlanControllers = {};
   final Map<String, StreamController<List<UserMealPlan>>> _plansControllers = {};
-  final Map<String, StreamController<List<user_meal_plan_repository.MealItem>>> _mealsControllers = {};
-  
+  final Map<String, StreamController<List<user_meal_plan_repository.MealItem>>>
+      _mealsControllers = {};
+
+  /// Stores the latest snapshot per (planId:userId:dayIndex) so new subscribers
+  /// immediately receive current state (Firestore snapshots() behavior).
+  final Map<String, List<user_meal_plan_repository.MealItem>> _latestMeals = {};
+
   int _getActivePlanCallCount = 0;
   int _getDayMealsCallCount = 0;
-  
+
   /// Counter for how many times getActivePlan was called
   int get getActivePlanCallCount => _getActivePlanCallCount;
-  
+
   /// Counter for how many times getDayMeals was called
   int get getDayMealsCallCount => _getDayMealsCallCount;
-  
+
   /// Emit a plan to the active plan stream for a user
   void emitActivePlan(String userId, UserMealPlan? plan) {
     final key = userId;
-    _activePlanControllers.putIfAbsent(key, () => StreamController<UserMealPlan?>.broadcast())
+    _activePlanControllers
+        .putIfAbsent(key, () => StreamController<UserMealPlan?>.broadcast())
         .add(plan);
   }
-  
+
   /// Emit meals to the day meals stream
-  void emitDayMeals(String planId, String userId, int dayIndex, List<user_meal_plan_repository.MealItem> meals) {
+  void emitDayMeals(
+    String planId,
+    String userId,
+    int dayIndex,
+    List<user_meal_plan_repository.MealItem> meals,
+  ) {
     final key = '$planId:$userId:$dayIndex';
-    _mealsControllers.putIfAbsent(key, () => StreamController<List<user_meal_plan_repository.MealItem>>.broadcast())
+
+    // Store immutable snapshot so later listeners can receive current state.
+    _latestMeals[key] =
+        List<user_meal_plan_repository.MealItem>.unmodifiable(meals);
+
+    _mealsControllers
+        .putIfAbsent(
+          key,
+          () => StreamController<List<user_meal_plan_repository.MealItem>>
+              .broadcast(),
+        )
         .add(meals);
   }
-  
+
   /// Close all streams (cleanup)
   void dispose() {
     for (final controller in _activePlanControllers.values) {
@@ -49,6 +72,7 @@ class FakeUserMealPlanRepository implements user_meal_plan_repository.UserMealPl
     _activePlanControllers.clear();
     _plansControllers.clear();
     _mealsControllers.clear();
+    _latestMeals.clear();
   }
 
   @override
@@ -92,7 +116,10 @@ class FakeUserMealPlanRepository implements user_meal_plan_repository.UserMealPl
   }
 
   @override
-  Future<void> savePlanAndSetActive({required UserMealPlan plan, required String userId}) async {
+  Future<void> savePlanAndSetActive({
+    required UserMealPlan plan,
+    required String userId,
+  }) async {
     // No-op for testing
   }
 
@@ -115,22 +142,48 @@ class FakeUserMealPlanRepository implements user_meal_plan_repository.UserMealPl
   }
 
   @override
-  Future<user_meal_plan_repository.MealPlanDay?> getDay(String planId, String userId, int dayIndex) async {
+  Future<user_meal_plan_repository.MealPlanDay?> getDay(
+    String planId,
+    String userId,
+    int dayIndex,
+  ) async {
     return null;
   }
 
   @override
-  Stream<List<user_meal_plan_repository.MealItem>> getDayMeals(String planId, String userId, int dayIndex) {
+  Stream<List<user_meal_plan_repository.MealItem>> getDayMeals(
+    String planId,
+    String userId,
+    int dayIndex,
+  ) {
     _getDayMealsCallCount++;
     final key = '$planId:$userId:$dayIndex';
+
     final controller = _mealsControllers.putIfAbsent(
       key,
       () => StreamController<List<user_meal_plan_repository.MealItem>>.broadcast(),
     );
-    // IMPORTANT: Emit empty list immediately to ensure stream always emits
-    // This matches Firestore snapshots() behavior - it emits immediately with current state
-    // Use async* to emit empty list first, then forward controller stream
-    return Stream.value(<user_meal_plan_repository.MealItem>[]).asyncExpand((_) => controller.stream);
+
+    // IMPORTANT:
+    // - Must emit immediately with current state (Firestore snapshots behavior)
+    // - Must allow multiple listeners (contract tests may listen twice)
+    return Stream<List<user_meal_plan_repository.MealItem>>.multi(
+      (multi) {
+        // Emit current snapshot immediately for THIS listener
+        multi.add(_latestMeals[key] ?? const <user_meal_plan_repository.MealItem>[]);
+
+        // Forward subsequent updates
+        final sub = controller.stream.listen(
+          (meals) => multi.add(meals),
+          onError: (error, stackTrace) => multi.addError(error, stackTrace),
+          onDone: () => multi.close(),
+          cancelOnError: false,
+        );
+
+        multi.onCancel = () => sub.cancel();
+      },
+      isBroadcast: true, // ✅ critical: allow multiple listeners
+    );
   }
 
   @override
@@ -193,4 +246,3 @@ class FakeUserMealPlanRepository implements user_meal_plan_repository.UserMealPl
     );
   }
 }
-

@@ -28,24 +28,23 @@ class MacrosSummaryService {
       return const MacrosSummary.empty();
     }
 
-    double totalCalories = 0.0;
-    double totalProtein = 0.0;
-    double totalCarb = 0.0;
-    double totalFat = 0.0;
-
-    for (final summary in daySummaries) {
-      totalCalories += summary.calories;
-      totalProtein += summary.protein;
-      totalCarb += summary.carb;
-      totalFat += summary.fat;
-    }
+    // Use fold to accumulate totals (avoids forbidden += pattern)
+    final totals = daySummaries.fold<MacrosSummary>(
+      const MacrosSummary.empty(),
+      (acc, summary) => MacrosSummary(
+        calories: acc.calories + summary.calories,
+        protein: acc.protein + summary.protein,
+        carb: acc.carb + summary.carb,
+        fat: acc.fat + summary.fat,
+      ),
+    );
 
     final count = daySummaries.length;
     return MacrosSummary(
-      calories: totalCalories / count,
-      protein: totalProtein / count,
-      carb: totalCarb / count,
-      fat: totalFat / count,
+      calories: totals.calories / count,
+      protein: totals.protein / count,
+      carb: totals.carb / count,
+      fat: totals.fat / count,
     );
   }
 
@@ -53,23 +52,15 @@ class MacrosSummaryService {
   /// 
   /// Returns total macros across all days
   static MacrosSummary sumPlanMacros(List<MacrosSummary> daySummaries) {
-    double totalCalories = 0.0;
-    double totalProtein = 0.0;
-    double totalCarb = 0.0;
-    double totalFat = 0.0;
-
-    for (final summary in daySummaries) {
-      totalCalories += summary.calories;
-      totalProtein += summary.protein;
-      totalCarb += summary.carb;
-      totalFat += summary.fat;
-    }
-
-    return MacrosSummary(
-      calories: totalCalories,
-      protein: totalProtein,
-      carb: totalCarb,
-      fat: totalFat,
+    // Use fold to accumulate totals (avoids forbidden += pattern)
+    return daySummaries.fold<MacrosSummary>(
+      const MacrosSummary.empty(),
+      (acc, summary) => MacrosSummary(
+        calories: acc.calories + summary.calories,
+        protein: acc.protein + summary.protein,
+        carb: acc.carb + summary.carb,
+        fat: acc.fat + summary.fat,
+      ),
     );
   }
 }
