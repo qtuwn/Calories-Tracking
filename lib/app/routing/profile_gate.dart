@@ -114,23 +114,3 @@ class _SkeletonHomeScreen extends StatelessWidget {
   }
 }
 
-class _LoadingScreen extends StatelessWidget {
-  const _LoadingScreen();
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const CircularProgressIndicator(),
-            const SizedBox(height: 24),
-            Text('Đang tải...', style: Theme.of(context).textTheme.bodyLarge),
-          ],
-        ),
-      ),
-    );
-  }
-}

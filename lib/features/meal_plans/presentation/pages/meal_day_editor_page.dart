@@ -1077,13 +1077,12 @@ class _EditFoodDialogState extends ConsumerState<_EditFoodDialog> {
 
       final service = ref.read(user_meal_plan_providers.userMealPlanServiceProvider);
       final userPlan = await service.loadPlanByIdOnce(widget.userId, widget.planId);
+      if (!context.mounted) return;
 
       if (userPlan == null) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Không tìm thấy thực đơn')),
-          );
-        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Không tìm thấy thực đơn')),
+        );
         return;
       }
 

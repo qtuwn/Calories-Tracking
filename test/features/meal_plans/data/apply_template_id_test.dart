@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:calories_app/domain/meal_plans/user_meal_plan_repository.dart' as user_meal_plan_repository;
 import 'package:calories_app/domain/meal_plans/explore_meal_plan.dart';
 import 'package:calories_app/domain/meal_plans/meal_plan_goal_type.dart';
 import 'fakes/fake_user_meal_plan_repository.dart';

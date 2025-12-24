@@ -9,6 +9,8 @@ class Activity {
   final ActivityIntensity intensity;
   final String? description;
   final String? iconName;
+  final String? iconUrl; // Cloudinary URL for icon image
+  final String? coverUrl; // Cloudinary URL for cover image
   final bool isActive;
   final DateTime createdAt;
   final DateTime? updatedAt;
@@ -22,6 +24,8 @@ class Activity {
     required this.intensity,
     this.description,
     this.iconName,
+    this.iconUrl,
+    this.coverUrl,
     this.isActive = true,
     required this.createdAt,
     this.updatedAt,
@@ -37,6 +41,8 @@ class Activity {
     ActivityIntensity? intensity,
     String? description,
     String? iconName,
+    String? iconUrl,
+    String? coverUrl,
     bool? isActive,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -50,6 +56,8 @@ class Activity {
       intensity: intensity ?? this.intensity,
       description: description ?? this.description,
       iconName: iconName ?? this.iconName,
+      iconUrl: iconUrl ?? this.iconUrl,
+      coverUrl: coverUrl ?? this.coverUrl,
       isActive: isActive ?? this.isActive,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,

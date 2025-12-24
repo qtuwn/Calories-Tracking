@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:calories_app/domain/meal_plans/user_meal_plan_repository.dart' as user_meal_plan_repository;
 import 'package:calories_app/features/meal_plans/state/meal_plan_repository_providers.dart';
 import 'package:calories_app/shared/state/user_meal_plan_providers.dart' as user_meal_plan_providers;
 import '../data/fakes/fake_user_meal_plan_repository.dart';

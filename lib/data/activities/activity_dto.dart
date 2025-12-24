@@ -12,6 +12,8 @@ class ActivityDto {
   final String intensity;
   final String? description;
   final String? iconName;
+  final String? iconUrl;
+  final String? coverUrl;
   final bool isActive;
   final Timestamp createdAt;
   final Timestamp? updatedAt;
@@ -25,6 +27,8 @@ class ActivityDto {
     required this.intensity,
     this.description,
     this.iconName,
+    this.iconUrl,
+    this.coverUrl,
     required this.isActive,
     required this.createdAt,
     this.updatedAt,
@@ -42,6 +46,8 @@ class ActivityDto {
       intensity: data['intensity'] as String? ?? 'moderate',
       description: data['description'] as String?,
       iconName: data['iconName'] as String?,
+      iconUrl: data['iconUrl'] as String?,
+      coverUrl: data['coverUrl'] as String?,
       isActive: data['isActive'] as bool? ?? true,
       createdAt: data['createdAt'] as Timestamp? ?? Timestamp.now(),
       updatedAt: data['updatedAt'] as Timestamp?,
@@ -62,6 +68,8 @@ class ActivityDto {
 
     if (description != null) map['description'] = description;
     if (iconName != null) map['iconName'] = iconName;
+    if (iconUrl != null) map['iconUrl'] = iconUrl;
+    if (coverUrl != null) map['coverUrl'] = coverUrl;
     if (updatedAt != null) map['updatedAt'] = updatedAt;
     if (deletedAt != null) map['deletedAt'] = deletedAt;
 
@@ -78,6 +86,8 @@ class ActivityDto {
       intensity: ActivityIntensity.fromString(intensity),
       description: description,
       iconName: iconName,
+      iconUrl: iconUrl,
+      coverUrl: coverUrl,
       isActive: isActive,
       createdAt: createdAt.toDate(),
       updatedAt: updatedAt?.toDate(),
@@ -95,6 +105,8 @@ class ActivityDto {
       intensity: activity.intensity.name,
       description: activity.description,
       iconName: activity.iconName,
+      iconUrl: activity.iconUrl,
+      coverUrl: activity.coverUrl,
       isActive: activity.isActive,
       createdAt: Timestamp.fromDate(activity.createdAt),
       updatedAt: activity.updatedAt != null

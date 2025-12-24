@@ -354,7 +354,10 @@ class FirestoreProfileRepository implements ProfileRepository {
     }
 
     // Remove null values for cleaner Firestore writes
-    normalized.removeWhere((key, value) => value == null);
+    // But keep FieldValue.delete() to allow field removal
+    normalized.removeWhere((key, value) => 
+      value == null && value is! FieldValue
+    );
 
     return normalized;
   }
@@ -385,14 +388,18 @@ class FirestoreProfileRepository implements ProfileRepository {
     }
   }
 
+  /// @deprecated Use updateProfileAvatarUrl instead
+  /// This method is kept for backward compatibility only.
+  /// TODO: Remove after base64 migration completes
   @override
+  @Deprecated('Use updateProfileAvatarUrl instead. Base64 support will be removed.')
   Future<void> updateProfileAvatarBase64({
     required String userId,
     required String profileId,
     required String photoBase64,
   }) async {
     debugPrint(
-      '[FirestoreProfileRepository] 🔵 Updating photoBase64 for uid=$userId, profileId=$profileId',
+      '[FirestoreProfileRepository] ⚠️ DEPRECATED: updateProfileAvatarBase64 called for uid=$userId, profileId=$profileId',
     );
 
     try {
@@ -409,6 +416,69 @@ class FirestoreProfileRepository implements ProfileRepository {
     } catch (e, stackTrace) {
       debugPrint(
         '[FirestoreProfileRepository] 🔥 updateProfileAvatarBase64 FAILED for uid=$userId, profileId=$profileId',
+      );
+      debugPrint('[FirestoreProfileRepository] Error: $e');
+      debugPrint('[FirestoreProfileRepository] Stack trace: $stackTrace');
+      rethrow;
+    }
+  }
+
+  @override
+  Future<void> updateProfileAvatarUrl({
+    required String userId,
+    required String profileId,
+    required String photoUrl,
+  }) async {
+    debugPrint(
+      '[FirestoreProfileRepository] 🔵 Updating photoUrl for uid=$userId, profileId=$profileId',
+    );
+
+    try {
+      await _firestore
+          .collection('users')
+          .doc(userId)
+          .collection('profiles')
+          .doc(profileId)
+          .update({'photoUrl': photoUrl});
+
+      debugPrint(
+        '[FirestoreProfileRepository] ✅ Successfully updated photoUrl for uid=$userId, profileId=$profileId',
+      );
+    } catch (e, stackTrace) {
+      debugPrint(
+        '[FirestoreProfileRepository] 🔥 updateProfileAvatarUrl FAILED for uid=$userId, profileId=$profileId',
+      );
+      debugPrint('[FirestoreProfileRepository] Error: $e');
+      debugPrint('[FirestoreProfileRepository] Stack trace: $stackTrace');
+      rethrow;
+    }
+  }
+
+  @override
+  Future<void> removeProfileAvatarBase64({
+    required String userId,
+    required String profileId,
+  }) async {
+    debugPrint(
+      '[FirestoreProfileRepository] 🔵 Removing photoBase64 for uid=$userId, profileId=$profileId',
+    );
+
+    try {
+      await _firestore
+          .collection('users')
+          .doc(userId)
+          .collection('profiles')
+          .doc(profileId)
+          .update({
+        'photoBase64': FieldValue.delete(),
+      });
+
+      debugPrint(
+        '[FirestoreProfileRepository] ✅ Successfully removed photoBase64 for uid=$userId, profileId=$profileId',
+      );
+    } catch (e, stackTrace) {
+      debugPrint(
+        '[FirestoreProfileRepository] 🔥 removeProfileAvatarBase64 FAILED for uid=$userId, profileId=$profileId',
       );
       debugPrint('[FirestoreProfileRepository] Error: $e');
       debugPrint('[FirestoreProfileRepository] Stack trace: $stackTrace');

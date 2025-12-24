@@ -35,6 +35,8 @@ class ProfileModel {
   final DateTime? goalDate;
   final bool isCurrent;
   final DateTime? createdAt;
+  /// @deprecated Use photoUrl instead. Base64 support will be removed after migration.
+  /// TODO: Remove photoBase64 field after migration completes (all profiles migrated to Cloudinary)
   final String? photoBase64;
 
   const ProfileModel({

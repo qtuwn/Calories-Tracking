@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:calories_app/domain/meal_plans/explore_meal_plan.dart';
 import 'package:calories_app/features/meal_plans/data/repositories/user_meal_plan_repository_impl.dart'
     show MealPlanApplyException, requireNonEmptyForTesting, requirePositiveForTesting;
 

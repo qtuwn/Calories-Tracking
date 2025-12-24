@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../domain/activities/activity.dart';
+import '../../../../data/images/cloudinary_url_builder.dart';
 import '../state/activity_providers.dart';
 import 'activity_form_page.dart';
 
@@ -117,9 +118,7 @@ class _ActivityListPageState extends ConsumerState<ActivityListPage> {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       child: ListTile(
-        leading: CircleAvatar(
-          child: Text(activity.iconName ?? activity.name[0].toUpperCase()),
-        ),
+        leading: _buildActivityIcon(activity),
         title: Text(activity.name),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -142,6 +141,66 @@ class _ActivityListPageState extends ConsumerState<ActivityListPage> {
         onTap: () => _navigateToForm(context, activity),
       ),
     );
+  }
+
+  /// Build activity icon widget (URL first, fallback to iconName, then default)
+  /// 
+  /// Phase 6: Uses CloudinaryUrlBuilder for optimized sport icon URLs
+  Widget _buildActivityIcon(Activity activity) {
+    // Prefer iconUrl (Cloudinary) over iconName
+    if (activity.iconUrl != null && activity.iconUrl!.isNotEmpty) {
+      // Build optimized URL for list thumbnails
+      final optimizedUrl = CloudinaryUrlBuilder.sportIcon(
+        baseUrl: activity.iconUrl!,
+        size: 72,
+      );
+
+      return CircleAvatar(
+        backgroundImage: NetworkImage(optimizedUrl),
+        onBackgroundImageError: (exception, stackTrace) {
+          // Fallback to default icon on error
+        },
+        child: activity.iconName != null
+            ? null
+            : Text(activity.name[0].toUpperCase()),
+      );
+    }
+
+    // Fallback to iconName (Material Icon)
+    if (activity.iconName != null && activity.iconName!.isNotEmpty) {
+      return CircleAvatar(
+        child: Icon(
+          _getIconData(activity.iconName!),
+        ),
+      );
+    }
+
+    // Default: first letter of name
+    return CircleAvatar(
+      child: Text(activity.name[0].toUpperCase()),
+    );
+  }
+
+  /// Get IconData from icon name string
+  IconData? _getIconData(String iconName) {
+    // Simple mapping for common icons
+    // For full Material Icons support, would need icon lookup package
+    switch (iconName.toLowerCase()) {
+      case 'fitness_center':
+      case 'fitness':
+        return Icons.fitness_center;
+      case 'directions_run':
+      case 'run':
+        return Icons.directions_run;
+      case 'pool':
+      case 'swim':
+        return Icons.pool;
+      case 'directions_bike':
+      case 'bike':
+        return Icons.directions_bike;
+      default:
+        return Icons.sports;
+    }
   }
 
   Widget _buildEmptyState() {

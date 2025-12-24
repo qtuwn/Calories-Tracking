@@ -21,7 +21,7 @@ class NotificationScheduler {
   Future<void> rescheduleAll(NotificationPrefs prefs, {bool force = false}) async {
     // PHASE 2: Check if we need to reschedule (avoid cancelAll on every boot)
     if (!force && _prefs != null) {
-      final lastRescheduleStr = _prefs!.getString(_lastRescheduleDateKey);
+      final lastRescheduleStr = _prefs.getString(_lastRescheduleDateKey);
       if (lastRescheduleStr != null) {
         final lastReschedule = DateTime.parse(lastRescheduleStr);
         final now = DateTime.now();
@@ -110,7 +110,7 @@ class NotificationScheduler {
 
       // Save last reschedule date
       if (_prefs != null) {
-        await _prefs!.setString(_lastRescheduleDateKey, DateTime.now().toIso8601String());
+        await _prefs.setString(_lastRescheduleDateKey, DateTime.now().toIso8601String());
       }
       
       debugPrint('[NotificationScheduler] ✅ All notifications rescheduled');

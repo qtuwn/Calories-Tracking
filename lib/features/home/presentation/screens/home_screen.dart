@@ -4,8 +4,6 @@ import 'package:calories_app/features/home/presentation/pages/dashboard_page.dar
 import 'package:calories_app/features/home/presentation/pages/diary_page.dart';
 import 'package:calories_app/features/home/presentation/pages/menu_page.dart';
 import 'package:calories_app/features/home/presentation/pages/profile_page.dart';
-import 'package:calories_app/core/notifications/notification_scheduler.dart';
-import 'package:calories_app/core/notifications/push_notifications_service.dart';
 import 'package:calories_app/core/notifications/fcm_token_provider.dart';
 import 'package:calories_app/core/bootstrap/startup_orchestrator.dart';
 import 'package:calories_app/features/voice_input/presentation/widgets/voice_input_button.dart';
@@ -17,7 +15,6 @@ import 'package:calories_app/domain/foods/food.dart';
 import 'package:calories_app/shared/state/diary_providers.dart';
 import 'package:calories_app/features/home/presentation/providers/weight_providers.dart';
 import 'package:calories_app/features/diary/domain/services/meal_time_classifier.dart';
-import 'package:calories_app/features/meal_plans/domain/models/shared/meal_type.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -131,7 +128,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             // Only show generic error for non-empty, non-user-friendly errors
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text(errorMsg.length > 50 ? errorMsg.substring(0, 50) + "..." : errorMsg),
+                content: Text(errorMsg.length > 50 ? '${errorMsg.substring(0, 50)}...' : errorMsg),
                 backgroundColor: Colors.red,
                 duration: const Duration(seconds: 3),
               ),

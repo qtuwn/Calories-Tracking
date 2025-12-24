@@ -1,0 +1,183 @@
+Analyzing Calories-App...                                       
+
+warning - The declaration '_LoadingScreen' isn't referenced - lib\app\routing\profile_gate.dart:117:7 - unused_element
+warning - Unused import: 'package:shared_preferences/shared_preferences.dart' - lib\core\health\health_providers.dart:2:8 - unused_import
+warning - The '!' will have no effect because the receiver can't be null - lib\core\notifications\notification_scheduler.dart:24:39 - unnecessary_non_null_assertion
+warning - The '!' will have no effect because the receiver can't be null - lib\core\notifications\notification_scheduler.dart:113:21 - unnecessary_non_null_assertion
+   info - The imported package 'http_parser' isn't a dependency of the importing package - lib\data\cloudinary\cloudinary_client.dart:5:8 - depend_on_referenced_packages
+   info - Angle brackets will be interpreted as HTML - lib\data\cloudinary\cloudinary_client.dart:122:56 - unintended_html_in_doc_comment
+   info - Angle brackets will be interpreted as HTML - lib\data\diary\shared_prefs_diary_cache.dart:11:30 - unintended_html_in_doc_comment
+   info - Angle brackets will be interpreted as HTML - lib\data\diary\shared_prefs_diary_cache.dart:11:36 - unintended_html_in_doc_comment
+   info - 'ProfileRepository' is deprecated and shouldn't be used. Use domain/profile/profile_repository.dart and FirestoreProfileRepository instead. See docs/migration_profile_to_domain.md - lib\data\firebase\weight_repository.dart:194:33 - deprecated_member_use_from_same_package
+   info - The import of 'dart:typed_data' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/foundation.dart' - lib\data\images\cloudinary_image_storage_repository.dart:1:8 - unnecessary_import
+   info - The import of 'package:firebase_core/firebase_core.dart' is unnecessary because all of the used elements are also provided by the import of 'package:cloud_firestore/cloud_firestore.dart' - lib\data\meal_plans\firestore_explore_meal_plan_repository.dart:2:8 - unnecessary_import
+   info - Parameter 'message' could be a super parameter - lib\domain\images\image_storage_failure.dart:18:9 - use_super_parameters
+   info - Parameter 'message' could be a super parameter - lib\domain\images\image_storage_failure.dart:28:9 - use_super_parameters
+   info - Parameter 'message' could be a super parameter - lib\domain\images\image_storage_failure.dart:47:9 - use_super_parameters
+   info - Don't invoke 'print' in production code - lib\domain\meal_plans\user_meal_plan_service.dart:34:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\domain\meal_plans\user_meal_plan_service.dart:72:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\domain\meal_plans\user_meal_plan_service.dart:77:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\domain\meal_plans\user_meal_plan_service.dart:81:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\domain\meal_plans\user_meal_plan_service.dart:82:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\domain\meal_plans\user_meal_plan_service.dart:84:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\domain\meal_plans\user_meal_plan_service.dart:94:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\domain\meal_plans\user_meal_plan_service.dart:96:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\domain\meal_plans\user_meal_plan_service.dart:106:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\domain\meal_plans\user_meal_plan_service.dart:107:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\domain\meal_plans\user_meal_plan_service.dart:131:11 - avoid_print
+   info - Don't invoke 'print' in production code - lib\domain\meal_plans\user_meal_plan_service.dart:138:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\domain\meal_plans\user_meal_plan_service.dart:147:13 - avoid_print
+   info - Don't invoke 'print' in production code - lib\domain\meal_plans\user_meal_plan_service.dart:168:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\domain\meal_plans\user_meal_plan_service.dart:170:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\domain\meal_plans\user_meal_plan_service.dart:283:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\domain\meal_plans\user_meal_plan_service.dart:288:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\domain\meal_plans\user_meal_plan_service.dart:298:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\domain\meal_plans\user_meal_plan_service.dart:302:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\domain\meal_plans\user_meal_plan_service.dart:313:13 - avoid_print
+   info - Don't invoke 'print' in production code - lib\domain\meal_plans\user_meal_plan_service.dart:319:11 - avoid_print
+   info - Don't invoke 'print' in production code - lib\domain\meal_plans\user_meal_plan_service.dart:322:11 - avoid_print
+   info - Don't invoke 'print' in production code - lib\domain\meal_plans\user_meal_plan_service.dart:325:11 - avoid_print
+   info - Don't invoke 'print' in production code - lib\domain\meal_plans\user_meal_plan_service.dart:328:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\domain\meal_plans\user_meal_plan_service.dart:338:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\domain\meal_plans\user_meal_plan_service.dart:339:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\domain\meal_plans\user_meal_plan_service.dart:343:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\domain\meal_plans\user_meal_plan_service.dart:348:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\domain\meal_plans\user_meal_plan_service.dart:357:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\domain\meal_plans\user_meal_plan_service.dart:358:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\domain\meal_plans\user_meal_plan_service.dart:371:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\domain\meal_plans\user_meal_plan_service.dart:372:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\domain\meal_plans\user_meal_plan_service.dart:373:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\domain\meal_plans\user_meal_plan_service.dart:374:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\domain\meal_plans\user_meal_plan_service.dart:386:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\domain\meal_plans\user_meal_plan_service.dart:388:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\domain\meal_plans\user_meal_plan_service.dart:391:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\domain\meal_plans\user_meal_plan_service.dart:392:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\domain\meal_plans\user_meal_plan_service.dart:401:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\domain\meal_plans\user_meal_plan_service.dart:402:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\domain\meal_plans\user_meal_plan_service.dart:406:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\domain\meal_plans\user_meal_plan_service.dart:410:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\domain\meal_plans\user_meal_plan_service.dart:421:13 - avoid_print
+   info - Don't invoke 'print' in production code - lib\domain\meal_plans\user_meal_plan_service.dart:427:11 - avoid_print
+   info - Don't invoke 'print' in production code - lib\domain\meal_plans\user_meal_plan_service.dart:430:11 - avoid_print
+   info - Don't invoke 'print' in production code - lib\domain\meal_plans\user_meal_plan_service.dart:433:11 - avoid_print
+   info - Don't invoke 'print' in production code - lib\domain\meal_plans\user_meal_plan_service.dart:436:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\domain\meal_plans\user_meal_plan_service.dart:446:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\domain\meal_plans\user_meal_plan_service.dart:447:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\domain\meal_plans\user_meal_plan_service.dart:452:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\domain\meal_plans\user_meal_plan_service.dart:454:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\domain\meal_plans\user_meal_plan_service.dart:461:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\domain\meal_plans\user_meal_plan_service.dart:463:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\domain\meal_plans\user_meal_plan_service.dart:465:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\domain\meal_plans\user_meal_plan_service.dart:466:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\domain\meal_plans\user_meal_plan_service.dart:467:5 - avoid_print
+   info - Dangling library doc comment - lib\domain\profile\profile.dart:4:1 - dangling_library_doc_comments
+   info - 'ProfileModel' is deprecated and shouldn't be used. Use domain/profile/profile.dart and ProfileService instead. See docs/migration_profile_to_domain.md - lib\domain\profile\profile_to_profile_model_adapter.dart:11:17 - deprecated_member_use_from_same_package
+   info - 'ProfileModel' is deprecated and shouldn't be used. Use domain/profile/profile.dart and ProfileService instead. See docs/migration_profile_to_domain.md - lib\domain\profile\profile_to_profile_model_adapter.dart:14:27 - deprecated_member_use_from_same_package
+   info - 'ProfileModel' is deprecated and shouldn't be used. Use domain/profile/profile.dart and ProfileService instead. See docs/migration_profile_to_domain.md - lib\domain\profile\profile_to_profile_model_adapter.dart:28:19 - deprecated_member_use_from_same_package
+warning - Unused import: 'dart:io' - lib\features\admin_activities\presentation\pages\activity_form_page.dart:1:8 - unused_import
+   info - 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre - lib\features\admin_explore_meal_plans\presentation\pages\explore_meal_plan_form_page.dart:105:15 - deprecated_member_use
+   info - 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre - lib\features\admin_explore_meal_plans\presentation\pages\explore_meal_plan_form_page.dart:210:15 - deprecated_member_use
+   info - The import of 'package:flutter/foundation.dart' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/material.dart' - lib\features\exercise\ui\exercise_admin_edit_screen.dart:2:8 - unnecessary_import
+warning - Unused import: 'dart:convert' - lib\features\home\presentation\pages\profile_page.dart:1:8 - unused_import
+warning - Unused import: 'package:calories_app/core/notifications/notification_scheduler.dart' - lib\features\home\presentation\screens\home_screen.dart:7:8 - unused_import
+warning - Unused import: 'package:calories_app/core/notifications/push_notifications_service.dart' - lib\features\home\presentation\screens\home_screen.dart:8:8 - unused_import
+   info - The import of 'package:calories_app/features/voice_input/presentation/controllers/voice_controller.dart' is unnecessary because all of the used elements are also provided by the import of 'package:calories_app/features/voice_input/presentation/controllers/voice_controller.dart' - lib\features\home\presentation\screens\home_screen.dart:14:8 - unnecessary_import
+warning - Unused import: 'package:calories_app/features/meal_plans/domain/models/shared/meal_type.dart' - lib\features\home\presentation\screens\home_screen.dart:20:8 - unused_import
+   info - Use interpolation to compose strings and values - lib\features\home\presentation\screens\home_screen.dart:134:54 - prefer_interpolation_to_compose_strings
+   info - Don't invoke 'print' in production code - lib\features\meal_plans\data\repositories\user_meal_plan_repository_impl.dart:965:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\features\meal_plans\data\repositories\user_meal_plan_repository_impl.dart:979:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\features\meal_plans\data\repositories\user_meal_plan_repository_impl.dart:1036:13 - avoid_print
+   info - Don't invoke 'print' in production code - lib\features\meal_plans\data\repositories\user_meal_plan_repository_impl.dart:1038:13 - avoid_print
+   info - Don't invoke 'print' in production code - lib\features\meal_plans\data\repositories\user_meal_plan_repository_impl.dart:1052:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\features\meal_plans\data\repositories\user_meal_plan_repository_impl.dart:1109:11 - avoid_print
+   info - Don't invoke 'print' in production code - lib\features\meal_plans\data\repositories\user_meal_plan_repository_impl.dart:1134:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\features\meal_plans\data\repositories\user_meal_plan_repository_impl.dart:1139:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\features\meal_plans\data\repositories\user_meal_plan_repository_impl.dart:1140:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\features\meal_plans\data\repositories\user_meal_plan_repository_impl.dart:1143:11 - avoid_print
+   info - Don't invoke 'print' in production code - lib\features\meal_plans\data\repositories\user_meal_plan_repository_impl.dart:1157:7 - avoid_print
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\features\meal_plans\presentation\pages\admin_discover_meal_plans_page.dart:130:15 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\features\meal_plans\presentation\pages\meal_custom_editor_page.dart:1690:32 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\features\meal_plans\presentation\pages\meal_day_editor_page.dart:1118:32 - use_build_context_synchronously
+   info - The local variable '_applyState' starts with an underscore - lib\features\meal_plans\presentation\pages\meal_detail_page.dart:69:11 - no_leading_underscores_for_local_identifiers
+warning - The value of the local variable '_applyState' isn't used - lib\features\meal_plans\presentation\pages\meal_detail_page.dart:69:11 - unused_local_variable
+   info - Don't invoke 'print' in production code - lib\features\meal_plans\state\applied_meal_plan_controller.dart:82:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\features\meal_plans\state\applied_meal_plan_controller.dart:101:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\features\meal_plans\state\applied_meal_plan_controller.dart:106:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\features\meal_plans\state\applied_meal_plan_controller.dart:110:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\features\meal_plans\state\applied_meal_plan_controller.dart:116:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\features\meal_plans\state\applied_meal_plan_controller.dart:119:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\features\meal_plans\state\applied_meal_plan_controller.dart:124:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\features\meal_plans\state\applied_meal_plan_controller.dart:131:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\features\meal_plans\state\applied_meal_plan_controller.dart:135:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\features\meal_plans\state\applied_meal_plan_controller.dart:139:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\features\meal_plans\state\applied_meal_plan_controller.dart:149:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\features\meal_plans\state\applied_meal_plan_controller.dart:158:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\features\meal_plans\state\applied_meal_plan_controller.dart:159:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\features\meal_plans\state\applied_meal_plan_controller.dart:163:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\features\meal_plans\state\applied_meal_plan_controller.dart:170:13 - avoid_print
+   info - Don't invoke 'print' in production code - lib\features\meal_plans\state\applied_meal_plan_controller.dart:175:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\features\meal_plans\state\applied_meal_plan_controller.dart:180:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\features\meal_plans\state\applied_meal_plan_controller.dart:185:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\features\meal_plans\state\applied_meal_plan_controller.dart:190:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\features\meal_plans\state\applied_meal_plan_controller.dart:194:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\features\meal_plans\state\applied_meal_plan_controller.dart:195:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\features\meal_plans\state\applied_meal_plan_controller.dart:198:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\features\meal_plans\state\applied_meal_plan_controller.dart:201:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\features\meal_plans\state\applied_meal_plan_controller.dart:210:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\features\meal_plans\state\applied_meal_plan_controller.dart:214:11 - avoid_print
+   info - Don't invoke 'print' in production code - lib\features\meal_plans\state\applied_meal_plan_controller.dart:225:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\features\meal_plans\state\applied_meal_plan_controller.dart:230:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\features\meal_plans\state\applied_meal_plan_controller.dart:231:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\features\meal_plans\state\applied_meal_plan_controller.dart:234:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\features\meal_plans\state\applied_meal_plan_controller.dart:235:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\features\meal_plans\state\applied_meal_plan_controller.dart:239:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\features\meal_plans\state\applied_meal_plan_controller.dart:240:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\features\meal_plans\state\applied_meal_plan_controller.dart:250:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\features\meal_plans\state\applied_meal_plan_controller.dart:253:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\features\meal_plans\state\applied_meal_plan_controller.dart:254:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\features\meal_plans\state\applied_meal_plan_controller.dart:255:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\features\meal_plans\state\applied_meal_plan_controller.dart:259:9 - avoid_print
+warning - Unused import: 'package:flutter/foundation.dart' - lib\features\onboarding\domain\macro_utils.dart:1:8 - unused_import
+warning - The value of the local variable 'total' isn't used - lib\features\onboarding\domain\macro_utils.dart:29:11 - unused_local_variable
+warning - Dead code - lib\features\onboarding\presentation\screens\macro_step_screen.dart:297:29 - dead_code
+warning - Dead code - lib\features\onboarding\presentation\screens\macro_step_screen.dart:300:64 - dead_code
+warning - Dead code - lib\features\onboarding\presentation\screens\macro_step_screen.dart:321:39 - dead_code
+warning - Dead code - lib\features\onboarding\presentation\screens\macro_step_screen.dart:491:29 - dead_code
+   info - 'ProfileModel' is deprecated and shouldn't be used. Use domain/profile/profile.dart and ProfileService instead. See docs/migration_profile_to_domain.md - lib\features\onboarding\presentation\screens\target_intake_step_screen.dart:78:28 - deprecated_member_use_from_same_package
+warning - The value of the field '_onFoodRecognizedCallback' isn't used - lib\features\voice_input\presentation\controllers\voice_controller.dart:304:39 - unused_field
+warning - Unused import: 'package:calories_app/data/profile/firestore_profile_repository.dart' - lib\shared\state\auth_providers.dart:8:8 - unused_import
+warning - Unused import: 'package:cloud_firestore/cloud_firestore.dart' - test\data\meal_plans\explore_meal_plan_dto_metadata_test.dart:2:8 - unused_import
+warning - Unused import: 'package:calories_app/domain/meal_plans/explore_meal_plan.dart' - test\features\meal_plans\apply_explore_template_validation_test.dart:2:8 - unused_import
+warning - Unused import: 'package:calories_app/domain/meal_plans/user_meal_plan_repository.dart' - test\features\meal_plans\data\apply_template_id_test.dart:2:8 - unused_import
+   info - The local variable '_buildProfile' starts with an underscore - test\features\meal_plans\domain\services\meal_plan_validation_service_test.dart:156:15 - no_leading_underscores_for_local_identifiers
+warning - Unused import: 'package:cloud_firestore/cloud_firestore.dart' - test\features\meal_plans\explore_meal_slot_serving_size_test.dart:2:8 - unused_import
+warning - Unused import: 'package:calories_app/data/meal_plans/explore_meal_plan_dto.dart' - test\features\meal_plans\explore_meal_slot_serving_size_test.dart:3:8 - unused_import
+warning - The value of the local variable 'fakeData' isn't used - test\features\meal_plans\explore_meal_slot_serving_size_test.dart:46:13 - unused_local_variable
+warning - Unused import: 'package:calories_app/domain/meal_plans/user_meal_plan_repository.dart' - test\features\meal_plans\state\provider_stability_test.dart:3:8 - unused_import
+   info - Angle brackets will be interpreted as HTML - tool\test_cloudinary_upload.dart:8:49 - unintended_html_in_doc_comment
+   info - Don't invoke 'print' in production code - tool\test_cloudinary_upload.dart:14:5 - avoid_print
+   info - Don't invoke 'print' in production code - tool\test_cloudinary_upload.dart:15:5 - avoid_print
+   info - Don't invoke 'print' in production code - tool\test_cloudinary_upload.dart:24:5 - avoid_print
+   info - Don't invoke 'print' in production code - tool\test_cloudinary_upload.dart:28:3 - avoid_print
+   info - Don't invoke 'print' in production code - tool\test_cloudinary_upload.dart:34:5 - avoid_print
+   info - Don't invoke 'print' in production code - tool\test_cloudinary_upload.dart:36:5 - avoid_print
+   info - Don't invoke 'print' in production code - tool\test_cloudinary_upload.dart:45:3 - avoid_print
+   info - Don't invoke 'print' in production code - tool\test_cloudinary_upload.dart:46:3 - avoid_print
+   info - Don't invoke 'print' in production code - tool\test_cloudinary_upload.dart:47:3 - avoid_print
+   info - Don't invoke 'print' in production code - tool\test_cloudinary_upload.dart:48:3 - avoid_print
+   info - Don't invoke 'print' in production code - tool\test_cloudinary_upload.dart:52:3 - avoid_print
+   info - Don't invoke 'print' in production code - tool\test_cloudinary_upload.dart:53:3 - avoid_print
+   info - Don't invoke 'print' in production code - tool\test_cloudinary_upload.dart:54:3 - avoid_print
+   info - Don't invoke 'print' in production code - tool\test_cloudinary_upload.dart:66:5 - avoid_print
+   info - Don't invoke 'print' in production code - tool\test_cloudinary_upload.dart:67:5 - avoid_print
+   info - Don't invoke 'print' in production code - tool\test_cloudinary_upload.dart:68:5 - avoid_print
+   info - Don't invoke 'print' in production code - tool\test_cloudinary_upload.dart:69:5 - avoid_print
+   info - Don't invoke 'print' in production code - tool\test_cloudinary_upload.dart:71:7 - avoid_print
+   info - Don't invoke 'print' in production code - tool\test_cloudinary_upload.dart:74:7 - avoid_print
+   info - Don't invoke 'print' in production code - tool\test_cloudinary_upload.dart:77:7 - avoid_print
+   info - Don't invoke 'print' in production code - tool\test_cloudinary_upload.dart:80:7 - avoid_print
+   info - Don't invoke 'print' in production code - tool\test_cloudinary_upload.dart:83:5 - avoid_print
+   info - Don't invoke 'print' in production code - tool\test_cloudinary_upload.dart:84:5 - avoid_print
+   info - Don't invoke 'print' in production code - tool\test_cloudinary_upload.dart:86:5 - avoid_print
+
+179 issues found. (ran in 4.3s)

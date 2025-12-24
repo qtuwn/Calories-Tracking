@@ -65,8 +65,8 @@ class _MealDetailPageState extends ConsumerState<MealDetailPage> {
     final templateAsync = ref.watch(explore_meal_plan_providers.exploreMealPlanByIdProvider(widget.planId));
     
     // PHASE 1: Watch controller provider to prevent autoDispose during async operations
-    // Note: applyState is intentionally watched but not used - keeps provider alive
-    final _applyState = ref.watch(appliedMealPlanControllerProvider);
+    // Note: intentionally watched but not used - keeps provider alive
+    ref.watch(appliedMealPlanControllerProvider);
     debugPrint('[MealDetailPage] 🧲 watching AppliedMealPlanController state to prevent autoDispose');
 
     return Scaffold(

@@ -8,7 +8,7 @@ import '../../data/firebase/date_utils.dart';
 /// SharedPreferences-based implementation of DiaryCache.
 /// 
 /// Stores and retrieves DiaryEntry objects as JSON strings in SharedPreferences.
-/// Key format: cached_diary_<uid>_<YYYY-MM-DD>
+/// Key format: `cached_diary_<uid>_<YYYY-MM-DD>`
 class SharedPrefsDiaryCache implements DiaryCache {
   final SharedPreferences _prefs;
   static const String _keyPrefix = 'cached_diary_';

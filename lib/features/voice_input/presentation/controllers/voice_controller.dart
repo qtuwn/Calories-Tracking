@@ -288,9 +288,6 @@ class VoiceController extends Notifier<VoiceState> {
       );
 
       debugPrint('[VoiceController] ✅ Started listening');
-      
-      // Store callback for later use
-      _onFoodRecognizedCallback = onFoodRecognized;
     } catch (e, stackTrace) {
       debugPrint('[VoiceController] ❌ Error starting listening: $e');
       debugPrint('[VoiceController] Stack trace: $stackTrace');
@@ -300,8 +297,6 @@ class VoiceController extends Notifier<VoiceState> {
       );
     }
   }
-
-  void Function(RecognizedFood food)? _onFoodRecognizedCallback;
 
   /// Stop listening (without processing - processing happens automatically on final result)
   Future<void> stopListening() async {
@@ -345,8 +340,6 @@ class VoiceController extends Notifier<VoiceState> {
         status: VoiceStatus.error,
         errorMessage: 'Không thể dừng nhận dạng giọng nói.',
       );
-    } finally {
-      _onFoodRecognizedCallback = null;
     }
   }
 
@@ -402,7 +395,6 @@ class VoiceController extends Notifier<VoiceState> {
         clearTranscript: true,
         clearFinalTranscript: true,
       );
-      _onFoodRecognizedCallback = null;
       debugPrint('[VoiceController] ✅ Cancelled listening');
     }
   }

@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:calories_app/shared/state/models/user_status.dart';
 import 'package:calories_app/domain/profile/profile.dart';
 import 'package:calories_app/shared/state/profile_providers.dart' as profile_providers;
-import 'package:calories_app/data/profile/firestore_profile_repository.dart';
 
 /// Stream provider for Firebase Auth state changes
 final authStateProvider = StreamProvider<User?>(

@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:calories_app/data/meal_plans/explore_meal_plan_dto.dart';
 import 'package:calories_app/domain/meal_plans/explore_meal_plan.dart';
 import 'package:calories_app/domain/meal_plans/meal_plan_goal_type.dart';
