@@ -617,51 +617,54 @@ class UserMealPlanRepositoryImpl implements UserMealPlanRepository {
     }
     
     // Use asyncExpand but ensure we only create one stream per day document
-    return daysRef.snapshots().asyncExpand((daySnapshot) {
-      if (daySnapshot.docs.isEmpty) {
-        // Day document doesn't exist - return a single stable empty stream
-        // This prevents infinite loops by not re-subscribing to the days query
-        // Log only once when first discovered
-        if (!_dayNotFoundLogged[streamKey]!) {
-          debugPrint('[UserMealPlanRepository] ℹ️ Day $dayIndex not found for planId=$planId, returning stable empty stream');
-          _dayNotFoundLogged[streamKey] = true;
+    // IMPORTANT: Start with empty list to ensure stream always emits at least once
+    return Stream.value(<MealItem>[]).asyncExpand((_) {
+      return daysRef.snapshots().asyncExpand((daySnapshot) {
+        if (daySnapshot.docs.isEmpty) {
+          // Day document doesn't exist - return a single stable empty stream
+          // This prevents infinite loops by not re-subscribing to the days query
+          // Log only once when first discovered
+          if (!_dayNotFoundLogged[streamKey]!) {
+            debugPrint('[UserMealPlanRepository] ℹ️ Day $dayIndex not found for planId=$planId, returning stable empty stream');
+            _dayNotFoundLogged[streamKey] = true;
+          }
+          return Stream.value(<MealItem>[]);
         }
-        return Stream.value(<MealItem>[]);
-      }
-      
-      // Reset the "not found" flag when day document appears
-      _dayNotFoundLogged[streamKey] = false;
-      
-      final dayDoc = daySnapshot.docs.first;
-      
-      // Day document exists - stream meals from its subcollection
-      // IMPORTANT: Firestore snapshots() emits immediately with current state (even if empty)
-      // This ensures the stream always emits at least once, preventing infinite loading
-      return dayDoc.reference
-          .collection('meals')
-          .orderBy('mealType')
-          .snapshots()
-          .map((mealsSnapshot) {
-        final meals = mealsSnapshot.docs
-            .map((doc) {
-              try {
-                final dto = MealItemDto.fromFirestore(doc);
-                return dto.toDomain();
-              } catch (e) {
-                debugPrint('[UserMealPlanRepository] ⚠️ Error parsing meal ${doc.id}: $e');
-                return null;
-              }
-            })
-            .whereType<MealItem>()
-            .toList();
         
-        // Only log when meal count actually changes, not on every snapshot
-        final lastCount = _lastMealCounts[streamKey] ?? -1;
-        if (meals.length != lastCount) {
-          debugPrint('[UserMealPlanRepository] 📊 Meals updated for day $dayIndex: ${meals.length} meals');
-          _lastMealCounts[streamKey] = meals.length;
-        }
-        return meals;
+        // Reset the "not found" flag when day document appears
+        _dayNotFoundLogged[streamKey] = false;
+        
+        final dayDoc = daySnapshot.docs.first;
+        
+        // Day document exists - stream meals from its subcollection
+        // IMPORTANT: Firestore snapshots() emits immediately with current state (even if empty)
+        // This ensures the stream always emits at least once, preventing infinite loading
+        return dayDoc.reference
+            .collection('meals')
+            .orderBy('mealType')
+            .snapshots()
+            .map((mealsSnapshot) {
+          final meals = mealsSnapshot.docs
+              .map((doc) {
+                try {
+                  final dto = MealItemDto.fromFirestore(doc);
+                  return dto.toDomain();
+                } catch (e) {
+                  debugPrint('[UserMealPlanRepository] ⚠️ Error parsing meal ${doc.id}: $e');
+                  return null;
+                }
+              })
+              .whereType<MealItem>()
+              .toList();
+          
+          // Only log when meal count actually changes, not on every snapshot
+          final lastCount = _lastMealCounts[streamKey] ?? -1;
+          if (meals.length != lastCount) {
+            debugPrint('[UserMealPlanRepository] 📊 Meals updated for day $dayIndex: ${meals.length} meals');
+            _lastMealCounts[streamKey] = meals.length;
+          }
+          return meals;
+        });
       });
     });
   }

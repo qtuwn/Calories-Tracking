@@ -61,11 +61,9 @@ class UserMealPlanService {
       cancelOnError: false,
     );
     
-    // Wait for first Firestore emission with timeout (3000ms)
-    // CRITICAL: If Firestore times out, we emit null (NOT cache) to prevent stale data
-    // After apply operations, cache is cleared, so emitting cache would show old plan
-    // Firestore is the source of truth - we wait for it or emit null
-    const timeout = Duration(milliseconds: 3000);
+    // Wait for first Firestore emission with timeout (300ms)
+    // If Firestore times out, emit cached plan if available, otherwise emit null
+    const timeout = Duration(milliseconds: 300);
     UserMealPlan? firstRemotePlan;
     bool firestoreEmittedQuickly = false;
     
@@ -99,14 +97,18 @@ class UserMealPlanService {
       await _cache.saveActivePlan(userId, firstRemotePlan);
       lastEmittedPlanId = firstRemotePlan?.id;
     } else {
-      // CRITICAL FIX: Firestore timeout - emit null (NOT cache) to prevent stale data
-      // After apply operations, cache is cleared, but even if it wasn't,
-      // we should not emit stale cache when Firestore is delayed
-      // Firestore is the source of truth - we wait for it
-      print('[UserMealPlanService] [ActivePlan] 📦 Firestore timeout - emitting NULL (no cache fallback to prevent stale data)');
+      // Firestore timeout - emit cached plan if available, otherwise emit null
+      final cachedPlan = await _cache.loadActivePlan(userId);
+      if (cachedPlan != null) {
+        print('[UserMealPlanService] [ActivePlan] 📦 Firestore timeout - emitting cached plan: planId=${cachedPlan.id}');
+        yield cachedPlan;
+        lastEmittedPlanId = cachedPlan.id;
+      } else {
+        print('[UserMealPlanService] [ActivePlan] 📦 Firestore timeout - emitting NULL (no cache available)');
+        yield null;
+        lastEmittedPlanId = null;
+      }
       print('[UserMealPlanService] [ActivePlan] 📡 Will continue streaming Firestore emissions...');
-      yield null;
-      lastEmittedPlanId = null;
     }
     
     // Continue streaming Firestore updates (deduplicated)
