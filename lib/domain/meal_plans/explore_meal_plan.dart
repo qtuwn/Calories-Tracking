@@ -1,7 +1,7 @@
 import 'meal_plan_goal_type.dart';
 
 /// Explore Meal Plan domain model
-/// 
+///
 /// Represents a public meal plan template that users can discover and apply.
 /// This is a pure domain model with no dependencies on Flutter or Firebase.
 
@@ -80,9 +80,7 @@ class ExploreMealPlan {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is ExploreMealPlan &&
-          runtimeType == other.runtimeType &&
-          id == other.id;
+      other is ExploreMealPlan && runtimeType == other.runtimeType && id == other.id;
 
   @override
   int get hashCode => id.hashCode;
@@ -172,10 +170,7 @@ class MealPlanDay {
 
   @override
   bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is MealPlanDay &&
-          runtimeType == other.runtimeType &&
-          id == other.id;
+      identical(this, other) || other is MealPlanDay && runtimeType == other.runtimeType && id == other.id;
 
   @override
   int get hashCode => id.hashCode;
@@ -194,6 +189,10 @@ class MealSlot {
   final String? description;
   final double servingSize; // Required: serving size must be > 0
 
+  /// NOTE:
+  /// - Keep this constructor `const` for easy caching/fixtures/tests.
+  /// - Do NOT validate (and do NOT throw) here because const constructors can't have bodies/throws.
+  /// - Runtime validation should be done via MealPlanInvariants.validateMealSlot(...)
   const MealSlot({
     required this.id,
     required this.name,
@@ -205,7 +204,7 @@ class MealSlot {
     this.foodId,
     this.description,
     required this.servingSize,
-  }) : assert(servingSize > 0, 'servingSize must be positive, got $servingSize');
+  });
 
   MealSlot copyWith({
     String? id,
@@ -235,12 +234,8 @@ class MealSlot {
 
   @override
   bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is MealSlot &&
-          runtimeType == other.runtimeType &&
-          id == other.id;
+      identical(this, other) || other is MealSlot && runtimeType == other.runtimeType && id == other.id;
 
   @override
   int get hashCode => id.hashCode;
 }
-

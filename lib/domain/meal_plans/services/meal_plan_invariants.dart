@@ -180,20 +180,6 @@ class MealPlanInvariants {
     int? dayIndex,
     String? docPath,
   }) {
-    // Assert for dev, throw for release
-    assert(
-      item.foodId.trim().isNotEmpty,
-      'foodId must be non-empty (dev assert)',
-    );
-    assert(
-      item.servingSize > 0,
-      'servingSize must be positive, got ${item.servingSize} (dev assert)',
-    );
-    assert(
-      item.calories >= 0 && item.calories.isFinite,
-      'calories must be non-negative and finite (dev assert)',
-    );
-
     // Runtime validation (throws for release too)
     if (item.foodId.trim().isEmpty) {
       throw MealPlanInvariantException(
@@ -225,6 +211,37 @@ class MealPlanInvariants {
       );
     }
 
+    // Check calories for NaN/Infinity and negative values
+    if (!item.calories.isFinite) {
+      throw MealPlanInvariantException(
+        'calories must be finite, got ${item.calories}',
+        userId: userId,
+        planId: planId,
+        dayIndex: dayIndex,
+        docPath: docPath,
+        details: {
+          'mealId': item.id,
+          'mealType': item.mealType,
+          'calories': item.calories,
+        },
+      );
+    }
+
+    if (item.calories < 0) {
+      throw MealPlanInvariantException(
+        'calories must be non-negative, got ${item.calories}',
+        userId: userId,
+        planId: planId,
+        dayIndex: dayIndex,
+        docPath: docPath,
+        details: {
+          'mealId': item.id,
+          'mealType': item.mealType,
+          'calories': item.calories,
+        },
+      );
+    }
+
     validateMacroNonNegative(
       calories: item.calories,
       protein: item.protein,
@@ -249,20 +266,6 @@ class MealPlanInvariants {
     int? slotIndex,
     String? docPath,
   }) {
-    // Assert for dev, throw for release
-    assert(
-      slot.foodId == null || slot.foodId!.trim().isNotEmpty,
-      'foodId must be null or non-empty (dev assert)',
-    );
-    assert(
-      slot.servingSize > 0,
-      'servingSize must be positive, got ${slot.servingSize} (dev assert)',
-    );
-    assert(
-      slot.calories >= 0 && slot.calories.isFinite,
-      'calories must be non-negative and finite (dev assert)',
-    );
-
     // Runtime validation (throws for release too)
     // Note: MealSlot.foodId is nullable, but if provided, must be non-empty
     if (slot.foodId != null && slot.foodId!.trim().isEmpty) {

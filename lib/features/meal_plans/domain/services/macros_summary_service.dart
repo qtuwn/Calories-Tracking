@@ -1,5 +1,6 @@
 import 'package:calories_app/domain/meal_plans/user_meal_plan_repository.dart' show MealItem;
 import 'package:calories_app/features/meal_plans/domain/models/shared/macros_summary.dart';
+import 'package:calories_app/domain/meal_plans/services/meal_nutrition_calculator.dart';
 
 /// Pure domain service for calculating macro summaries
 /// 
@@ -10,23 +11,12 @@ class MacrosSummaryService {
   /// 
   /// Returns a MacrosSummary with totals for calories, protein, carb, and fat
   static MacrosSummary sumMacros(List<MealItem> items) {
-    double totalCalories = 0.0;
-    double totalProtein = 0.0;
-    double totalCarb = 0.0;
-    double totalFat = 0.0;
-
-    for (final item in items) {
-      totalCalories += item.calories;
-      totalProtein += item.protein;
-      totalCarb += item.carb;
-      totalFat += item.fat;
-    }
-
+    final nutrition = MealNutritionCalculator.sumMeals(items);
     return MacrosSummary(
-      calories: totalCalories,
-      protein: totalProtein,
-      carb: totalCarb,
-      fat: totalFat,
+      calories: nutrition.calories,
+      protein: nutrition.protein,
+      carb: nutrition.carb,
+      fat: nutrition.fat,
     );
   }
 
