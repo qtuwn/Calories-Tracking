@@ -41,11 +41,31 @@ abstract class ProfileRepository {
   /// Get current profile ID (the one with isCurrent = true)
   Future<String?> getCurrentProfileId(String userId);
 
-  /// Update profile avatar using base64 string
+  /// @deprecated Use updateProfileAvatarUrl instead
+  /// This method is kept for backward compatibility only.
+  /// TODO: Remove after base64 migration completes
+  @Deprecated('Use updateProfileAvatarUrl instead. Base64 support will be removed.')
   Future<void> updateProfileAvatarBase64({
     required String userId,
     required String profileId,
     required String photoBase64,
+  });
+
+  /// Update profile avatar using Cloudinary URL
+  Future<void> updateProfileAvatarUrl({
+    required String userId,
+    required String profileId,
+    required String photoUrl,
+  });
+
+  /// Phase 6: Remove legacy base64 avatar field after successful migration
+  /// 
+  /// This method removes the photoBase64 field from Firestore after
+  /// a successful migration to Cloudinary. It is idempotent and safe to call
+  /// multiple times.
+  Future<void> removeProfileAvatarBase64({
+    required String userId,
+    required String profileId,
   });
 }
 

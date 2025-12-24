@@ -1,5 +1,3 @@
-import 'package:flutter/foundation.dart';
-
 /// Utility functions for macro percentage normalization and validation
 class MacroUtils {
   /// Normalize macro percentages to ensure they total exactly 100%
@@ -24,9 +22,6 @@ class MacroUtils {
     protein = (protein * 10).round() / 10;
     carb = (carb * 10).round() / 10;
     fat = (fat * 10).round() / 10;
-
-    // Calculate current total
-    final total = protein + carb + fat;
 
     // Force fat to absorb rounding error to make total exactly 100
     fat = 100.0 - protein - carb;

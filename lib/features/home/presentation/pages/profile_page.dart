@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -6,6 +5,10 @@ import 'package:image_picker/image_picker.dart';
 import 'package:calories_app/shared/state/auth_providers.dart';
 import 'package:calories_app/domain/profile/profile.dart';
 import 'package:calories_app/shared/state/profile_providers.dart' as profile_providers;
+import 'package:calories_app/shared/state/image_storage_providers.dart';
+import 'package:calories_app/domain/images/image_storage_failure.dart';
+import 'package:calories_app/data/profile/profile_avatar_migration_service.dart';
+import 'package:calories_app/data/images/cloudinary_url_builder.dart';
 import 'package:calories_app/features/home/presentation/controllers/avatar_upload_controller.dart';
 import 'package:calories_app/features/home/presentation/pages/settings_page.dart';
 import 'package:calories_app/features/home/presentation/pages/reports/nutrition_report_screen.dart';
@@ -70,6 +73,9 @@ class AccountPage extends ConsumerWidget {
             debugPrint('[AccountPage] Showing empty state - user authenticated (uid=${user.uid}) but no profile found');
             return _buildNoProfileView(context, ref);
           }
+          
+          // Trigger silent migration if base64 exists but no URL
+          _triggerMigrationIfNeeded(ref, user.uid, profile);
           
           // We have both user and profile - show the full profile view
           debugPrint('[AccountPage] Showing profile view for user: ${profile.nickname ?? "unnamed"} (uid=${user.uid})');
@@ -217,12 +223,12 @@ class AccountPage extends ConsumerWidget {
                   height: 100,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    gradient: profile?.photoBase64 != null && profile!.photoBase64!.isNotEmpty
+                    gradient: _hasAvatar(profile)
                         ? null
                         : const LinearGradient(
                             colors: [Color(0xFFAAF0D1), Color(0xFF7FD8BE)],
                           ),
-                    color: profile?.photoBase64 != null && profile!.photoBase64!.isNotEmpty
+                    color: _hasAvatar(profile)
                         ? Colors.transparent
                         : null,
                     border: Border.all(color: Colors.white, width: 4),
@@ -234,20 +240,7 @@ class AccountPage extends ConsumerWidget {
                       ),
                     ],
                   ),
-                  child: profile?.photoBase64 != null && profile!.photoBase64!.isNotEmpty
-                      ? ClipOval(
-                          child: Image.memory(
-                            base64Decode(profile.photoBase64!),
-                            width: 100,
-                            height: 100,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              debugPrint('[AccountPage] 🔥 Error decoding base64 image: $error');
-                              return const Icon(Icons.person, size: 50, color: Colors.white);
-                            },
-                          ),
-                        )
-                      : const Icon(Icons.person, size: 50, color: Colors.white),
+                  child: _buildAvatarImage(profile),
                 ),
                 // Camera icon overlay
                 Positioned(
@@ -716,7 +709,97 @@ class AccountPage extends ConsumerWidget {
   }
 
 
-  /// Pick image from gallery and upload to Firestore as base64
+  /// Check if profile has an avatar (Cloudinary URL only)
+  bool _hasAvatar(Profile? profile) {
+    if (profile == null) return false;
+    return profile.photoUrl != null && profile.photoUrl!.isNotEmpty;
+  }
+
+  /// Build avatar image widget (Cloudinary URL only)
+  /// 
+  /// Phase 6: Uses CloudinaryUrlBuilder for cache-safe, optimized URLs
+  Widget _buildAvatarImage(Profile? profile) {
+    if (profile == null || profile.photoUrl == null || profile.photoUrl!.isEmpty) {
+      return const Icon(Icons.person, size: 50, color: Colors.white);
+    }
+
+    // Build cache-safe URL with transformations
+    final url = CloudinaryUrlBuilder.avatar(
+      baseUrl: profile.photoUrl!,
+      size: 256,
+    );
+
+    return ClipOval(
+      child: Image.network(
+        url,
+        key: ValueKey(profile.photoUrl), // Force rebuild when photoUrl changes
+        width: 100,
+        height: 100,
+        fit: BoxFit.cover,
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return const Center(
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+            ),
+          );
+        },
+        errorBuilder: (context, error, stackTrace) {
+          debugPrint('[AccountPage] 🔥 Error loading avatar URL: $error');
+          return const Icon(Icons.person, size: 50, color: Colors.white);
+        },
+      ),
+    );
+  }
+
+  /// Trigger silent migration if base64 exists but no URL
+  /// 
+  /// Migration runs in background and does not block UI
+  void _triggerMigrationIfNeeded(
+    WidgetRef ref,
+    String userId,
+    Profile profile,
+  ) {
+    // Skip if no base64 or already has URL
+    if (profile.photoBase64 == null || profile.photoBase64!.isEmpty) {
+      return;
+    }
+    if (profile.photoUrl != null && profile.photoUrl!.isNotEmpty) {
+      return;
+    }
+
+    // Run migration in background (fire and forget)
+    Future.microtask(() async {
+      try {
+        final repository = ref.read(profile_providers.profileRepositoryProvider);
+        final profileId = await repository.getCurrentProfileId(userId);
+        if (profileId == null) return;
+
+        final uploadUseCase = ref.read(uploadUserAvatarUseCaseProvider);
+        final migrationService = ProfileAvatarMigrationService(
+          profileRepository: repository,
+          uploadUseCase: uploadUseCase,
+        );
+
+        await migrationService.migrateIfNeeded(
+          userId: userId,
+          profileId: profileId,
+          photoBase64: profile.photoBase64,
+          photoUrl: profile.photoUrl,
+        );
+
+        // Invalidate profile to refresh after migration
+        ref.invalidate(currentUserProfileDataProvider(userId));
+        ref.invalidate(currentUserProfileProvider);
+      } catch (e) {
+        debugPrint('[AccountPage] ⚠️ Migration error (will retry later): $e');
+        // Non-blocking - will retry on next profile load
+      }
+    });
+  }
+
+  /// Pick image from gallery and upload to Cloudinary
   Future<void> _pickAndUploadAvatar(
     BuildContext context,
     WidgetRef ref,
@@ -776,27 +859,50 @@ class AccountPage extends ConsumerWidget {
     ref.read(avatarUploadControllerProvider.notifier).setUploading(true);
 
     try {
-      // Read bytes and convert to base64
-      debugPrint('[AccountPage] 📤 Reading image bytes and encoding to base64...');
+      // Read image bytes
+      debugPrint('[AccountPage] 📤 Reading image bytes...');
       final bytes = await picked.readAsBytes();
-      final base64String = base64Encode(bytes);
-      debugPrint('[AccountPage] ✅ Image encoded to base64 (${base64String.length} chars)');
+      debugPrint('[AccountPage] ✅ Read ${bytes.length} bytes from image');
 
-      // Update Firestore with base64 string
-      debugPrint('[AccountPage] 📝 Updating Firestore with photoBase64...');
-      await repository.updateProfileAvatarBase64(
+      // Determine MIME type from file extension
+      final fileName = picked.path.split('/').last;
+      final extension = fileName.split('.').last.toLowerCase();
+      final mimeType = _getMimeType(extension);
+      debugPrint('[AccountPage] Detected MIME type: $mimeType');
+
+      // Upload to Cloudinary using use case
+      debugPrint('[AccountPage] 📤 Uploading to Cloudinary...');
+      final useCase = ref.read(uploadUserAvatarUseCaseProvider);
+      final imageAsset = await useCase.execute(
+        bytes: bytes,
+        fileName: fileName,
+        mimeType: mimeType,
+        uid: uid,
+      );
+
+      debugPrint('[AccountPage] ✅ Upload successful: ${imageAsset.url}');
+
+      // Build cache-safe URL with transformations
+      final cacheSafeUrl = CloudinaryUrlBuilder.avatar(
+        baseUrl: imageAsset.url,
+        size: 256,
+        version: imageAsset.version,
+      );
+
+      // Update Firestore with cache-safe Cloudinary URL
+      debugPrint('[AccountPage] 📝 Updating Firestore with photoUrl...');
+      await repository.updateProfileAvatarUrl(
         userId: uid,
         profileId: profileId,
-        photoBase64: base64String,
+        photoUrl: cacheSafeUrl,
       );
+
+      debugPrint('[AccountPage] ✅ Avatar URL saved to Firestore');
 
       // Success - clear uploading state
       ref.read(avatarUploadControllerProvider.notifier).setUploading(false);
 
-      debugPrint('[AccountPage] ✅ Avatar uploaded and updated successfully');
-
       // Invalidate the profile providers to force immediate refresh
-      // This ensures the UI updates immediately even if Firestore snapshot has a slight delay
       ref.invalidate(currentUserProfileDataProvider(uid));
       ref.invalidate(currentUserProfileProvider);
       debugPrint('[AccountPage] 🔄 Invalidated profile providers to force refresh');
@@ -809,8 +915,33 @@ class AccountPage extends ConsumerWidget {
           ),
         );
       }
+    } on ImageStorageFailure catch (e) {
+      debugPrint('[AccountPage] 🔥 Image upload failed: $e');
+
+      // Set error state
+      ref.read(avatarUploadControllerProvider.notifier).setError(e.toString());
+
+      // Show user-friendly error message
+      String errorMessage = 'Lỗi cập nhật ảnh';
+      if (e is ImageUploadNetworkFailure) {
+        errorMessage = 'Lỗi kết nối. Vui lòng kiểm tra internet và thử lại.';
+      } else if (e is ImageUploadServerFailure) {
+        errorMessage = 'Lỗi server. Vui lòng thử lại sau.';
+      } else if (e is ImageUploadInvalidResponseFailure) {
+        errorMessage = 'Lỗi xử lý ảnh. Vui lòng thử lại.';
+      }
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMessage),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
     } catch (e, stackTrace) {
-      debugPrint('[AccountPage] 🔥 Error uploading avatar: $e');
+      debugPrint('[AccountPage] 🔥 Unexpected error uploading avatar: $e');
       debugPrint('[AccountPage] Stack trace: $stackTrace');
 
       // Set error state
@@ -828,6 +959,23 @@ class AccountPage extends ConsumerWidget {
     } finally {
       // Ensure uploading state is cleared
       ref.read(avatarUploadControllerProvider.notifier).setUploading(false);
+    }
+  }
+
+  /// Get MIME type from file extension
+  String _getMimeType(String extension) {
+    switch (extension) {
+      case 'jpg':
+      case 'jpeg':
+        return 'image/jpeg';
+      case 'png':
+        return 'image/png';
+      case 'gif':
+        return 'image/gif';
+      case 'webp':
+        return 'image/webp';
+      default:
+        return 'image/jpeg'; // Default fallback
     }
   }
 

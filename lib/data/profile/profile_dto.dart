@@ -31,7 +31,10 @@ class ProfileDto {
   final Timestamp? goalDate;
   final bool isCurrent;
   final Timestamp? createdAt;
+  /// @deprecated Use photoUrl instead. Base64 support will be removed after migration.
+  /// TODO: Remove photoBase64 field after migration completes (all profiles migrated to Cloudinary)
   final String? photoBase64;
+  final String? photoUrl;
 
   ProfileDto({
     this.nickname,
@@ -61,6 +64,7 @@ class ProfileDto {
     this.isCurrent = true,
     this.createdAt,
     this.photoBase64,
+    this.photoUrl,
   });
 
   /// Create DTO from Firestore document
@@ -151,6 +155,7 @@ class ProfileDto {
               ? Timestamp.fromDate(parseDateTime(createdAtValue)!)
               : null),
       photoBase64: data['photoBase64'] as String?,
+      photoUrl: data['photoUrl'] as String?,
     );
   }
 
@@ -185,6 +190,7 @@ class ProfileDto {
       map['goalDate'] = goalDate!.toDate().toIso8601String();
     }
     if (photoBase64 != null) map['photoBase64'] = photoBase64;
+    if (photoUrl != null) map['photoUrl'] = photoUrl;
 
     // Use serverTimestamp for createdAt
     map['createdAt'] = FieldValue.serverTimestamp();
@@ -222,6 +228,7 @@ class ProfileDto {
       isCurrent: isCurrent,
       createdAt: createdAt?.toDate(),
       photoBase64: photoBase64,
+      photoUrl: photoUrl,
     );
   }
 
@@ -259,6 +266,7 @@ class ProfileDto {
           ? Timestamp.fromDate(profile.createdAt!)
           : null,
       photoBase64: profile.photoBase64,
+      photoUrl: profile.photoUrl,
     );
   }
 }

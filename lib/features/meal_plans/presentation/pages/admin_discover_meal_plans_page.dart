@@ -126,6 +126,7 @@ class _AdminDiscoverMealPlansPageState extends ConsumerState<AdminDiscoverMealPl
           
           // After form returns planId, navigate to editor
           if (mounted && createdPlanId != null && createdPlanId.isNotEmpty) {
+            if (!context.mounted) return;
             Navigator.push(
               context,
               MaterialPageRoute(

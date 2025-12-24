@@ -108,7 +108,9 @@ class _TargetIntakeStepScreenState
         goalDate: profileModel.goalDate,
         isCurrent: profileModel.isCurrent,
         createdAt: profileModel.createdAt ?? DateTime.now(),
-        photoBase64: profileModel.photoBase64,
+        // TODO: Remove photoBase64 after migration completes
+        // Base64 avatars are migrated automatically to Cloudinary URLs
+        photoBase64: null, // No longer used - use photoUrl instead
       );
 
       debugPrint(

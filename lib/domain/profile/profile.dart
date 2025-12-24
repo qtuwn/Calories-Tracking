@@ -31,7 +31,10 @@ class Profile {
   final DateTime? goalDate;
   final bool isCurrent;
   final DateTime? createdAt;
+  /// @deprecated Use photoUrl instead. Base64 support will be removed after migration.
+  /// TODO: Remove photoBase64 field after migration completes (all profiles migrated to Cloudinary)
   final String? photoBase64;
+  final String? photoUrl;
 
   const Profile({
     this.nickname,
@@ -61,6 +64,7 @@ class Profile {
     this.isCurrent = true,
     this.createdAt,
     this.photoBase64,
+    this.photoUrl,
   });
 
   /// Create a copy with updated fields
@@ -92,6 +96,7 @@ class Profile {
     bool? isCurrent,
     DateTime? createdAt,
     String? photoBase64,
+    String? photoUrl,
   }) {
     return Profile(
       nickname: nickname ?? this.nickname,
@@ -121,6 +126,7 @@ class Profile {
       isCurrent: isCurrent ?? this.isCurrent,
       createdAt: createdAt ?? this.createdAt,
       photoBase64: photoBase64 ?? this.photoBase64,
+      photoUrl: photoUrl ?? this.photoUrl,
     );
   }
 
@@ -214,6 +220,7 @@ class Profile {
     if (goalDate != null) map['goalDate'] = goalDate!.toIso8601String();
     if (createdAt != null) map['createdAt'] = createdAt!.toIso8601String();
     if (photoBase64 != null) map['photoBase64'] = photoBase64;
+    if (photoUrl != null) map['photoUrl'] = photoUrl;
 
     return map;
   }
@@ -289,6 +296,7 @@ class Profile {
       isCurrent: json['isCurrent'] as bool? ?? true,
       createdAt: parseDateTime(json['createdAt']),
       photoBase64: json['photoBase64'] as String?,
+      photoUrl: json['photoUrl'] as String?,
     );
   }
 }

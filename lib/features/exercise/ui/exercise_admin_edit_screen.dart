@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:calories_app/core/theme/theme.dart';
 import 'package:calories_app/features/exercise/data/exercise_model.dart';
 import 'package:calories_app/features/exercise/data/exercise_providers.dart';
+import 'package:calories_app/shared/state/image_storage_providers.dart';
+import 'package:calories_app/domain/images/image_storage_failure.dart';
 
 /// Provider for current user's role from Firestore
 final _currentUserRoleProvider = StreamProvider<String?>((ref) {
@@ -44,6 +48,7 @@ class _ExerciseAdminEditScreenState
   List<ExerciseLevel> _levels = [];
 
   bool _isLoading = false;
+  bool _isUploadingImage = false;
 
   @override
   void initState() {
@@ -173,12 +178,51 @@ class _ExerciseAdminEditScreenState
                   // Image URL
                   _buildSectionTitle('Ảnh (URL)'),
                   const SizedBox(height: 8),
+                  // Image preview
+                  if (_imageUrlController.text.trim().isNotEmpty) ...[
+                    _buildImagePreview(_imageUrlController.text.trim()),
+                    const SizedBox(height: 12),
+                  ],
+                  // URL TextField
                   TextFormField(
                     controller: _imageUrlController,
                     decoration: const InputDecoration(
                       labelText: 'URL ảnh',
                       hintText: 'https://example.com/image.jpg',
                     ),
+                    onChanged: (value) {
+                      setState(() {}); // Refresh preview when URL changes
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  // Action buttons
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: _isUploadingImage || _isLoading ? null : _pickAndUploadImage,
+                          icon: _isUploadingImage
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              : const Icon(Icons.image),
+                          label: const Text('Chọn ảnh'),
+                        ),
+                      ),
+                      if (_imageUrlController.text.trim().isNotEmpty) ...[
+                        const SizedBox(width: 8),
+                        OutlinedButton.icon(
+                          onPressed: _isUploadingImage || _isLoading ? null : _clearImage,
+                          icon: const Icon(Icons.clear),
+                          label: const Text('Xóa ảnh'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColors.error,
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                   const SizedBox(height: 24),
                   // Unit type
@@ -583,6 +627,173 @@ class _ExerciseAdminEditScreenState
           _isLoading = false;
         });
       }
+    }
+  }
+
+  /// Build image preview widget
+  Widget _buildImagePreview(String imageUrl) {
+    return Container(
+      height: 120,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Image.network(
+          imageUrl,
+          key: ValueKey(imageUrl), // Force rebuild when URL changes
+          fit: BoxFit.cover,
+          loadingBuilder: (context, child, loadingProgress) {
+            if (loadingProgress == null) return child;
+            return Center(
+              child: CircularProgressIndicator(
+                value: loadingProgress.expectedTotalBytes != null
+                    ? loadingProgress.cumulativeBytesLoaded /
+                        loadingProgress.expectedTotalBytes!
+                    : null,
+              ),
+            );
+          },
+          errorBuilder: (context, error, stackTrace) {
+            return Container(
+              color: Colors.grey[200],
+              child: const Center(
+                child: Icon(Icons.broken_image, size: 48, color: Colors.grey),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  /// Pick image from gallery and upload to Cloudinary
+  Future<void> _pickAndUploadImage() async {
+    debugPrint('[ExerciseAdminEditScreen] 🔵 Starting image pick and upload');
+
+    // Pick image from gallery
+    final picker = ImagePicker();
+    final XFile? picked = await picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 1920,
+      maxHeight: 1080,
+      imageQuality: 85,
+    );
+
+    if (picked == null) {
+      debugPrint('[ExerciseAdminEditScreen] ℹ️ User cancelled image picker');
+      return;
+    }
+
+    debugPrint('[ExerciseAdminEditScreen] ✅ Image picked: ${picked.path}');
+
+    setState(() {
+      _isUploadingImage = true;
+    });
+
+    try {
+      // Read image bytes
+      debugPrint('[ExerciseAdminEditScreen] 📤 Reading image bytes...');
+      final bytes = await picked.readAsBytes();
+      debugPrint('[ExerciseAdminEditScreen] ✅ Read ${bytes.length} bytes from image');
+
+      // Determine MIME type from file extension
+      final fileName = picked.path.split('/').last;
+      final extension = fileName.split('.').last.toLowerCase();
+      final mimeType = _getMimeType(extension);
+      debugPrint('[ExerciseAdminEditScreen] Detected MIME type: $mimeType');
+
+      // Upload to Cloudinary using repository
+      debugPrint('[ExerciseAdminEditScreen] 📤 Uploading to Cloudinary...');
+      final repository = ref.read(imageStorageRepositoryProvider);
+      final imageAsset = await repository.uploadImage(
+        bytes: bytes,
+        fileName: fileName,
+        mimeType: mimeType,
+        folder: 'exercises/images',
+        publicId: null, // Let Cloudinary auto-generate unique ID
+      );
+
+      debugPrint('[ExerciseAdminEditScreen] ✅ Upload successful: ${imageAsset.url}');
+
+      // Update URL field with secure URL
+      setState(() {
+        _imageUrlController.text = imageAsset.url;
+        _isUploadingImage = false;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Đã tải lên ảnh thành công'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      }
+    } on ImageStorageFailure catch (e) {
+      debugPrint('[ExerciseAdminEditScreen] 🔥 Image upload failed: $e');
+
+      setState(() {
+        _isUploadingImage = false;
+      });
+
+      String errorMessage = 'Lỗi tải lên ảnh';
+      if (e is ImageUploadNetworkFailure) {
+        errorMessage = 'Lỗi kết nối. Vui lòng kiểm tra internet và thử lại.';
+      } else if (e is ImageUploadServerFailure) {
+        errorMessage = 'Lỗi server. Vui lòng thử lại sau.';
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMessage),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } catch (e, stackTrace) {
+      debugPrint('[ExerciseAdminEditScreen] 🔥 Unexpected error: $e');
+      debugPrint('[ExerciseAdminEditScreen] Stack trace: $stackTrace');
+
+      setState(() {
+        _isUploadingImage = false;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi: ${e.toString()}'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Clear image URL
+  void _clearImage() {
+    setState(() {
+      _imageUrlController.clear();
+    });
+  }
+
+  /// Get MIME type from file extension
+  String _getMimeType(String extension) {
+    switch (extension.toLowerCase()) {
+      case 'jpg':
+      case 'jpeg':
+        return 'image/jpeg';
+      case 'png':
+        return 'image/png';
+      case 'gif':
+        return 'image/gif';
+      case 'webp':
+        return 'image/webp';
+      default:
+        return 'image/jpeg'; // Default fallback
     }
   }
 }

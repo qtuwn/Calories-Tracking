@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../../domain/activities/activity.dart';
+import '../../../../domain/images/image_storage_failure.dart';
+import '../../../../shared/state/image_storage_providers.dart';
 import '../state/activity_providers.dart';
 
 /// Form page for creating/editing activities
@@ -22,6 +25,14 @@ class _ActivityFormPageState extends ConsumerState<ActivityFormPage> {
 
   ActivityCategory _selectedCategory = ActivityCategory.other;
   bool _isActive = true;
+  
+  // Image URLs (from Cloudinary or existing)
+  String? _iconUrl;
+  String? _coverUrl;
+  
+  // Upload states
+  bool _isUploadingIcon = false;
+  bool _isUploadingCover = false;
 
   @override
   void initState() {
@@ -35,6 +46,8 @@ class _ActivityFormPageState extends ConsumerState<ActivityFormPage> {
         TextEditingController(text: activity?.iconName ?? '');
     _selectedCategory = activity?.category ?? ActivityCategory.other;
     _isActive = activity?.isActive ?? true;
+    _iconUrl = activity?.iconUrl;
+    _coverUrl = activity?.coverUrl;
   }
 
   @override
@@ -131,6 +144,36 @@ class _ActivityFormPageState extends ConsumerState<ActivityFormPage> {
                 helperText: 'Tên icon Material Icons (tùy chọn)',
               ),
             ),
+            const SizedBox(height: 24),
+            
+            // Icon Image Upload Section
+            _buildImageUploadSection(
+              title: 'Icon ảnh',
+              currentUrl: _iconUrl,
+              isUploading: _isUploadingIcon,
+              isEnabled: isEditing, // Only enable if editing existing activity
+              onUpload: _uploadIconImage,
+              onRemove: () {
+                setState(() {
+                  _iconUrl = null;
+                });
+              },
+            ),
+            const SizedBox(height: 16),
+            
+            // Cover Image Upload Section
+            _buildImageUploadSection(
+              title: 'Ảnh bìa',
+              currentUrl: _coverUrl,
+              isUploading: _isUploadingCover,
+              isEnabled: isEditing, // Only enable if editing existing activity
+              onUpload: _uploadCoverImage,
+              onRemove: () {
+                setState(() {
+                  _coverUrl = null;
+                });
+              },
+            ),
             const SizedBox(height: 16),
             SwitchListTile(
               title: const Text('Hoạt động'),
@@ -190,6 +233,8 @@ class _ActivityFormPageState extends ConsumerState<ActivityFormPage> {
         iconName: _iconNameController.text.trim().isEmpty
             ? null
             : _iconNameController.text.trim(),
+        iconUrl: _iconUrl,
+        coverUrl: _coverUrl,
         isActive: _isActive,
         createdAt: widget.activity?.createdAt ?? DateTime.now(),
         updatedAt: DateTime.now(),
@@ -227,6 +272,321 @@ class _ActivityFormPageState extends ConsumerState<ActivityFormPage> {
           _isLoading = false;
         });
       }
+    }
+  }
+
+  /// Build image upload section widget
+  Widget _buildImageUploadSection({
+    required String title,
+    required String? currentUrl,
+    required bool isUploading,
+    required bool isEnabled,
+    required VoidCallback onUpload,
+    required VoidCallback onRemove,
+  }) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 12),
+            if (currentUrl != null && currentUrl.isNotEmpty) ...[
+              // Display current image
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.network(
+                  currentUrl,
+                  height: 120,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return Container(
+                      height: 120,
+                      alignment: Alignment.center,
+                      child: const CircularProgressIndicator(),
+                    );
+                  },
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      height: 120,
+                      color: Colors.grey[300],
+                      child: const Icon(Icons.broken_image, size: 48),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: (isUploading || !isEnabled) ? null : onUpload,
+                      icon: const Icon(Icons.upload),
+                      label: const Text('Thay đổi'),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  OutlinedButton.icon(
+                    onPressed: (isUploading || !isEnabled) ? null : onRemove,
+                    icon: const Icon(Icons.delete),
+                    label: const Text('Xóa'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.red,
+                    ),
+                  ),
+                ],
+              ),
+            ] else ...[
+              // No image - show upload button or message
+              if (!isEnabled) ...[
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.orange[50],
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.orange[200]!),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.info_outline, color: Colors.orange[700], size: 20),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Vui lòng lưu hoạt động trước khi tải ảnh',
+                          style: TextStyle(
+                            color: Colors.orange[900],
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ] else ...[
+                OutlinedButton.icon(
+                  onPressed: isUploading ? null : onUpload,
+                  icon: isUploading
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.add_photo_alternate),
+                  label: Text(isUploading ? 'Đang tải lên...' : 'Tải lên ảnh'),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
+                ),
+              ],
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Upload icon image
+  Future<void> _uploadIconImage() async {
+    // This should not be called if activity is not saved, but double-check
+    if (widget.activity == null || widget.activity!.id.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Vui lòng lưu hoạt động trước khi tải ảnh'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+      return;
+    }
+
+    final picker = ImagePicker();
+    final XFile? picked = await picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 512,
+      maxHeight: 512,
+      imageQuality: 85,
+    );
+
+    if (picked == null) return;
+
+    setState(() {
+      _isUploadingIcon = true;
+    });
+
+    try {
+      final bytes = await picked.readAsBytes();
+      final fileName = picked.path.split('/').last;
+      final mimeType = _getMimeType(fileName.split('.').last);
+
+      final useCase = ref.read(uploadSportIconUseCaseProvider);
+      final imageAsset = await useCase.execute(
+        bytes: bytes,
+        fileName: fileName,
+        mimeType: mimeType,
+        sportId: widget.activity!.id,
+      );
+
+      setState(() {
+        _iconUrl = imageAsset.url;
+        _isUploadingIcon = false;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Đã tải lên icon thành công'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } on ImageStorageFailure catch (e) {
+      setState(() {
+        _isUploadingIcon = false;
+      });
+
+      String errorMessage = 'Lỗi tải lên icon';
+      if (e is ImageUploadNetworkFailure) {
+        errorMessage = 'Lỗi kết nối. Vui lòng kiểm tra internet và thử lại.';
+      } else if (e is ImageUploadServerFailure) {
+        errorMessage = 'Lỗi server. Vui lòng thử lại sau.';
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMessage),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      setState(() {
+        _isUploadingIcon = false;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Upload cover image
+  Future<void> _uploadCoverImage() async {
+    // This should not be called if activity is not saved, but double-check
+    if (widget.activity == null || widget.activity!.id.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Vui lòng lưu hoạt động trước khi tải ảnh'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+      return;
+    }
+
+    final picker = ImagePicker();
+    final XFile? picked = await picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 1920,
+      maxHeight: 1080,
+      imageQuality: 85,
+    );
+
+    if (picked == null) return;
+
+    setState(() {
+      _isUploadingCover = true;
+    });
+
+    try {
+      final bytes = await picked.readAsBytes();
+      final fileName = picked.path.split('/').last;
+      final mimeType = _getMimeType(fileName.split('.').last);
+
+      final useCase = ref.read(uploadSportCoverUseCaseProvider);
+      final imageAsset = await useCase.execute(
+        bytes: bytes,
+        fileName: fileName,
+        mimeType: mimeType,
+        sportId: widget.activity!.id,
+      );
+
+      setState(() {
+        _coverUrl = imageAsset.url;
+        _isUploadingCover = false;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Đã tải lên ảnh bìa thành công'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } on ImageStorageFailure catch (e) {
+      setState(() {
+        _isUploadingCover = false;
+      });
+
+      String errorMessage = 'Lỗi tải lên ảnh bìa';
+      if (e is ImageUploadNetworkFailure) {
+        errorMessage = 'Lỗi kết nối. Vui lòng kiểm tra internet và thử lại.';
+      } else if (e is ImageUploadServerFailure) {
+        errorMessage = 'Lỗi server. Vui lòng thử lại sau.';
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMessage),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      setState(() {
+        _isUploadingCover = false;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Get MIME type from file extension
+  String _getMimeType(String extension) {
+    switch (extension.toLowerCase()) {
+      case 'jpg':
+      case 'jpeg':
+        return 'image/jpeg';
+      case 'png':
+        return 'image/png';
+      case 'gif':
+        return 'image/gif';
+      case 'webp':
+        return 'image/webp';
+      default:
+        return 'image/jpeg';
     }
   }
 }

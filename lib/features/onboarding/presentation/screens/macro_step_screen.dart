@@ -238,15 +238,14 @@ class _MacroStepScreenState extends ConsumerState<MacroStepScreen> {
           final normalizedProtein = normalized['proteinPercent']!;
           final normalizedCarb = normalized['carbPercent']!;
           final normalizedFat = normalized['fatPercent']!;
+          final total = normalizedProtein + normalizedCarb + normalizedFat;
 
           // Calculate grams using normalized values
           final proteinGrams = (normalizedProtein * targetKcal / 100) / 4;
           final carbGrams = (normalizedCarb * targetKcal / 100) / 4;
           final fatGrams = (normalizedFat * targetKcal / 100) / 9;
-          final total = normalizedProtein + normalizedCarb + normalizedFat;
           
           // Save button is always enabled since normalization guarantees total = 100
-          final isValid = true;
 
           return Padding(
             padding: EdgeInsets.only(
@@ -292,12 +291,10 @@ class _MacroStepScreenState extends ConsumerState<MacroStepScreen> {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: isValid
-                          ? AppColors.mintGreen.withValues(alpha: 0.2)
-                          : AppColors.error.withValues(alpha: 0.1),
+                      color: AppColors.mintGreen.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(AppTheme.radiusSmall),
                       border: Border.all(
-                        color: isValid ? AppColors.mintGreen : AppColors.error,
+                        color: AppColors.mintGreen,
                         width: 2,
                       ),
                     ),
@@ -316,9 +313,7 @@ class _MacroStepScreenState extends ConsumerState<MacroStepScreen> {
                           '${total.toStringAsFixed(1)}%',
                           style: Theme.of(context).textTheme.titleLarge
                               ?.copyWith(
-                                color: isValid
-                                    ? AppColors.mintGreen
-                                    : AppColors.error,
+                                color: AppColors.mintGreen,
                                 fontWeight: FontWeight.bold,
                               ),
                         ),
@@ -464,31 +459,29 @@ class _MacroStepScreenState extends ConsumerState<MacroStepScreen> {
                     width: double.infinity,
                     height: 56,
                     child: ElevatedButton(
-                      onPressed: isValid
-                          ? () {
-                              // Normalize before saving to ensure exact 100%
-                              final normalized = MacroUtils.normalizeMacros(
-                                proteinPercent: proteinPercent,
-                                carbPercent: carbPercent,
-                                fatPercent: fatPercent,
-                              );
-                              
-                              ref
-                                  .read(onboardingControllerProvider.notifier)
-                                  .updateMacros(
-                                    proteinPercent: normalized['proteinPercent']!,
-                                    carbPercent: normalized['carbPercent']!,
-                                    fatPercent: normalized['fatPercent']!,
-                                  );
-                              
-                              // Update notifiers to match saved values
-                              _proteinPercentNotifier.value = normalized['proteinPercent']!;
-                              _carbPercentNotifier.value = normalized['carbPercent']!;
-                              _fatPercentNotifier.value = normalized['fatPercent']!;
-                              
-                              Navigator.of(context).pop();
-                            }
-                          : null,
+                      onPressed: () {
+                        // Normalize before saving to ensure exact 100%
+                        final normalized = MacroUtils.normalizeMacros(
+                          proteinPercent: proteinPercent,
+                          carbPercent: carbPercent,
+                          fatPercent: fatPercent,
+                        );
+                        
+                        ref
+                            .read(onboardingControllerProvider.notifier)
+                            .updateMacros(
+                              proteinPercent: normalized['proteinPercent']!,
+                              carbPercent: normalized['carbPercent']!,
+                              fatPercent: normalized['fatPercent']!,
+                            );
+                        
+                        // Update notifiers to match saved values
+                        _proteinPercentNotifier.value = normalized['proteinPercent']!;
+                        _carbPercentNotifier.value = normalized['carbPercent']!;
+                        _fatPercentNotifier.value = normalized['fatPercent']!;
+                        
+                        Navigator.of(context).pop();
+                      },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.mintGreen,
                         foregroundColor: AppColors.nearBlack,
