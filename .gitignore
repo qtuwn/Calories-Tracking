@@ -64,3 +64,14 @@ android/app/keystore/
 **/*.jks
 **/*.keystore
 
+# Firebase config (SENSITIVE - contains API keys)
+**/google-services.json
+**/GoogleService-Info.plist
+
+# Build outputs
+android/build/
+**/build/
+
+# Temp files
+tracked_files.txt
+

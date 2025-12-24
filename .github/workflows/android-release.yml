@@ -82,6 +82,12 @@ jobs:
           grep -q "storeFile=" android/key.properties
           echo "key.properties verified"
 
+      - name: Restore google-services.json from secret
+        shell: bash
+        run: |
+          mkdir -p android/app
+          printf '%s' "${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}" | tr -d '\r\n ' | base64 --decode > android/app/google-services.json
+
       - name: Build Android App Bundle (AAB)
         run: flutter build appbundle --release
 
