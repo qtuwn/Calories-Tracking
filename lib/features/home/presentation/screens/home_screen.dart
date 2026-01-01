@@ -9,12 +9,12 @@ import 'package:calories_app/core/bootstrap/startup_orchestrator.dart';
 import 'package:calories_app/features/voice_input/presentation/widgets/voice_input_button.dart';
 import 'package:calories_app/features/voice_input/domain/entities/recognized_food.dart';
 import 'package:calories_app/features/voice_input/presentation/controllers/voice_controller.dart';
-import 'package:calories_app/features/voice_input/presentation/controllers/voice_controller.dart' show VoiceStatus;
 import 'package:calories_app/features/voice_input/presentation/widgets/voice_suggestions_bottom_sheet.dart';
 import 'package:calories_app/domain/foods/food.dart';
 import 'package:calories_app/shared/state/diary_providers.dart';
 import 'package:calories_app/features/home/presentation/providers/weight_providers.dart';
 import 'package:calories_app/features/diary/domain/services/meal_time_classifier.dart';
+import 'package:calories_app/shared/ui/voice_toast.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -109,29 +109,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           final errorMsg = next.errorMessage!;
           // Check if it's a network-related error
           if (errorMsg.contains('error_network') || errorMsg.contains('network')) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Không thể nhận dạng giọng nói. Vui lòng kiểm tra kết nối mạng và thử lại.'),
-                backgroundColor: Colors.orange,
-                duration: Duration(seconds: 4),
-              ),
+            showVoiceToast(
+              context,
+              message: 'Không thể nhận dạng giọng nói. Vui lòng kiểm tra kết nối mạng và thử lại.',
+              type: VoiceToastType.error,
             );
           } else if (errorMsg.contains('permission') || errorMsg.contains('microphone')) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Cần quyền truy cập microphone để sử dụng tính năng này.'),
-                backgroundColor: Colors.orange,
-                duration: Duration(seconds: 4),
-              ),
+            showVoiceToast(
+              context,
+              message: 'Cần quyền truy cập microphone để sử dụng tính năng này.',
+              type: VoiceToastType.error,
             );
           } else if (errorMsg.isNotEmpty && !errorMsg.contains('No speech detected')) {
             // Only show generic error for non-empty, non-user-friendly errors
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(errorMsg.length > 50 ? '${errorMsg.substring(0, 50)}...' : errorMsg),
-                backgroundColor: Colors.red,
-                duration: const Duration(seconds: 3),
-              ),
+            showVoiceToast(
+              context,
+              message: errorMsg.length > 50 ? '${errorMsg.substring(0, 50)}...' : errorMsg,
+              type: VoiceToastType.error,
             );
           }
         }
@@ -279,11 +273,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       // Get current user ID
       final userId = ref.read(currentUserIdProvider);
       if (userId == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Bạn cần đăng nhập để thêm món ăn'),
-            backgroundColor: Colors.red,
-          ),
+        showVoiceToast(
+          context,
+          message: 'Bạn cần đăng nhập để thêm món ăn',
+          type: VoiceToastType.error,
         );
         return;
       }
@@ -309,12 +302,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         Navigator.of(context).pop();
         
         // Show success message with localized meal type
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Đã thêm ${food.name} vào ${mealType.displayName}'),
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 2),
-          ),
+        showVoiceToast(
+          context,
+          message: 'Đã thêm ${food.name} vào ${mealType.displayName}',
+          type: VoiceToastType.success,
         );
       }
 
@@ -327,12 +318,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       debugPrint('[Voice→Diary] Stack trace: $stackTrace');
       
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Không thể thêm món ăn, vui lòng thử lại.'),
-            backgroundColor: Colors.red,
-            duration: Duration(seconds: 3),
-          ),
+        showVoiceToast(
+          context,
+          message: 'Không thể thêm món ăn, vui lòng thử lại.',
+          type: VoiceToastType.error,
         );
       }
     }

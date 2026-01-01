@@ -2,6 +2,7 @@
 /// 
 /// Pure domain entity representing a user's profile.
 /// No dependencies on Flutter or Firebase.
+library;
 
 /// Profile entity
 class Profile {

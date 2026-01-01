@@ -28,6 +28,7 @@ import 'package:calories_app/shared/state/user_meal_plan_providers.dart' as user
 import 'package:calories_app/features/meal_plans/state/meal_plan_repository_providers.dart' show exploreTemplateMealsProvider, userMealPlanMealsProvider;
 import 'package:calories_app/features/meal_plans/presentation/pages/meal_day_editor_page.dart';
 import 'package:calories_app/features/meal_plans/presentation/widgets/difficulty_helper.dart';
+import 'package:calories_app/shared/ui/app_toast.dart';
 
 class MealDetailPage extends ConsumerStatefulWidget {
   const MealDetailPage({
@@ -858,10 +859,10 @@ class _MealDetailPageState extends ConsumerState<MealDetailPage> {
       if (user == null) {
         debugPrint('[MealDetailPage] ⚠️ User not logged in');
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Vui lòng đăng nhập để bắt đầu thực đơn'),
-            ),
+          showAppToast(
+            context,
+            message: 'Vui lòng đăng nhập để bắt đầu thực đơn',
+            type: AppToastType.info,
           );
         }
         return;
@@ -875,10 +876,10 @@ class _MealDetailPageState extends ConsumerState<MealDetailPage> {
       if (profile == null) {
         debugPrint('[MealDetailPage] ⚠️ User profile not found');
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Không thể tải thông tin người dùng'),
-            ),
+          showAppToast(
+            context,
+            message: 'Không thể tải thông tin người dùng',
+            type: AppToastType.error,
           );
         }
         return;
@@ -939,11 +940,10 @@ class _MealDetailPageState extends ConsumerState<MealDetailPage> {
       if (template == null) {
         debugPrint('[MealDetailPage] 🔥 Template not found: ${widget.planId}');
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Không tìm thấy thực đơn'),
-              backgroundColor: Colors.red,
-            ),
+          showAppToast(
+            context,
+            message: 'Không tìm thấy thực đơn',
+            type: AppToastType.error,
           );
         }
         return;
@@ -1003,11 +1003,10 @@ class _MealDetailPageState extends ConsumerState<MealDetailPage> {
       debugPrint('[MealDetailPage] ✅ applyExploreTemplate() completed successfully with verification');
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Đã bắt đầu thực đơn thành công!'),
-            backgroundColor: Colors.green,
-          ),
+        showAppToast(
+          context,
+          message: 'Đã bắt đầu thực đơn thành công!',
+          type: AppToastType.success,
         );
         // Navigate back and refresh
         Navigator.pop(context);
@@ -1031,12 +1030,10 @@ class _MealDetailPageState extends ConsumerState<MealDetailPage> {
           errorMessage = 'Cần tạo chỉ mục Firestore. Vui lòng liên hệ quản trị viên.';
         }
         
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(errorMessage),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 4),
-          ),
+        showAppToast(
+          context,
+          message: errorMessage,
+          type: AppToastType.error,
         );
       }
     }
@@ -1100,12 +1097,10 @@ class _MealDetailPageState extends ConsumerState<MealDetailPage> {
       debugPrint('[MealDetailPage] ✅ Successfully applied custom plan: ${widget.userPlanId}');
       
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Đã áp dụng thực đơn này'),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 2),
-          ),
+        showAppToast(
+          context,
+          message: 'Đã áp dụng thực đơn này',
+          type: AppToastType.success,
         );
       }
     } catch (e, stackTrace) {
@@ -1118,12 +1113,10 @@ class _MealDetailPageState extends ConsumerState<MealDetailPage> {
       debugPrint('[MealDetailPage] 🔥 ================================================');
       
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Không thể áp dụng thực đơn: ${e.toString()}'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 4),
-          ),
+        showAppToast(
+          context,
+          message: 'Không thể áp dụng thực đơn: ${e.toString()}',
+          type: AppToastType.error,
         );
       }
     }

@@ -17,6 +17,7 @@ import 'package:calories_app/features/home/presentation/pages/reports/steps_repo
 import 'package:calories_app/features/home/presentation/pages/reports/weight_report_screen.dart';
 import 'package:calories_app/features/home/presentation/widgets/edit_profile_sheet.dart';
 import 'package:calories_app/features/home/presentation/widgets/customize_nutrition_sheet.dart';
+import 'package:calories_app/shared/ui/app_toast.dart';
 
 class AccountPage extends ConsumerWidget {
   const AccountPage({super.key});
@@ -354,11 +355,10 @@ class AccountPage extends ConsumerWidget {
     return GestureDetector(
       onTap: () {
         // TODO: Navigate to body/physical profile screen when implemented
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Tính năng hồ sơ thể chất sẽ được cập nhật sau'),
-            duration: Duration(seconds: 2),
-          ),
+        showAppToast(
+          context,
+          message: 'Tính năng hồ sơ thể chất sẽ được cập nhật sau',
+          type: AppToastType.info,
         );
       },
       child: Container(
@@ -667,11 +667,10 @@ class AccountPage extends ConsumerWidget {
             break;
           default:
             // Fallback: show snackbar if label doesn't match
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Tính năng $label sẽ được cập nhật sau'),
-                duration: const Duration(seconds: 2),
-              ),
+            showAppToast(
+              context,
+              message: 'Tính năng $label sẽ được cập nhật sau',
+              type: AppToastType.info,
             );
             return;
         }
@@ -812,11 +811,10 @@ class AccountPage extends ConsumerWidget {
     final uid = user?.uid;
     if (uid == null) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Bạn cần đăng nhập để cập nhật ảnh hồ sơ'),
-            backgroundColor: Colors.red,
-          ),
+        showAppToast(
+          context,
+          message: 'Bạn cần đăng nhập để cập nhật ảnh hồ sơ',
+          type: AppToastType.error,
         );
       }
       return;
@@ -845,11 +843,10 @@ class AccountPage extends ConsumerWidget {
     if (profileId == null) {
       debugPrint('[AccountPage] 🔥 No current profile found');
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Không tìm thấy hồ sơ. Vui lòng hoàn thành đăng ký.'),
-            backgroundColor: Colors.red,
-          ),
+        showAppToast(
+          context,
+          message: 'Không tìm thấy hồ sơ. Vui lòng hoàn thành đăng ký.',
+          type: AppToastType.error,
         );
       }
       return;
@@ -908,11 +905,10 @@ class AccountPage extends ConsumerWidget {
       debugPrint('[AccountPage] 🔄 Invalidated profile providers to force refresh');
 
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Cập nhật ảnh đại diện thành công'),
-            backgroundColor: Colors.green,
-          ),
+        showAppToast(
+          context,
+          message: 'Cập nhật ảnh đại diện thành công',
+          type: AppToastType.success,
         );
       }
     } on ImageStorageFailure catch (e) {
@@ -932,12 +928,10 @@ class AccountPage extends ConsumerWidget {
       }
 
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(errorMessage),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 4),
-          ),
+        showAppToast(
+          context,
+          message: errorMessage,
+          type: AppToastType.error,
         );
       }
     } catch (e, stackTrace) {
@@ -948,12 +942,10 @@ class AccountPage extends ConsumerWidget {
       ref.read(avatarUploadControllerProvider.notifier).setError(e.toString());
 
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Lỗi cập nhật ảnh: ${e.toString()}'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 4),
-          ),
+        showAppToast(
+          context,
+          message: 'Lỗi cập nhật ảnh: ${e.toString()}',
+          type: AppToastType.error,
         );
       }
     } finally {
@@ -982,11 +974,10 @@ class AccountPage extends ConsumerWidget {
   // Navigation methods
   void _navigateToEditProfile(BuildContext context, Profile? profile) {
     if (profile == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Không thể chỉnh sửa hồ sơ. Vui lòng thử lại.'),
-          backgroundColor: Colors.red,
-        ),
+      showAppToast(
+        context,
+        message: 'Không thể chỉnh sửa hồ sơ. Vui lòng thử lại.',
+        type: AppToastType.error,
       );
       return;
     }
@@ -1001,11 +992,10 @@ class AccountPage extends ConsumerWidget {
 
   void _navigateToCustomizeNutrition(BuildContext context, Profile? profile) {
     if (profile == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Không thể tùy chỉnh mục tiêu. Vui lòng thử lại.'),
-          backgroundColor: Colors.red,
-        ),
+      showAppToast(
+        context,
+        message: 'Không thể tùy chỉnh mục tiêu. Vui lòng thử lại.',
+        type: AppToastType.error,
       );
       return;
     }

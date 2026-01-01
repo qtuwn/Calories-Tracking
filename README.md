@@ -397,7 +397,7 @@ This project is developed for academic purposes. All rights reserved.
 **QuocTuan_dev_in_hcm**
 
 - LinkedIn: [www.linkedin.com/in/tuấn-quốc-866a63251](https://www.linkedin.com/in/tuấn-quốc-866a63251)
-
+- Email: tuquoctuan201@gmail.com
 ---
 
 <div align="center">

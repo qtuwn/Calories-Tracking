@@ -102,7 +102,7 @@ class _ExploreMealPlanFormPageState
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<MealPlanGoalType>(
-              value: _selectedGoalType,
+              initialValue: _selectedGoalType,
               decoration: const InputDecoration(
                 labelText: 'Mục tiêu *',
                 border: OutlineInputBorder(),
@@ -207,7 +207,7 @@ class _ExploreMealPlanFormPageState
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
-              value: _difficulty,
+              initialValue: _difficulty,
               decoration: const InputDecoration(
                 labelText: 'Độ khó',
                 border: OutlineInputBorder(),
