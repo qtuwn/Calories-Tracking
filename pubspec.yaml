@@ -36,6 +36,7 @@ dependencies:
   flutter_dotenv: ^5.1.0
   speech_to_text: ^7.0.0
   http: ^1.2.0
+  http_parser: ^4.0.2
   cloudinary_public: ^0.23.1
 
 dev_dependencies:
