@@ -6,6 +6,7 @@ import 'package:calories_app/features/meal_plans/domain/models/shared/meal_type.
 import 'package:calories_app/features/home/presentation/providers/diary_provider.dart';
 import 'package:calories_app/features/home/presentation/providers/food_search_providers.dart';
 import 'package:calories_app/domain/foods/food.dart';
+import 'package:calories_app/shared/ui/app_toast.dart';
 
 /// Bottom sheet để thêm/sửa món ăn với food search
 class AddMealItemBottomSheet extends ConsumerStatefulWidget {
@@ -584,11 +585,11 @@ class _AddMealItemBottomSheetState extends ConsumerState<AddMealItemBottomSheet>
         
         if (mounted) {
           Navigator.pop(context);
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Thêm món ăn thành công'),
-              backgroundColor: Colors.green,
-            ),
+          showAppToast(
+            context,
+            message: 'Thêm món ăn thành công',
+            type: AppToastType.success,
+            extraBottomOffset: 12,
           );
         }
       } else {
@@ -608,11 +609,11 @@ class _AddMealItemBottomSheetState extends ConsumerState<AddMealItemBottomSheet>
         
         if (mounted) {
           Navigator.pop(context);
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Thêm món ăn thành công'),
-              backgroundColor: Colors.green,
-            ),
+          showAppToast(
+            context,
+            message: 'Thêm món ăn thành công',
+            type: AppToastType.success,
+            extraBottomOffset: 12,
           );
         }
       }

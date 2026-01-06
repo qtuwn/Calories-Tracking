@@ -19,6 +19,7 @@ import 'package:calories_app/features/meal_plans/domain/models/shared/meal_type.
 import 'package:calories_app/features/home/presentation/providers/diary_provider.dart';
 import 'package:calories_app/shared/state/food_providers.dart' as food_providers;
 import 'package:calories_app/shared/state/auth_providers.dart';
+import 'package:calories_app/shared/ui/app_toast.dart';
 
 class MealUserActivePage extends ConsumerStatefulWidget {
   const MealUserActivePage({super.key});
@@ -367,11 +368,11 @@ class _MealUserActivePageState extends ConsumerState<MealUserActivePage> {
       );
 
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Đã thêm vào nhật ký'),
-            backgroundColor: Colors.green,
-          ),
+        showAppToast(
+          context,
+          message: 'Đã thêm vào nhật ký',
+          type: AppToastType.success,
+          extraBottomOffset: 48,
         );
       }
     } catch (e, stackTrace) {

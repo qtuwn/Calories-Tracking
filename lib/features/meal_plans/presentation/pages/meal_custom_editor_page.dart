@@ -1,5 +1,5 @@
 // Screen: Custom meal plan editor (CRUD)
-// 
+//
 // Responsibilities:
 // - Create new custom meal plans
 // - Edit existing custom meal plans
@@ -14,17 +14,20 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:calories_app/core/theme/app_colors.dart';
 import 'package:calories_app/domain/meal_plans/user_meal_plan.dart';
-import 'package:calories_app/domain/meal_plans/user_meal_plan_repository.dart' show MealItem;
+import 'package:calories_app/domain/meal_plans/user_meal_plan_repository.dart'
+    show MealItem;
 import 'package:calories_app/domain/meal_plans/meal_plan_goal_type.dart';
 import 'package:calories_app/features/meal_plans/domain/models/shared/meal_type.dart';
 import 'package:calories_app/features/meal_plans/state/user_custom_meal_plan_controller.dart';
 import 'package:calories_app/features/meal_plans/domain/services/kcal_calculator.dart';
 import 'package:calories_app/features/meal_plans/domain/services/macros_summary_service.dart';
 import 'package:calories_app/features/meal_plans/domain/services/meal_plan_validation_service.dart';
-import 'package:calories_app/shared/state/food_providers.dart' as food_providers;
+import 'package:calories_app/shared/state/food_providers.dart'
+    as food_providers;
 import 'package:calories_app/domain/foods/food.dart';
 import 'package:calories_app/shared/state/auth_providers.dart';
-import 'package:calories_app/shared/state/user_meal_plan_providers.dart' as user_meal_plan_providers;
+import 'package:calories_app/shared/state/user_meal_plan_providers.dart'
+    as user_meal_plan_providers;
 import 'package:calories_app/features/meal_plans/presentation/pages/meal_detail_page.dart';
 
 /// Callback for when meals change for a specific day
@@ -39,10 +42,12 @@ class MealCustomEditorPage extends ConsumerStatefulWidget {
     this.planId, // If provided, edit existing plan (for user custom plans)
   });
 
-  final String? planId; // If provided, edit existing plan (for user custom plans)
+  final String?
+  planId; // If provided, edit existing plan (for user custom plans)
 
   @override
-  ConsumerState<MealCustomEditorPage> createState() => _MealCustomEditorPageState();
+  ConsumerState<MealCustomEditorPage> createState() =>
+      _MealCustomEditorPageState();
 }
 
 class _MealCustomEditorPageState extends ConsumerState<MealCustomEditorPage> {
@@ -55,7 +60,7 @@ class _MealCustomEditorPageState extends ConsumerState<MealCustomEditorPage> {
   String? _existingPlanId;
   String? _calorieError; // Validation error for daily calories
   int? _dailyCalorieLimit; // Daily calorie limit from user profile
-  
+
   // In-memory storage for meals: dayIndex -> list of meals
   final Map<int, List<MealItem>> _mealsByDay = {};
   bool _mealsLoaded = false;
@@ -75,24 +80,28 @@ class _MealCustomEditorPageState extends ConsumerState<MealCustomEditorPage> {
     if (user == null || widget.planId == null) return;
 
     try {
-      final service = ref.read(user_meal_plan_providers.userMealPlanServiceProvider);
+      final service = ref.read(
+        user_meal_plan_providers.userMealPlanServiceProvider,
+      );
       final plan = await service.loadPlanByIdOnce(user.uid, widget.planId!);
 
       if (plan != null) {
         // Load plan into controller for editing
-        final controller = ref.read(userCustomMealPlanControllerProvider.notifier);
+        final controller = ref.read(
+          userCustomMealPlanControllerProvider.notifier,
+        );
         controller.startEditing(plan);
-        
+
         // Update local UI state
         _nameController.text = plan.name;
         _caloriesController.text = plan.dailyCalories.toString();
         _selectedGoalType = plan.goalType.value;
         _selectedDurationDays = plan.durationDays;
         _existingPlanId = widget.planId;
-        
+
         // Load meals from repository into local state
         await _loadMealsFromRepository(user.uid);
-        
+
         setState(() {});
       }
     } catch (e) {
@@ -100,21 +109,26 @@ class _MealCustomEditorPageState extends ConsumerState<MealCustomEditorPage> {
     }
   }
 
-
   /// Load all meals from service into local state (user custom plan)
   Future<void> _loadMealsFromRepository(String userId) async {
     if (widget.planId == null) return;
-    
+
     try {
-      final service = ref.read(user_meal_plan_providers.userMealPlanServiceProvider);
+      final service = ref.read(
+        user_meal_plan_providers.userMealPlanServiceProvider,
+      );
       final plan = await service.loadPlanByIdOnce(userId, widget.planId!);
       if (plan == null) return;
-      
+
       _mealsByDay.clear();
-      
+
       // Load meals for each day
       for (int dayIndex = 1; dayIndex <= plan.durationDays; dayIndex++) {
-        final mealsStream = service.getDayMeals(widget.planId!, userId, dayIndex);
+        final mealsStream = service.getDayMeals(
+          widget.planId!,
+          userId,
+          dayIndex,
+        );
         // Take first emission to get current meals
         await for (final meals in mealsStream.take(1)) {
           if (meals.isNotEmpty) {
@@ -123,15 +137,17 @@ class _MealCustomEditorPageState extends ConsumerState<MealCustomEditorPage> {
           break;
         }
       }
-      
+
       _mealsLoaded = true;
-      debugPrint('[MealCustomEditorPage] ✅ Loaded ${_mealsByDay.length} days with meals');
+      debugPrint(
+        '[MealCustomEditorPage] ✅ Loaded ${_mealsByDay.length} days with meals',
+      );
     } catch (e) {
       debugPrint('[MealCustomEditorPage] Error loading meals: $e');
-      _mealsLoaded = true; // Mark as loaded even on error to prevent infinite loading
+      _mealsLoaded =
+          true; // Mark as loaded even on error to prevent infinite loading
     }
   }
-
 
   @override
   void dispose() {
@@ -161,9 +177,9 @@ class _MealCustomEditorPageState extends ConsumerState<MealCustomEditorPage> {
         ),
         title: Text(
           widget.planId == null ? 'Tạo thực đơn mới' : 'Chỉnh sửa thực đơn',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.w700,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
         ),
       ),
       body: SingleChildScrollView(
@@ -186,9 +202,9 @@ class _MealCustomEditorPageState extends ConsumerState<MealCustomEditorPage> {
             // Goal type selector
             Text(
               'Mục tiêu',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 12),
             Wrap(
@@ -269,37 +285,42 @@ class _MealCustomEditorPageState extends ConsumerState<MealCustomEditorPage> {
               builder: (context, ref, child) {
                 // Watch user profile for calorie limits
                 final profileAsync = ref.watch(currentUserProfileProvider);
-                
+
                 return profileAsync.when(
                   data: (profile) {
                     // Use Profile directly (no conversion needed)
                     // Calculate calorie limit for selected goal
-                    final goalType = MealPlanGoalType.fromString(_selectedGoalType);
+                    final goalType = MealPlanGoalType.fromString(
+                      _selectedGoalType,
+                    );
                     final range = KcalCalculator.getDailyCalorieRangeForGoal(
                       profile,
                       goalType,
                     );
                     _dailyCalorieLimit = range?['max']?.toInt();
-                    
+
                     // Update validation when goal changes
                     if (_caloriesController.text.isNotEmpty) {
                       final calories = int.tryParse(_caloriesController.text);
                       if (calories != null) {
-                        _calorieError = KcalCalculator.getCalorieValidationError(
-                          profile,
-                          goalType,
-                          calories,
-                        );
+                        _calorieError =
+                            KcalCalculator.getCalorieValidationError(
+                              profile,
+                              goalType,
+                              calories,
+                            );
                       }
                     }
-                    
+
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-            TextField(
+                        TextField(
                           controller: _caloriesController,
                           keyboardType: TextInputType.number,
-                          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                          ],
                           decoration: InputDecoration(
                             labelText: 'Calories mỗi ngày',
                             hintText: _dailyCalorieLimit != null
@@ -312,51 +333,58 @@ class _MealCustomEditorPageState extends ConsumerState<MealCustomEditorPage> {
                             errorText: _calorieError,
                             errorMaxLines: 2,
                           ),
-                            onChanged: (value) {
+                          onChanged: (value) {
                             final calories = int.tryParse(value);
                             if (calories != null) {
                               setState(() {
-                                final goalType = MealPlanGoalType.fromString(_selectedGoalType);
-                                _calorieError = KcalCalculator.getCalorieValidationError(
-                                  profile,
-                                  goalType,
-                                  calories,
+                                final goalType = MealPlanGoalType.fromString(
+                                  _selectedGoalType,
                                 );
+                                _calorieError =
+                                    KcalCalculator.getCalorieValidationError(
+                                      profile,
+                                      goalType,
+                                      calories,
+                                    );
                               });
                             } else {
                               setState(() => _calorieError = null);
                             }
                           },
                         ),
-                        if (_dailyCalorieLimit != null && _calorieError == null) ...[
+                        if (_dailyCalorieLimit != null &&
+                            _calorieError == null) ...[
                           const SizedBox(height: 8),
                           Text(
                             'Giới hạn khuyến nghị: ${range?['min']?.toInt() ?? 0} - $_dailyCalorieLimit kcal/ngày',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: AppColors.mediumGray,
-                            ),
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(color: AppColors.mediumGray),
                           ),
                         ],
                       ],
                     );
                   },
                   loading: () => TextField(
-              controller: _caloriesController,
-              keyboardType: TextInputType.number,
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              decoration: InputDecoration(
-                labelText: 'Calories mỗi ngày',
-                hintText: 'VD: 1500',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                suffixText: 'kcal',
+                    controller: _caloriesController,
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    decoration: InputDecoration(
+                      labelText: 'Calories mỗi ngày',
+                      hintText: 'VD: 1500',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      suffixText: 'kcal',
                       errorText: _calorieError,
                     ),
                     onChanged: (value) {
                       final calories = int.tryParse(value);
-                      if (calories != null && (calories < 1200 || calories > 4000)) {
-                        setState(() => _calorieError = 'Calories phải từ 1200-4000 kcal/ngày');
+                      if (calories != null &&
+                          (calories < 1200 || calories > 4000)) {
+                        setState(
+                          () => _calorieError =
+                              'Calories phải từ 1200-4000 kcal/ngày',
+                        );
                       } else {
                         setState(() => _calorieError = null);
                       }
@@ -364,14 +392,14 @@ class _MealCustomEditorPageState extends ConsumerState<MealCustomEditorPage> {
                   ),
                   error: (_, __) => TextField(
                     controller: _caloriesController,
-              keyboardType: TextInputType.number,
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              decoration: InputDecoration(
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    decoration: InputDecoration(
                       labelText: 'Calories mỗi ngày',
                       hintText: 'VD: 1500',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                       suffixText: 'kcal',
                     ),
                   ),
@@ -382,9 +410,9 @@ class _MealCustomEditorPageState extends ConsumerState<MealCustomEditorPage> {
             // Duration presets
             Text(
               'Thời gian',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 12),
             Wrap(
@@ -394,10 +422,10 @@ class _MealCustomEditorPageState extends ConsumerState<MealCustomEditorPage> {
                 final label = days == 7
                     ? '7 ngày (1 tuần)'
                     : days == 14
-                        ? '14 ngày (2 tuần)'
-                        : days == 30
-                            ? '30 ngày (1 tháng)'
-                            : '90 ngày (3 tháng)';
+                    ? '14 ngày (2 tuần)'
+                    : days == 30
+                    ? '30 ngày (1 tháng)'
+                    : '90 ngày (3 tháng)';
                 return _DurationChip(
                   label: label,
                   days: days,
@@ -422,10 +450,10 @@ class _MealCustomEditorPageState extends ConsumerState<MealCustomEditorPage> {
                 ),
                 child: Text(
                   'Tiếp tục',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ),
             ),
           ],
@@ -470,9 +498,9 @@ class _MealCustomEditorPageState extends ConsumerState<MealCustomEditorPage> {
           _nameController.text.trim().isEmpty
               ? (widget.planId == null ? 'Tạo thực đơn' : 'Sửa thực đơn')
               : _nameController.text.trim(),
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.w700,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
         ),
         actions: [
           if (_existingPlanId != null)
@@ -492,21 +520,25 @@ class _MealCustomEditorPageState extends ConsumerState<MealCustomEditorPage> {
           Consumer(
             builder: (context, ref, child) {
               final profileAsync = ref.watch(currentUserProfileProvider);
-              final planCalories = int.tryParse(_caloriesController.text.trim()) ?? 0;
-              
+              final planCalories =
+                  int.tryParse(_caloriesController.text.trim()) ?? 0;
+
               return profileAsync.when(
                 data: (profile) {
                   final targetKcal = profile?.targetKcal;
-                  if (targetKcal == null || targetKcal <= 0 || planCalories <= 0) {
+                  if (targetKcal == null ||
+                      targetKcal <= 0 ||
+                      planCalories <= 0) {
                     return const SizedBox.shrink();
                   }
-                  
+
                   final targetKcalInt = targetKcal.toInt();
-                  final validation = MealPlanValidationService.validateKcalDeviation(
-                    actualKcal: planCalories,
-                    targetKcal: targetKcalInt,
-                  );
-                  
+                  final validation =
+                      MealPlanValidationService.validateKcalDeviation(
+                        actualKcal: planCalories,
+                        targetKcal: targetKcalInt,
+                      );
+
                   return _KcalValidationSummary(
                     totalKcal: planCalories,
                     targetKcal: targetKcalInt,
@@ -550,16 +582,17 @@ class _MealCustomEditorPageState extends ConsumerState<MealCustomEditorPage> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-            Text(
+                          Text(
                             'Ngày $day',
-                            style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                              fontWeight: FontWeight.w700,
-                              color: isSelected
-                                  ? AppColors.nearBlack
-                                  : AppColors.mediumGray,
-              ),
-            ),
-          ],
+                            style: Theme.of(context).textTheme.labelMedium
+                                ?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  color: isSelected
+                                      ? AppColors.nearBlack
+                                      : AppColors.mediumGray,
+                                ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -591,7 +624,6 @@ class _MealCustomEditorPageState extends ConsumerState<MealCustomEditorPage> {
       ),
     );
   }
-
 
   Future<void> _savePlan() async {
     final name = _nameController.text.trim();
@@ -629,13 +661,13 @@ class _MealCustomEditorPageState extends ConsumerState<MealCustomEditorPage> {
     final profileAsync = ref.read(currentUserProfileProvider);
     final profile = profileAsync.value;
     final targetKcal = profile?.targetKcal;
-    
+
     if (targetKcal != null && targetKcal > 0) {
       final validation = MealPlanValidationService.validateKcalDeviation(
         actualKcal: calories,
         targetKcal: targetKcal.toInt(),
       );
-      
+
       // If deviation > 15%, show confirmation dialog
       if (validation.isWarning) {
         final shouldProceed = await showDialog<bool>(
@@ -654,15 +686,13 @@ class _MealCustomEditorPageState extends ConsumerState<MealCustomEditorPage> {
               ),
               TextButton(
                 onPressed: () => Navigator.pop(context, true),
-                style: TextButton.styleFrom(
-                  foregroundColor: Colors.orange,
-                ),
+                style: TextButton.styleFrom(foregroundColor: Colors.orange),
                 child: const Text('Vẫn lưu'),
               ),
             ],
           ),
         );
-        
+
         if (shouldProceed != true) {
           return; // User chose to adjust
         }
@@ -673,7 +703,9 @@ class _MealCustomEditorPageState extends ConsumerState<MealCustomEditorPage> {
 
     // Capture all ref values BEFORE any async operations to avoid "ref after unmount" errors
     final controller = ref.read(userCustomMealPlanControllerProvider.notifier);
-    final service = ref.read(user_meal_plan_providers.userMealPlanServiceProvider);
+    final service = ref.read(
+      user_meal_plan_providers.userMealPlanServiceProvider,
+    );
     final profileAsyncValue = ref.read(currentUserProfileProvider);
     final profileValue = profileAsyncValue.value;
     final wasNewPlan = _existingPlanId == null;
@@ -681,11 +713,12 @@ class _MealCustomEditorPageState extends ConsumerState<MealCustomEditorPage> {
 
     try {
       UserMealPlan planToSave;
-      
+
       if (wasNewPlan) {
         // Generate a new plan ID
-        final newPlanId = '${user.uid}_${DateTime.now().millisecondsSinceEpoch}';
-        
+        final newPlanId =
+            '${user.uid}_${DateTime.now().millisecondsSinceEpoch}';
+
         // Create plan object
         planToSave = UserMealPlan(
           id: newPlanId,
@@ -702,19 +735,22 @@ class _MealCustomEditorPageState extends ConsumerState<MealCustomEditorPage> {
           isActive: false,
           createdAt: DateTime.now(),
         );
-        
+
         currentPlanId = newPlanId;
         _existingPlanId = currentPlanId;
       } else {
         // Load existing plan
-        final existingPlan = await service.loadPlanByIdOnce(user.uid, _existingPlanId!);
-        
+        final existingPlan = await service.loadPlanByIdOnce(
+          user.uid,
+          _existingPlanId!,
+        );
+
         if (!mounted) return;
-        
+
         if (existingPlan == null) {
           throw Exception('Plan not found: $_existingPlanId');
         }
-        
+
         // Update plan with new values
         planToSave = existingPlan.copyWith(
           name: name,
@@ -722,7 +758,7 @@ class _MealCustomEditorPageState extends ConsumerState<MealCustomEditorPage> {
           dailyCalories: calories,
           durationDays: _selectedDurationDays!,
         );
-        
+
         currentPlanId = _existingPlanId!;
       }
 
@@ -733,22 +769,26 @@ class _MealCustomEditorPageState extends ConsumerState<MealCustomEditorPage> {
         mealsByDay: _mealsByDay,
         profile: profileValue,
       );
-      
+
       if (!mounted || savedPlanId == null) return;
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(wasNewPlan
-                ? 'Tạo thực đơn thành công!'
-                : 'Cập nhật thực đơn thành công!'),
+            content: Text(
+              wasNewPlan
+                  ? 'Tạo thực đơn thành công!'
+                  : 'Cập nhật thực đơn thành công!',
+            ),
             backgroundColor: Colors.green,
           ),
         );
-        
+
         if (wasNewPlan) {
           // Navigate to detail page for new plans
-          debugPrint('[MealCustomEditorPage] 🚀 Navigating to detail page for new plan: planId=$currentPlanId');
+          debugPrint(
+            '[MealCustomEditorPage] 🚀 Navigating to detail page for new plan: planId=$currentPlanId',
+          );
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
@@ -767,14 +807,14 @@ class _MealCustomEditorPageState extends ConsumerState<MealCustomEditorPage> {
     } catch (e, stackTrace) {
       debugPrint('[MealCustomEditorPage] 🔥 Error saving plan: $e');
       debugPrint('[MealCustomEditorPage] Stack trace: $stackTrace');
-      
+
       if (mounted) {
         String errorMessage = 'Không thể lưu thực đơn. Vui lòng thử lại sau.';
-        
+
         if (e.toString().contains('permission-denied')) {
           errorMessage = 'Bạn không có quyền thực hiện thao tác này.';
         }
-        
+
         _showError(errorMessage);
       }
     } finally {
@@ -792,7 +832,9 @@ class _MealCustomEditorPageState extends ConsumerState<MealCustomEditorPage> {
     if (user == null) return;
 
     // Check if this plan is active (use provider as source of truth)
-    final activePlanAsync = ref.read(user_meal_plan_providers.activeMealPlanProvider);
+    final activePlanAsync = ref.read(
+      user_meal_plan_providers.activeMealPlanProvider,
+    );
     final activePlan = activePlanAsync.value;
     final isActive = activePlan?.id == _existingPlanId;
 
@@ -803,7 +845,7 @@ class _MealCustomEditorPageState extends ConsumerState<MealCustomEditorPage> {
         content: Text(
           isActive
               ? 'Thực đơn này đang được kích hoạt. Nếu xóa, bạn sẽ không còn thực đơn nào đang hoạt động.\n\n'
-                  'Bạn có chắc chắn muốn xóa thực đơn này?'
+                    'Bạn có chắc chắn muốn xóa thực đơn này?'
               : 'Bạn có chắc chắn muốn xóa thực đơn này?',
         ),
         actions: [
@@ -822,7 +864,9 @@ class _MealCustomEditorPageState extends ConsumerState<MealCustomEditorPage> {
     if (confirmed != true) return;
 
     try {
-      final controller = ref.read(userCustomMealPlanControllerProvider.notifier);
+      final controller = ref.read(
+        userCustomMealPlanControllerProvider.notifier,
+      );
       await controller.deletePlan(_existingPlanId!);
 
       if (mounted) {
@@ -842,10 +886,7 @@ class _MealCustomEditorPageState extends ConsumerState<MealCustomEditorPage> {
 
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-      ),
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
     );
   }
 
@@ -898,13 +939,17 @@ class _DayMealsEditorState extends ConsumerState<_DayMealsEditor> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.info_outline, size: 48, color: AppColors.mediumGray),
+            const Icon(
+              Icons.info_outline,
+              size: 48,
+              color: AppColors.mediumGray,
+            ),
             const SizedBox(height: 16),
             Text(
               'Vui lòng lưu thực đơn trước khi thêm bữa ăn',
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: AppColors.mediumGray,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyLarge?.copyWith(color: AppColors.mediumGray),
               textAlign: TextAlign.center,
             ),
           ],
@@ -920,7 +965,9 @@ class _DayMealsEditorState extends ConsumerState<_DayMealsEditor> {
     final dayTotals = _calculateDayTotals(widget.meals);
 
     // Get daily calorie limit from plan
-    final service = ref.read(user_meal_plan_providers.userMealPlanServiceProvider);
+    final service = ref.read(
+      user_meal_plan_providers.userMealPlanServiceProvider,
+    );
     final userPlanFuture = service.loadPlanByIdOnce(user.uid, widget.planId!);
 
     return FutureBuilder<UserMealPlan?>(
@@ -929,16 +976,16 @@ class _DayMealsEditorState extends ConsumerState<_DayMealsEditor> {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         }
-        
+
         if (snapshot.hasError) {
           return const Center(child: Text('Lỗi tải thực đơn'));
         }
-        
+
         final userPlan = snapshot.data;
         final dailyCalories = userPlan?.dailyCalories ?? 0;
         final dailyCal = dailyCalories > 0 ? dailyCalories : 0;
         final exceedsLimit = dailyCal > 0 && dayTotals['calories']! > dailyCal;
-        final percentage = dailyCal > 0 
+        final percentage = dailyCal > 0
             ? (dayTotals['calories']! / dailyCal * 100).clamp(0, 200)
             : 0.0;
 
@@ -970,18 +1017,20 @@ class _DayMealsEditorState extends ConsumerState<_DayMealsEditor> {
                       Expanded(
                         child: Text(
                           'Tổng dinh dưỡng ngày ${widget.dayIndex}',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(fontWeight: FontWeight.w700),
                         ),
                       ),
                       if (dailyCal > 0)
                         Text(
                           '${percentage.toInt()}%',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: exceedsLimit ? Colors.red : AppColors.nearBlack,
-                          ),
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(
+                                fontWeight: FontWeight.w700,
+                                color: exceedsLimit
+                                    ? Colors.red
+                                    : AppColors.nearBlack,
+                              ),
                         ),
                     ],
                   ),
@@ -995,16 +1044,18 @@ class _DayMealsEditorState extends ConsumerState<_DayMealsEditor> {
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.warning_amber_rounded, 
-                            color: Colors.red, size: 20),
+                          const Icon(
+                            Icons.warning_amber_rounded,
+                            color: Colors.red,
+                            size: 20,
+                          ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
                               'Tổng calories vượt quá giới hạn ngày ($dailyCal kcal). '
                               'Vui lòng xóa hoặc giảm một số món ăn.',
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: Colors.red,
-                              ),
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(color: Colors.red),
                             ),
                           ),
                         ],
@@ -1061,9 +1112,7 @@ class _DayMealsEditorState extends ConsumerState<_DayMealsEditor> {
               ),
             ),
             // Meals by type
-            Expanded(
-              child: _buildMealsList(user.uid),
-            ),
+            Expanded(child: _buildMealsList(user.uid)),
           ],
         );
       },
@@ -1170,9 +1219,9 @@ class _MealTypeSectionState extends ConsumerState<_MealTypeSection> {
               const SizedBox(width: 8),
               Text(
                 widget.mealType.displayName,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
               ),
               const Spacer(),
               IconButton(
@@ -1187,20 +1236,22 @@ class _MealTypeSectionState extends ConsumerState<_MealTypeSection> {
               padding: const EdgeInsets.all(16),
               child: Text(
                 'Chưa có món ăn nào',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppColors.mediumGray,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(color: AppColors.mediumGray),
               ),
             )
           else
-            ...widget.items.map((item) => _MealItemTile(
-              planId: widget.planId,
-              userId: widget.userId,
-              dayIndex: widget.dayIndex,
-              item: item,
-              allMeals: widget.allMeals,
-              onMealsChanged: widget.onMealsChanged,
-            )),
+            ...widget.items.map(
+              (item) => _MealItemTile(
+                planId: widget.planId,
+                userId: widget.userId,
+                dayIndex: widget.dayIndex,
+                item: item,
+                allMeals: widget.allMeals,
+                onMealsChanged: widget.onMealsChanged,
+              ),
+            ),
         ],
       ),
     );
@@ -1273,7 +1324,11 @@ class _MealItemTile extends ConsumerWidget {
                 onPressed: () => _editItem(context, ref),
               ),
               IconButton(
-                icon: const Icon(Icons.delete_outline, size: 20, color: Colors.red),
+                icon: const Icon(
+                  Icons.delete_outline,
+                  size: 20,
+                  color: Colors.red,
+                ),
                 onPressed: () => _deleteItem(context, ref),
               ),
             ],
@@ -1294,7 +1349,9 @@ class _MealItemTile extends ConsumerWidget {
         allMeals: allMeals,
         onMealUpdated: (updatedMeal) {
           // Update the meal in the list
-          final newMeals = allMeals.map((m) => m.id == item.id ? updatedMeal : m).toList();
+          final newMeals = allMeals
+              .map((m) => m.id == item.id ? updatedMeal : m)
+              .toList();
           onMealsChanged(newMeals);
         },
       ),
@@ -1367,7 +1424,12 @@ class _AddFoodDialogState extends ConsumerState<_AddFoodDialog> {
     final searchQuery = _searchController.text;
     final foodsAsync = searchQuery.isEmpty
         ? ref.watch(foodSearchProvider(''))
-        : ref.watch(foodSearchByGoalProvider((query: searchQuery, goalType: widget.goalType)));
+        : ref.watch(
+            foodSearchByGoalProvider((
+              query: searchQuery,
+              goalType: widget.goalType,
+            )),
+          );
 
     return Dialog(
       child: Container(
@@ -1378,9 +1440,9 @@ class _AddFoodDialogState extends ConsumerState<_AddFoodDialog> {
           children: [
             Text(
               'Thêm món ăn - ${widget.mealType.displayName}',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 16),
             TextField(
@@ -1489,9 +1551,14 @@ class _AddFoodDialogState extends ConsumerState<_AddFoodDialog> {
       final fat = food.fatPer100g * multiplier;
 
       // Get user plan to check daily calorie limit
-      final service = ref.read(user_meal_plan_providers.userMealPlanServiceProvider);
-      final userPlan = await service.loadPlanByIdOnce(widget.userId, widget.planId);
-      
+      final service = ref.read(
+        user_meal_plan_providers.userMealPlanServiceProvider,
+      );
+      final userPlan = await service.loadPlanByIdOnce(
+        widget.userId,
+        widget.planId,
+      );
+
       if (userPlan == null) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -1500,7 +1567,7 @@ class _AddFoodDialogState extends ConsumerState<_AddFoodDialog> {
         }
         return;
       }
-      
+
       final dailyCalories = userPlan.dailyCalories;
 
       if (dailyCalories > 0) {
@@ -1549,16 +1616,16 @@ class _AddFoodDialogState extends ConsumerState<_AddFoodDialog> {
 
       if (mounted) {
         Navigator.pop(context); // Close add dialog
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Đã thêm món ăn')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Đã thêm món ăn')));
       }
     } catch (e) {
       debugPrint('[AddFoodDialog] Error adding food: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Không thể thêm món ăn')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Không thể thêm món ăn')));
       }
     }
   }
@@ -1623,9 +1690,7 @@ class _EditFoodDialogState extends ConsumerState<_EditFoodDialog> {
           content: TextField(
             controller: _servingController,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: const InputDecoration(
-              labelText: 'Số phần',
-            ),
+            decoration: const InputDecoration(labelText: 'Số phần'),
           ),
           actions: [
             TextButton(
@@ -1645,9 +1710,9 @@ class _EditFoodDialogState extends ConsumerState<_EditFoodDialog> {
   Future<void> _saveChanges(Food food) async {
     final servingSize = double.tryParse(_servingController.text);
     if (servingSize == null || servingSize <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Số phần không hợp lệ')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Số phần không hợp lệ')));
       return;
     }
 
@@ -1663,17 +1728,22 @@ class _EditFoodDialogState extends ConsumerState<_EditFoodDialog> {
       final fat = food.fatPer100g * multiplier;
 
       // Get user plan to check daily calorie limit
-      final service = ref.read(user_meal_plan_providers.userMealPlanServiceProvider);
-      final userPlan = await service.loadPlanByIdOnce(widget.userId, widget.planId);
-      if (!context.mounted) return;
-      
+      final service = ref.read(
+        user_meal_plan_providers.userMealPlanServiceProvider,
+      );
+      final userPlan = await service.loadPlanByIdOnce(
+        widget.userId,
+        widget.planId,
+      );
+      if (!mounted) return;
+
       if (userPlan == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Không tìm thấy thực đơn')),
         );
         return;
       }
-      
+
       final dailyCalories = userPlan.dailyCalories;
 
       if (dailyCalories > 0) {
@@ -1715,9 +1785,9 @@ class _EditFoodDialogState extends ConsumerState<_EditFoodDialog> {
 
       if (mounted) {
         Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Đã cập nhật món ăn')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Đã cập nhật món ăn')));
       }
     } catch (e) {
       debugPrint('[EditFoodDialog] Error updating food: $e');
@@ -1838,9 +1908,9 @@ class _NutritionChip extends StatelessWidget {
         children: [
           Text(
             label,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: AppColors.mediumGray,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: AppColors.mediumGray),
           ),
           const SizedBox(height: 4),
           Text(
@@ -1877,7 +1947,9 @@ class _KcalValidationSummary extends StatelessWidget {
   Widget build(BuildContext context) {
     final isWarning = ratio > 0.15;
     final deviationText = deviation > 0 ? '+$deviation' : '$deviation';
-    final percentageText = percentage > 0 ? '+${percentage.toStringAsFixed(1)}' : percentage.toStringAsFixed(1);
+    final percentageText = percentage > 0
+        ? '+${percentage.toStringAsFixed(1)}'
+        : percentage.toStringAsFixed(1);
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
@@ -1892,9 +1964,7 @@ class _KcalValidationSummary extends StatelessWidget {
             offset: const Offset(0, 2),
           ),
         ],
-        border: isWarning
-            ? Border.all(color: Colors.orange, width: 2)
-            : null,
+        border: isWarning ? Border.all(color: Colors.orange, width: 2) : null,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1936,8 +2006,11 @@ class _KcalValidationSummary extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.warning_amber_rounded, 
-                    color: Colors.orange, size: 20),
+                  const Icon(
+                    Icons.warning_amber_rounded,
+                    color: Colors.orange,
+                    size: 20,
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -1959,7 +2032,10 @@ class _KcalValidationSummary extends StatelessWidget {
 }
 
 // Providers for food search
-final foodSearchProvider = StreamProvider.family<List<Food>, String>((ref, query) {
+final foodSearchProvider = StreamProvider.family<List<Food>, String>((
+  ref,
+  query,
+) {
   final repository = ref.watch(food_providers.foodRepositoryProvider);
   if (query.isEmpty) {
     return Stream.value([]);
@@ -1967,10 +2043,14 @@ final foodSearchProvider = StreamProvider.family<List<Food>, String>((ref, query
   return repository.search(query);
 });
 
-final foodSearchByGoalProvider = StreamProvider.family<List<Food>, ({String query, String goalType})>((ref, params) {
-  final repository = ref.watch(food_providers.foodRepositoryProvider);
-  if (params.query.isEmpty) {
-    return Stream.value([]);
-  }
-  return repository.searchByGoal(params.query, params.goalType);
-});
+final foodSearchByGoalProvider =
+    StreamProvider.family<List<Food>, ({String query, String goalType})>((
+      ref,
+      params,
+    ) {
+      final repository = ref.watch(food_providers.foodRepositoryProvider);
+      if (params.query.isEmpty) {
+        return Stream.value([]);
+      }
+      return repository.searchByGoal(params.query, params.goalType);
+    });

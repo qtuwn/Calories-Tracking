@@ -153,7 +153,7 @@ void main() {
 
     group('validateUserPlanKcal', () {
       /// Helper to build test profiles with specific TDEE and targetKcal values
-      Profile _buildProfile({
+      Profile buildProfile({
         double? tdee,
         double? targetKcal,
       }) {
@@ -164,7 +164,7 @@ void main() {
         );
       }
 
-      final profileWithTarget = _buildProfile(
+      final profileWithTarget = buildProfile(
         tdee: 2000.0,
         targetKcal: 1800.0,
       );
@@ -206,7 +206,7 @@ void main() {
       });
 
       test('returns valid result when targetKcal is null', () {
-        final profileWithoutTarget = _buildProfile(tdee: 2000.0, targetKcal: null);
+        final profileWithoutTarget = buildProfile(tdee: 2000.0, targetKcal: null);
         final result = MealPlanValidationService.validateUserPlanKcal(
           planKcal: 2000,
           profile: profileWithoutTarget,
@@ -218,7 +218,7 @@ void main() {
       });
 
       test('returns valid result when targetKcal is zero or negative', () {
-        final invalidProfile = _buildProfile(tdee: 2000.0, targetKcal: 0.0);
+        final invalidProfile = buildProfile(tdee: 2000.0, targetKcal: 0.0);
         final result = MealPlanValidationService.validateUserPlanKcal(
           planKcal: 2000,
           profile: invalidProfile,

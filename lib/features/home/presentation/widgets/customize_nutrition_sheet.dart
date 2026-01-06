@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:calories_app/domain/profile/profile.dart';
 import 'package:calories_app/shared/state/profile_providers.dart' as profile_providers;
 import 'package:calories_app/shared/state/auth_providers.dart';
+import 'package:calories_app/shared/ui/app_toast.dart';
 
 /// Modal bottom sheet for customizing nutrition targets and macro distribution.
 /// 
@@ -199,11 +200,10 @@ class _CustomizeNutritionSheetState
         
         Navigator.of(context).pop(true);
         
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Cập nhật mục tiêu dinh dưỡng thành công'),
-            backgroundColor: Colors.green,
-          ),
+        showAppToast(
+          context,
+          message: 'Cập nhật mục tiêu dinh dưỡng thành công',
+          type: AppToastType.success,
         );
       }
     } catch (e) {

@@ -3,11 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:calories_app/core/theme/app_colors.dart';
-import 'package:calories_app/domain/meal_plans/user_meal_plan_repository.dart' show MealItem;
-import 'package:calories_app/domain/meal_plans/services/meal_nutrition_calculator.dart' show MealNutritionCalculator, MealNutritionException;
+import 'package:calories_app/domain/meal_plans/user_meal_plan_repository.dart'
+    show MealItem;
+import 'package:calories_app/domain/meal_plans/services/meal_nutrition_calculator.dart'
+    show MealNutritionCalculator, MealNutritionException;
 import 'package:calories_app/domain/foods/food.dart';
-import 'package:calories_app/shared/state/food_providers.dart' as food_providers;
-import 'package:calories_app/shared/state/user_meal_plan_providers.dart' as user_meal_plan_providers;
+import 'package:calories_app/shared/state/food_providers.dart'
+    as food_providers;
+import 'package:calories_app/shared/state/user_meal_plan_providers.dart'
+    as user_meal_plan_providers;
 import 'package:calories_app/features/meal_plans/domain/models/shared/meal_type.dart';
 
 /// Standalone page for editing meals in a specific day of a user's custom meal plan
@@ -44,29 +48,37 @@ class _MealDayEditorPageState extends ConsumerState<MealDayEditorPage> {
   }
 
   Future<void> _loadMeals() async {
-    debugPrint('[MealDayEditorPage] 📥 Loading meals for planId=${widget.planId}, dayIndex=${widget.dayIndex}, userId=${widget.userId}');
-    
+    debugPrint(
+      '[MealDayEditorPage] 📥 Loading meals for planId=${widget.planId}, dayIndex=${widget.dayIndex}, userId=${widget.userId}',
+    );
+
     setState(() => _isLoading = true);
-    
+
     try {
-      final service = ref.read(user_meal_plan_providers.userMealPlanServiceProvider);
+      final service = ref.read(
+        user_meal_plan_providers.userMealPlanServiceProvider,
+      );
       final mealsStream = service.getDayMeals(
         widget.planId,
         widget.userId,
         widget.dayIndex,
       );
-      
+
       final meals = await mealsStream.first;
-      debugPrint('[MealDayEditorPage] ✅ Loaded ${meals.length} meals for day ${widget.dayIndex}');
-      
+      debugPrint(
+        '[MealDayEditorPage] ✅ Loaded ${meals.length} meals for day ${widget.dayIndex}',
+      );
+
       setState(() {
         _meals = meals;
-        _initialMeals = List.from(meals); // Store initial state for diff calculation
+        _initialMeals = List.from(
+          meals,
+        ); // Store initial state for diff calculation
         _isLoading = false;
       });
     } catch (e) {
       debugPrint('[MealDayEditorPage] 🔥 Error loading meals: $e');
-      
+
       if (mounted) {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -86,31 +98,33 @@ class _MealDayEditorPageState extends ConsumerState<MealDayEditorPage> {
       '[MealDayEditorPage] 💾 Batch saving meals for day ${widget.dayIndex}: '
       'planId=${widget.planId}, userId=${widget.userId}',
     );
-    
+
     setState(() => _isSaving = true);
-    
+
     try {
-      final service = ref.read(user_meal_plan_providers.userMealPlanServiceProvider);
-      
+      final service = ref.read(
+        user_meal_plan_providers.userMealPlanServiceProvider,
+      );
+
       // Calculate which meals to save (new or updated) and which to delete
       final mealsToSave = <MealItem>[];
       final mealsToDelete = <String>[];
-      
+
       // All current meals should be saved (new ones have empty ID, existing ones have ID)
       mealsToSave.addAll(_meals);
-      
+
       // Find meals that were in initial state but are no longer present
       for (final initialMeal in _initialMeals) {
         if (!_meals.any((m) => m.id == initialMeal.id && m.id.isNotEmpty)) {
           mealsToDelete.add(initialMeal.id);
         }
       }
-      
+
       debugPrint(
         '[MealDayEditorPage] 📊 Batch operation: ${mealsToSave.length} to save, '
         '${mealsToDelete.length} to delete',
       );
-      
+
       // Use batch write - single network call (or queued offline)
       final success = await service.saveDayMealsBatch(
         planId: widget.planId,
@@ -119,13 +133,13 @@ class _MealDayEditorPageState extends ConsumerState<MealDayEditorPage> {
         mealsToSave: mealsToSave,
         mealsToDelete: mealsToDelete,
       );
-      
+
       if (success) {
         // Update initial state to current state for next save
         _initialMeals = List.from(_meals);
-        
+
         debugPrint('[MealDayEditorPage] ✅ Batch save completed successfully');
-        
+
         if (mounted) {
           // Check if we're likely offline (write succeeded but may be queued)
           // Firestore handles this automatically, but we can show a subtle hint
@@ -136,19 +150,24 @@ class _MealDayEditorPageState extends ConsumerState<MealDayEditorPage> {
               duration: Duration(seconds: 2),
             ),
           );
-          Navigator.pop(context, true); // Return true to indicate changes were saved
+          Navigator.pop(
+            context,
+            true,
+          ); // Return true to indicate changes were saved
         }
       }
     } on FirebaseException catch (e, stackTrace) {
       final errorCode = e.code;
       final errorMessage = e.message ?? 'Unknown error';
-      
-      debugPrint('[MealDayEditorPage] 🔥 Firestore error: code=$errorCode, message=$errorMessage');
+
+      debugPrint(
+        '[MealDayEditorPage] 🔥 Firestore error: code=$errorCode, message=$errorMessage',
+      );
       debugPrint('[MealDayEditorPage] Stack trace: $stackTrace');
-      
+
       if (mounted) {
         // Distinguish between network errors and hard failures
-        if (errorCode == 'unavailable' || 
+        if (errorCode == 'unavailable' ||
             errorCode == 'deadline-exceeded' ||
             errorMessage.contains('Unable to resolve host') ||
             errorMessage.contains('network')) {
@@ -167,7 +186,9 @@ class _MealDayEditorPageState extends ConsumerState<MealDayEditorPage> {
           // Permission error - hard failure
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Không có quyền lưu bữa ăn. Vui lòng kiểm tra quyền truy cập.'),
+              content: Text(
+                'Không có quyền lưu bữa ăn. Vui lòng kiểm tra quyền truy cập.',
+              ),
               backgroundColor: Colors.red,
             ),
           );
@@ -185,10 +206,10 @@ class _MealDayEditorPageState extends ConsumerState<MealDayEditorPage> {
       final errorStr = e.toString();
       debugPrint('[MealDayEditorPage] 🔥 Error saving meals: $e');
       debugPrint('[MealDayEditorPage] Stack trace: $stackTrace');
-      
+
       if (mounted) {
         // Check if it's a network-related error
-        if (errorStr.contains('UNAVAILABLE') || 
+        if (errorStr.contains('UNAVAILABLE') ||
             errorStr.contains('Unable to resolve host') ||
             errorStr.contains('network') ||
             errorStr.contains('DNS')) {
@@ -228,8 +249,13 @@ class _MealDayEditorPageState extends ConsumerState<MealDayEditorPage> {
   @override
   Widget build(BuildContext context) {
     // Get user plan from service
-    final service = ref.read(user_meal_plan_providers.userMealPlanServiceProvider);
-    final userPlanFuture = service.loadPlanByIdOnce(widget.userId, widget.planId);
+    final service = ref.read(
+      user_meal_plan_providers.userMealPlanServiceProvider,
+    );
+    final userPlanFuture = service.loadPlanByIdOnce(
+      widget.userId,
+      widget.planId,
+    );
 
     return Scaffold(
       backgroundColor: AppColors.palePink,
@@ -242,9 +268,9 @@ class _MealDayEditorPageState extends ConsumerState<MealDayEditorPage> {
         ),
         title: Text(
           'Ngày ${widget.dayIndex}',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.w700,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
         ),
         actions: [
           IconButton(
@@ -275,9 +301,13 @@ class _MealDayEditorPageState extends ConsumerState<MealDayEditorPage> {
                 final userPlan = snapshot.data!;
                 final dailyCalories = userPlan.dailyCalories;
                 final dayTotals = _calculateDayTotals(_meals);
-                final exceedsLimit = dailyCalories > 0 && dayTotals['calories']! > dailyCalories;
+                final exceedsLimit =
+                    dailyCalories > 0 && dayTotals['calories']! > dailyCalories;
                 final percentage = dailyCalories > 0
-                    ? (dayTotals['calories']! / dailyCalories * 100).clamp(0, 200)
+                    ? (dayTotals['calories']! / dailyCalories * 100).clamp(
+                        0,
+                        200,
+                      )
                     : 0.0;
 
                 return Column(
@@ -308,18 +338,20 @@ class _MealDayEditorPageState extends ConsumerState<MealDayEditorPage> {
                               Expanded(
                                 child: Text(
                                   'Tổng dinh dưỡng ngày ${widget.dayIndex}',
-                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.w700,
-                                  ),
+                                  style: Theme.of(context).textTheme.titleMedium
+                                      ?.copyWith(fontWeight: FontWeight.w700),
                                 ),
                               ),
                               if (dailyCalories > 0)
                                 Text(
                                   '${percentage.toInt()}%',
-                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.w700,
-                                    color: exceedsLimit ? Colors.red : AppColors.nearBlack,
-                                  ),
+                                  style: Theme.of(context).textTheme.titleMedium
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.w700,
+                                        color: exceedsLimit
+                                            ? Colors.red
+                                            : AppColors.nearBlack,
+                                      ),
                                 ),
                             ],
                           ),
@@ -333,16 +365,20 @@ class _MealDayEditorPageState extends ConsumerState<MealDayEditorPage> {
                               ),
                               child: Row(
                                 children: [
-                                  const Icon(Icons.warning_amber_rounded,
-                                      color: Colors.red, size: 20),
+                                  const Icon(
+                                    Icons.warning_amber_rounded,
+                                    color: Colors.red,
+                                    size: 20,
+                                  ),
                                   const SizedBox(width: 8),
                                   Expanded(
                                     child: Text(
                                       'Tổng calories vượt quá giới hạn ngày ($dailyCalories kcal). '
                                       'Vui lòng xóa hoặc giảm một số món ăn.',
-                                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                        color: Colors.red,
-                                      ),
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodySmall
+                                          ?.copyWith(color: Colors.red),
                                     ),
                                   ),
                                 ],
@@ -390,18 +426,15 @@ class _MealDayEditorPageState extends ConsumerState<MealDayEditorPage> {
                             const SizedBox(height: 8),
                             Text(
                               'Giới hạn: $dailyCalories kcal/ngày',
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: AppColors.mediumGray,
-                              ),
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(color: AppColors.mediumGray),
                             ),
                           ],
                         ],
                       ),
                     ),
                     // Meals list
-                    Expanded(
-                      child: _buildMealsList(),
-                    ),
+                    Expanded(child: _buildMealsList()),
                   ],
                 );
               },
@@ -427,12 +460,7 @@ class _MealDayEditorPageState extends ConsumerState<MealDayEditorPage> {
     } on MealNutritionException catch (e) {
       // Log error but return zeros to prevent UI crash
       debugPrint('[MealDayEditorPage] ⚠️ Nutrition calculation error: $e');
-      return {
-        'calories': 0.0,
-        'protein': 0.0,
-        'carb': 0.0,
-        'fat': 0.0,
-      };
+      return {'calories': 0.0, 'protein': 0.0, 'carb': 0.0, 'fat': 0.0};
     }
   }
 
@@ -528,9 +556,9 @@ class _MealTypeSectionState extends ConsumerState<_MealTypeSection> {
               const SizedBox(width: 8),
               Text(
                 widget.mealType.displayName,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
               ),
               const Spacer(),
               IconButton(
@@ -545,20 +573,22 @@ class _MealTypeSectionState extends ConsumerState<_MealTypeSection> {
               padding: const EdgeInsets.all(16),
               child: Text(
                 'Chưa có món ăn nào',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppColors.mediumGray,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(color: AppColors.mediumGray),
               ),
             )
           else
-            ...widget.items.map((item) => _MealItemTile(
-              planId: widget.planId,
-              userId: widget.userId,
-              dayIndex: widget.dayIndex,
-              item: item,
-              allMeals: widget.allMeals,
-              onMealsChanged: widget.onMealsChanged,
-            )),
+            ...widget.items.map(
+              (item) => _MealItemTile(
+                planId: widget.planId,
+                userId: widget.userId,
+                dayIndex: widget.dayIndex,
+                item: item,
+                allMeals: widget.allMeals,
+                onMealsChanged: widget.onMealsChanged,
+              ),
+            ),
         ],
       ),
     );
@@ -630,7 +660,11 @@ class _MealItemTile extends ConsumerWidget {
                 onPressed: () => _editItem(context, ref),
               ),
               IconButton(
-                icon: const Icon(Icons.delete_outline, size: 20, color: Colors.red),
+                icon: const Icon(
+                  Icons.delete_outline,
+                  size: 20,
+                  color: Colors.red,
+                ),
                 onPressed: () => _deleteItem(context, ref),
               ),
             ],
@@ -650,7 +684,9 @@ class _MealItemTile extends ConsumerWidget {
         item: item,
         allMeals: allMeals,
         onMealUpdated: (updatedMeal) {
-          final newMeals = allMeals.map((m) => m.id == item.id ? updatedMeal : m).toList();
+          final newMeals = allMeals
+              .map((m) => m.id == item.id ? updatedMeal : m)
+              .toList();
           onMealsChanged(newMeals);
         },
       ),
@@ -720,7 +756,12 @@ class _AddFoodDialogState extends ConsumerState<_AddFoodDialog> {
     final searchQuery = _searchController.text;
     final foodsAsync = searchQuery.isEmpty
         ? ref.watch(foodSearchProvider(''))
-        : ref.watch(foodSearchByGoalProvider((query: searchQuery, goalType: widget.goalType)));
+        : ref.watch(
+            foodSearchByGoalProvider((
+              query: searchQuery,
+              goalType: widget.goalType,
+            )),
+          );
 
     return Dialog(
       child: Container(
@@ -731,9 +772,9 @@ class _AddFoodDialogState extends ConsumerState<_AddFoodDialog> {
           children: [
             Text(
               'Thêm món ăn - ${widget.mealType.displayName}',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 16),
             TextField(
@@ -840,8 +881,13 @@ class _AddFoodDialogState extends ConsumerState<_AddFoodDialog> {
       final fat = food.fatPer100g * multiplier;
 
       // Get user plan to check daily calorie limit
-      final service = ref.read(user_meal_plan_providers.userMealPlanServiceProvider);
-      final userPlan = await service.loadPlanByIdOnce(widget.userId, widget.planId);
+      final service = ref.read(
+        user_meal_plan_providers.userMealPlanServiceProvider,
+      );
+      final userPlan = await service.loadPlanByIdOnce(
+        widget.userId,
+        widget.planId,
+      );
 
       if (userPlan == null) {
         if (mounted) {
@@ -933,16 +979,16 @@ class _AddFoodDialogState extends ConsumerState<_AddFoodDialog> {
 
       if (mounted) {
         Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Đã thêm món ăn')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Đã thêm món ăn')));
       }
     } catch (e) {
       debugPrint('[AddFoodDialog] Error adding food: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Không thể thêm món ăn')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Không thể thêm món ăn')));
       }
     }
   }
@@ -1007,9 +1053,7 @@ class _EditFoodDialogState extends ConsumerState<_EditFoodDialog> {
           content: TextField(
             controller: _servingController,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: const InputDecoration(
-              labelText: 'Số phần',
-            ),
+            decoration: const InputDecoration(labelText: 'Số phần'),
           ),
           actions: [
             TextButton(
@@ -1029,9 +1073,9 @@ class _EditFoodDialogState extends ConsumerState<_EditFoodDialog> {
   Future<void> _saveChanges(Food food) async {
     final servingSize = double.tryParse(_servingController.text);
     if (servingSize == null || servingSize <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Số phần không hợp lệ')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Số phần không hợp lệ')));
       return;
     }
 
@@ -1075,9 +1119,14 @@ class _EditFoodDialogState extends ConsumerState<_EditFoodDialog> {
         return;
       }
 
-      final service = ref.read(user_meal_plan_providers.userMealPlanServiceProvider);
-      final userPlan = await service.loadPlanByIdOnce(widget.userId, widget.planId);
-      if (!context.mounted) return;
+      final service = ref.read(
+        user_meal_plan_providers.userMealPlanServiceProvider,
+      );
+      final userPlan = await service.loadPlanByIdOnce(
+        widget.userId,
+        widget.planId,
+      );
+      if (!mounted) return;
 
       if (userPlan == null) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1111,7 +1160,10 @@ class _EditFoodDialogState extends ConsumerState<_EditFoodDialog> {
           dayIndex: widget.dayIndex,
         );
         // Remove old meal nutrition, add new meal nutrition
-        final newTotal = currentDayNutrition.calories - oldMealNutrition.calories + newMealNutrition.calories;
+        final newTotal =
+            currentDayNutrition.calories -
+            oldMealNutrition.calories +
+            newMealNutrition.calories;
 
         if (newTotal > dailyCalories) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -1133,9 +1185,9 @@ class _EditFoodDialogState extends ConsumerState<_EditFoodDialog> {
 
       if (mounted) {
         Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Đã cập nhật món ăn')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Đã cập nhật món ăn')));
       }
     } catch (e) {
       debugPrint('[EditFoodDialog] Error updating food: $e');
@@ -1176,9 +1228,9 @@ class _NutritionChip extends StatelessWidget {
         children: [
           Text(
             label,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: AppColors.mediumGray,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: AppColors.mediumGray),
           ),
           const SizedBox(height: 4),
           Text(
@@ -1195,7 +1247,10 @@ class _NutritionChip extends StatelessWidget {
 }
 
 // Providers for food search (reused from meal_custom_editor_page.dart)
-final foodSearchProvider = StreamProvider.family<List<Food>, String>((ref, query) {
+final foodSearchProvider = StreamProvider.family<List<Food>, String>((
+  ref,
+  query,
+) {
   final repository = ref.watch(food_providers.foodRepositoryProvider);
   if (query.isEmpty) {
     return Stream.value([]);
@@ -1203,11 +1258,14 @@ final foodSearchProvider = StreamProvider.family<List<Food>, String>((ref, query
   return repository.search(query);
 });
 
-final foodSearchByGoalProvider = StreamProvider.family<List<Food>, ({String query, String goalType})>((ref, params) {
-  final repository = ref.watch(food_providers.foodRepositoryProvider);
-  if (params.query.isEmpty) {
-    return Stream.value([]);
-  }
-  return repository.searchByGoal(params.query, params.goalType);
-});
-
+final foodSearchByGoalProvider =
+    StreamProvider.family<List<Food>, ({String query, String goalType})>((
+      ref,
+      params,
+    ) {
+      final repository = ref.watch(food_providers.foodRepositoryProvider);
+      if (params.query.isEmpty) {
+        return Stream.value([]);
+      }
+      return repository.searchByGoal(params.query, params.goalType);
+    });
