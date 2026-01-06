@@ -51,7 +51,7 @@ The project has undergone multiple refactoring phases to achieve a mature, maint
 
 ## Screenshots
 
-> **Note:** Screenshots should be placed in `docs/screenshots/` directory
+> **Note:** Screenshots should be placed in `docs/screenshots/` directory.
 
 <!--
 ![Dashboard](docs/screenshots/dashboard.png)
