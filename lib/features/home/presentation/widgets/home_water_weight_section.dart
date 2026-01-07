@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:collection/collection.dart';
 
 import 'package:calories_app/features/home/domain/statistics_models.dart';
 
@@ -629,6 +628,10 @@ class _WeightTrendPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _WeightTrendPainter oldDelegate) {
     // Only repaint if the actual data changed
-    return !const DeepCollectionEquality().equals(oldDelegate.points, points);
+    if (oldDelegate.points.length != points.length) return true;
+    for (int i = 0; i < points.length; i++) {
+      if (oldDelegate.points[i] != points[i]) return true;
+    }
+    return false;
   }
 }

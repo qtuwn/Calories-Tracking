@@ -21,7 +21,7 @@ class DiaryProviderKey {
   static String forDate({required String uid, required DateTime date}) {
     final normalizedDate = DateUtils.normalizeToMidnight(date);
     final dateString = DateUtils.normalizeToIsoString(normalizedDate);
-    return '${uid}_${dateString}';
+    return '${uid}_$dateString';
   }
 
   /// Parses a provider key back into its components.

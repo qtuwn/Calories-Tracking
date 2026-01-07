@@ -283,8 +283,9 @@ class _MealUserActivePageState extends ConsumerState<MealUserActivePage> {
                 ..sort((a, b) {
                   final indexA = sortedMealTypes.indexOf(a.key);
                   final indexB = sortedMealTypes.indexOf(b.key);
-                  if (indexA == -1 && indexB == -1)
+                  if (indexA == -1 && indexB == -1) {
                     return a.key.compareTo(b.key);
+                  }
                   if (indexA == -1) return 1;
                   if (indexB == -1) return -1;
                   return indexA.compareTo(indexB);

@@ -204,11 +204,11 @@ class DiaryNotifier extends Notifier<DiaryState> {
     if (state.selectedDate.year == normalized.year &&
         state.selectedDate.month == normalized.month &&
         state.selectedDate.day == normalized.day) {
-      debugPrint('[DiaryNotifier] ℹ️ Same date selected (${normalized}), skipping stream recreation');
+      debugPrint('[DiaryNotifier] ℹ️ Same date selected ($normalized), skipping stream recreation');
       return; // Same date, no need to do anything
     }
 
-    debugPrint('[DiaryNotifier] 🔄 Date changed from ${state.selectedDate} to ${normalized}, recreating stream');
+    debugPrint('[DiaryNotifier] 🔄 Date changed from ${state.selectedDate} to $normalized, recreating stream');
 
     // Cancel previous subscription
     _entriesSubscription?.cancel();
