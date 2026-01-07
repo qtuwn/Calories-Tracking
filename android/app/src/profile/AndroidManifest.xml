@@ -4,9 +4,14 @@
          to allow setting breakpoints, to provide hot reload, etc.
     -->
     <uses-permission android:name="android.permission.INTERNET" />
+    
     <!-- Required for fitness data such as steps -->
     <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
-    <!-- Health Connect – Steps only -->
+    
+    <!-- Health Connect – Steps (READ and WRITE) -->
     <uses-permission android:name="android.permission.health.READ_STEPS" />
     <uses-permission android:name="android.permission.health.WRITE_STEPS" />
+    
+    <!-- Health Connect – Exercise (READ) -->
+    <uses-permission android:name="android.permission.health.READ_EXERCISE" />
 </manifest>

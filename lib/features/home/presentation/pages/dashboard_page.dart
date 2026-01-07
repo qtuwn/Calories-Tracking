@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:calories_app/core/theme/theme.dart';
 import '../widgets/home_activity_section.dart';
@@ -9,25 +8,27 @@ import '../widgets/home_macro_section.dart';
 import '../widgets/home_recent_diary_section.dart';
 import '../widgets/home_water_weight_section.dart';
 
-class DashboardPage extends ConsumerStatefulWidget {
+/// PERFORMANCE: DashboardPage is now a StatefulWidget (not ConsumerWidget)
+/// - Does NOT watch any providers directly
+/// - All provider watches are isolated to leaf widgets
+/// - Only rebuilds on navigation, theme change, or _showBelowFold toggle
+class DashboardPage extends StatefulWidget {
   final VoidCallback? onNavigateToDiary;
 
-  const DashboardPage({
-    super.key,
-    this.onNavigateToDiary,
-  });
+  const DashboardPage({super.key, this.onNavigateToDiary});
 
   @override
-  ConsumerState<DashboardPage> createState() => _DashboardPageState();
+  State<DashboardPage> createState() => _DashboardPageState();
 }
 
-class _DashboardPageState extends ConsumerState<DashboardPage> {
+class _DashboardPageState extends State<DashboardPage> {
   bool _showBelowFold = false;
 
   @override
   void initState() {
     super.initState();
-    Future.delayed(const Duration(milliseconds: 500), () {
+    // PERFORMANCE: Delay below-fold content to after first frame painted
+    Future.delayed(const Duration(milliseconds: 300), () {
       if (mounted) {
         setState(() {
           _showBelowFold = true;
@@ -46,6 +47,8 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // PERFORMANCE: All children are const or StatelessWidget
+              // Provider watches happen INSIDE each widget, not here
               const HomeHeaderSection(),
               const SizedBox(height: 24),
               const HomeCalorieCard(),
@@ -84,9 +87,7 @@ class _LoadingPlaceholder extends StatelessWidget {
         color: Colors.grey[200],
         borderRadius: BorderRadius.circular(16),
       ),
-      child: const Center(
-        child: CircularProgressIndicator(),
-      ),
+      child: const Center(child: CircularProgressIndicator()),
     );
   }
 }

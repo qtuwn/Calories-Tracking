@@ -2,19 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:calories_app/features/home/presentation/providers/weight_providers.dart';
+import 'package:calories_app/shared/ui/app_toast.dart';
 
 /// Modal bottom sheet for updating today's weight.
-/// 
+///
 /// Allows user to enter their current weight in kilograms.
 /// The weight is saved to Firestore and automatically syncs with the profile.
-/// 
+///
 /// If a weight entry for today already exists, it will be updated.
 /// Otherwise, a new entry will be created.
 class UpdateWeightSheet extends ConsumerStatefulWidget {
-  const UpdateWeightSheet({
-    super.key,
-    this.initialWeight,
-  });
+  const UpdateWeightSheet({super.key, this.initialWeight});
 
   /// Initial weight value to pre-fill the form (e.g. last recorded weight)
   final double? initialWeight;
@@ -32,7 +30,7 @@ class _UpdateWeightSheetState extends ConsumerState<UpdateWeightSheet> {
   @override
   void initState() {
     super.initState();
-    
+
     // Initialize controller with initial weight or empty
     _weightController = TextEditingController(
       text: widget.initialWeight?.toStringAsFixed(1) ?? '',
@@ -65,14 +63,15 @@ class _UpdateWeightSheetState extends ConsumerState<UpdateWeightSheet> {
         // Invalidate providers to trigger refresh
         ref.invalidate(latestWeightProvider);
         ref.invalidate(recentWeights7DaysProvider);
-        
+        ref.invalidate(recentWeights30DaysProvider);
+
         Navigator.of(context).pop(true);
-        
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Cập nhật cân nặng thành công'),
-            backgroundColor: Colors.green,
-          ),
+
+        showAppToast(
+          context,
+          message: 'Cập nhật cân nặng thành công',
+          type: AppToastType.success,
+          extraBottomOffset: 12,
         );
       }
     } catch (e) {
@@ -85,7 +84,6 @@ class _UpdateWeightSheetState extends ConsumerState<UpdateWeightSheet> {
 
   @override
   Widget build(BuildContext context) {
-
     return Container(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
@@ -109,13 +107,15 @@ class _UpdateWeightSheetState extends ConsumerState<UpdateWeightSheet> {
               children: [
                 Text(
                   'Cập nhật cân nặng',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
                 ),
                 IconButton(
                   icon: const Icon(Icons.close),
-                  onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
+                  onPressed: _isLoading
+                      ? null
+                      : () => Navigator.of(context).pop(),
                 ),
               ],
             ),
@@ -124,14 +124,16 @@ class _UpdateWeightSheetState extends ConsumerState<UpdateWeightSheet> {
             // Weight input
             Text(
               'Cân nặng (kg) *',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 8),
             TextFormField(
               controller: _weightController,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               inputFormatters: [
                 FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,1}')),
               ],
@@ -171,10 +173,7 @@ class _UpdateWeightSheetState extends ConsumerState<UpdateWeightSheet> {
                 padding: const EdgeInsets.only(bottom: 16),
                 child: Text(
                   _errorMessage!,
-                  style: TextStyle(
-                    color: Colors.red[700],
-                    fontSize: 14,
-                  ),
+                  style: TextStyle(color: Colors.red[700], fontSize: 14),
                 ),
               ),
 
@@ -183,7 +182,9 @@ class _UpdateWeightSheetState extends ConsumerState<UpdateWeightSheet> {
               children: [
                 Expanded(
                   child: OutlinedButton(
-                    onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
+                    onPressed: _isLoading
+                        ? null
+                        : () => Navigator.of(context).pop(),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
@@ -212,7 +213,9 @@ class _UpdateWeightSheetState extends ConsumerState<UpdateWeightSheet> {
                             width: 20,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.white,
+                              ),
                             ),
                           )
                         : const Text('Lưu'),
@@ -227,4 +230,3 @@ class _UpdateWeightSheetState extends ConsumerState<UpdateWeightSheet> {
     );
   }
 }
-

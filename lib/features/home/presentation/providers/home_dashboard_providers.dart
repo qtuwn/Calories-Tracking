@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:calories_app/domain/diary/diary_entry.dart';
 import 'package:calories_app/features/meal_plans/domain/models/shared/meal_type.dart';
 import 'package:calories_app/features/home/domain/workout_type.dart';
+import 'package:calories_app/features/home/domain/statistics_models.dart';
 import 'package:calories_app/features/home/presentation/providers/diary_provider.dart';
 import 'package:calories_app/shared/state/auth_providers.dart';
 
@@ -109,34 +110,31 @@ class MacroProgress {
 }
 
 /// Provider for macro summary combining diary totals with profile targets.
-/// Automatically updates when auth state changes (user switches accounts).
+/// Uses selective watching to prevent unnecessary rebuilds.
 final homeMacroSummaryProvider = Provider<List<MacroProgress>>((ref) {
-  // Get diary state (uses selected date from diaryProvider)
-  final diaryState = ref.watch(diaryProvider);
-  
+  // Use selective watching instead of entire diary state
+  final proteinConsumed = ref.watch(diaryProvider.select((s) => s.totalProtein));
+  final carbsConsumed = ref.watch(diaryProvider.select((s) => s.totalCarbs));
+  final fatConsumed = ref.watch(diaryProvider.select((s) => s.totalFat));
+
   // Get profile data for targets (this provider automatically watches auth state)
   final profileAsync = ref.watch(currentUserProfileProvider);
-  
+
   // Extract macro targets from profile
   final proteinTarget = profileAsync.maybeWhen(
     data: (profile) => profile?.proteinGrams ?? 0.0,
     orElse: () => 0.0,
   );
-  
+
   final carbsTarget = profileAsync.maybeWhen(
     data: (profile) => profile?.carbGrams ?? 0.0,
     orElse: () => 0.0,
   );
-  
+
   final fatTarget = profileAsync.maybeWhen(
     data: (profile) => profile?.fatGrams ?? 0.0,
     orElse: () => 0.0,
   );
-  
-  // Get consumed macros from diary state
-  final proteinConsumed = diaryState.totalProtein;
-  final carbsConsumed = diaryState.totalCarbs;
-  final fatConsumed = diaryState.totalFat;
   
   return [
     MacroProgress(
@@ -306,16 +304,6 @@ final homeWaterIntakeProvider = Provider<WaterIntake>((ref) {
     goalMl: 2200,
   );
 });
-
-class WeightPoint {
-  const WeightPoint({
-    required this.date,
-    required this.weight,
-  });
-
-  final DateTime date;
-  final double weight;
-}
 
 class WeightHistory {
   const WeightHistory({

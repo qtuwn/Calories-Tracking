@@ -8,10 +8,14 @@ import 'package:calories_app/features/meal_plans/presentation/pages/meal_custom_
 import 'package:calories_app/features/meal_plans/presentation/pages/meal_detail_page.dart';
 import 'package:calories_app/features/meal_plans/presentation/widgets/meal_plan_summary_card.dart';
 import 'package:calories_app/shared/state/auth_providers.dart';
-import 'package:calories_app/shared/state/user_meal_plan_providers.dart' as user_meal_plan_providers;
+import 'package:calories_app/shared/state/user_meal_plan_providers.dart'
+    as user_meal_plan_providers;
 
 class MealCustomRoot extends ConsumerStatefulWidget {
-  const MealCustomRoot({super.key});
+  const MealCustomRoot({super.key, this.onBackPressed});
+
+  /// Callback when back button is pressed (navigates to first tab)
+  final VoidCallback? onBackPressed;
 
   @override
   ConsumerState<MealCustomRoot> createState() => _MealCustomRootState();
@@ -26,7 +30,9 @@ class _MealCustomRootState extends ConsumerState<MealCustomRoot> {
       final authState = ref.read(authStateProvider);
       final user = authState.value;
       if (user != null) {
-        ref.read(userCustomMealPlanControllerProvider.notifier).loadPlans(user.uid);
+        ref
+            .read(userCustomMealPlanControllerProvider.notifier)
+            .loadPlans(user.uid);
       }
     });
   }
@@ -71,7 +77,7 @@ class _MealCustomRootState extends ConsumerState<MealCustomRoot> {
             children: [
               IconButton(
                 icon: const Icon(Icons.arrow_back),
-                onPressed: () => Navigator.pop(context),
+                onPressed: widget.onBackPressed,
               ),
               Expanded(
                 child: Text(
@@ -86,9 +92,7 @@ class _MealCustomRootState extends ConsumerState<MealCustomRoot> {
           ),
         ),
         const SizedBox(height: 16),
-        Expanded(
-          child: _buildPlansList(context, ref, userId, controllerState),
-        ),
+        Expanded(child: _buildPlansList(context, ref, userId, controllerState)),
         // Create button
         Padding(
           padding: const EdgeInsets.all(20),
@@ -137,23 +141,21 @@ class _MealCustomRootState extends ConsumerState<MealCustomRoot> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(
-                Icons.error_outline,
-                size: 48,
-                color: AppColors.error,
-              ),
+              const Icon(Icons.error_outline, size: 48, color: AppColors.error),
               const SizedBox(height: 16),
               Text(
                 state.errorMessage!,
                 textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: AppColors.mediumGray,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyLarge?.copyWith(color: AppColors.mediumGray),
               ),
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () {
-                  ref.read(userCustomMealPlanControllerProvider.notifier).loadPlans(userId);
+                  ref
+                      .read(userCustomMealPlanControllerProvider.notifier)
+                      .loadPlans(userId);
                 },
                 child: const Text('Thử lại'),
               ),
@@ -168,9 +170,7 @@ class _MealCustomRootState extends ConsumerState<MealCustomRoot> {
         onCreateTap: () {
           Navigator.push(
             context,
-            MaterialPageRoute(
-              builder: (_) => const MealCustomEditorPage(),
-            ),
+            MaterialPageRoute(builder: (_) => const MealCustomEditorPage()),
           );
         },
       );
@@ -261,7 +261,9 @@ class _CustomPlanCard extends ConsumerWidget {
 
   Future<void> _showMoreActions(BuildContext context, WidgetRef ref) async {
     // Check if this plan is currently active (use provider as source of truth)
-    final activePlanAsync = ref.read(user_meal_plan_providers.activeMealPlanProvider);
+    final activePlanAsync = ref.read(
+      user_meal_plan_providers.activeMealPlanProvider,
+    );
     final activePlan = activePlanAsync.value;
     final isActive = activePlan?.id == plan.id;
 
@@ -319,7 +321,10 @@ class _CustomPlanCard extends ConsumerWidget {
               ),
               ListTile(
                 leading: const Icon(Icons.delete_outline, color: Colors.red),
-                title: const Text('Xóa thực đơn', style: TextStyle(color: Colors.red)),
+                title: const Text(
+                  'Xóa thực đơn',
+                  style: TextStyle(color: Colors.red),
+                ),
                 onTap: () {
                   Navigator.pop(context);
                   _showDeleteDialog(context, ref);
@@ -336,10 +341,14 @@ class _CustomPlanCard extends ConsumerWidget {
   /// Apply this custom plan as the active meal plan for the current user.
   /// Uses AppliedMealPlanController to set the active plan.
   Future<void> _applyPlan(BuildContext context, WidgetRef ref) async {
-    final appliedController = ref.read(appliedMealPlanControllerProvider.notifier);
-    
+    final appliedController = ref.read(
+      appliedMealPlanControllerProvider.notifier,
+    );
+
     // Get active plan from provider (source of truth)
-    final activePlanAsync = ref.read(user_meal_plan_providers.activeMealPlanProvider);
+    final activePlanAsync = ref.read(
+      user_meal_plan_providers.activeMealPlanProvider,
+    );
     final activePlan = activePlanAsync.value;
 
     try {
@@ -380,15 +389,14 @@ class _CustomPlanCard extends ConsumerWidget {
       // Use controller to apply custom plan - use the new public API
       debugPrint('[MealCustomRoot] 🚀 Applying custom plan: ${plan.id}');
       debugPrint('[MealCustomRoot] 🚀 User ID: $userId');
-      
-      await appliedController.applyCustomPlan(
-        planId: plan.id,
-        userId: userId,
-      );
-      
+
+      await appliedController.applyCustomPlan(planId: plan.id, userId: userId);
+
       // Only show success if no exception was thrown
-      debugPrint('[MealCustomRoot] ✅ Successfully applied custom plan: ${plan.id}');
-      
+      debugPrint(
+        '[MealCustomRoot] ✅ Successfully applied custom plan: ${plan.id}',
+      );
+
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -400,13 +408,17 @@ class _CustomPlanCard extends ConsumerWidget {
       }
     } catch (e, stackTrace) {
       // Error was thrown - show error message
-      debugPrint('[MealCustomRoot] 🔥 ========== ERROR applying plan ==========');
+      debugPrint(
+        '[MealCustomRoot] 🔥 ========== ERROR applying plan ==========',
+      );
       debugPrint('[MealCustomRoot] 🔥 Plan ID: ${plan.id}');
       debugPrint('[MealCustomRoot] 🔥 User ID: $userId');
       debugPrint('[MealCustomRoot] 🔥 Error: $e');
       debugPrint('[MealCustomRoot] 🔥 Stack trace: $stackTrace');
-      debugPrint('[MealCustomRoot] 🔥 =========================================');
-      
+      debugPrint(
+        '[MealCustomRoot] 🔥 =========================================',
+      );
+
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -421,7 +433,9 @@ class _CustomPlanCard extends ConsumerWidget {
 
   Future<void> _showDeleteDialog(BuildContext context, WidgetRef ref) async {
     // Check if this plan is active (use provider as source of truth)
-    final activePlanAsync = ref.read(user_meal_plan_providers.activeMealPlanProvider);
+    final activePlanAsync = ref.read(
+      user_meal_plan_providers.activeMealPlanProvider,
+    );
     final activePlan = activePlanAsync.value;
     final isActive = activePlan?.id == plan.id;
 
@@ -432,7 +446,7 @@ class _CustomPlanCard extends ConsumerWidget {
         content: Text(
           isActive
               ? 'Thực đơn này đang được kích hoạt. Nếu xóa, bạn sẽ không còn thực đơn nào đang hoạt động.\n\n'
-                  'Bạn có chắc chắn muốn xóa thực đơn này? Hành động này không thể hoàn tác.'
+                    'Bạn có chắc chắn muốn xóa thực đơn này? Hành động này không thể hoàn tác.'
               : 'Bạn có chắc chắn muốn xóa thực đơn này? Hành động này không thể hoàn tác.',
         ),
         actions: [
@@ -442,9 +456,7 @@ class _CustomPlanCard extends ConsumerWidget {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.red,
-            ),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: const Text('Xóa'),
           ),
         ],
@@ -454,7 +466,9 @@ class _CustomPlanCard extends ConsumerWidget {
     if (confirmed != true) return;
 
     try {
-      final controller = ref.read(userCustomMealPlanControllerProvider.notifier);
+      final controller = ref.read(
+        userCustomMealPlanControllerProvider.notifier,
+      );
       await controller.deletePlan(plan.id);
 
       if (context.mounted) {
@@ -509,9 +523,9 @@ class _EmptyState extends StatelessWidget {
             Text(
               'Bắt đầu sáng tạo thực đơn riêng, lưu lại món yêu thích theo khẩu vị của bạn.',
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: AppColors.mediumGray,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyLarge?.copyWith(color: AppColors.mediumGray),
             ),
             if (onCreateTap != null) ...[
               const SizedBox(height: 20),
@@ -531,5 +545,3 @@ class _EmptyState extends StatelessWidget {
     );
   }
 }
-
-

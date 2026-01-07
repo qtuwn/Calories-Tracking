@@ -3,13 +3,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:calories_app/core/theme/app_colors.dart';
 import 'package:calories_app/domain/meal_plans/explore_meal_plan.dart';
 import 'package:calories_app/domain/meal_plans/meal_plan_goal_type.dart';
-import 'package:calories_app/shared/state/explore_meal_plan_providers.dart' as explore_meal_plan_providers;
+import 'package:calories_app/shared/state/explore_meal_plan_providers.dart'
+    as explore_meal_plan_providers;
 import 'package:calories_app/data/meal_plans/explore_meal_plan_query_exception.dart';
 import 'package:calories_app/features/meal_plans/presentation/pages/meal_detail_page.dart';
 import 'package:calories_app/features/meal_plans/presentation/widgets/meal_plan_summary_card.dart';
 
 class MealExplorePage extends ConsumerStatefulWidget {
-  const MealExplorePage({super.key});
+  const MealExplorePage({super.key, this.onBackPressed});
+
+  /// Callback when back button is pressed (navigates to first tab)
+  final VoidCallback? onBackPressed;
 
   @override
   ConsumerState<MealExplorePage> createState() => _MealExplorePageState();
@@ -21,19 +25,24 @@ class _MealExplorePageState extends ConsumerState<MealExplorePage> {
   @override
   Widget build(BuildContext context) {
     // Watch published meal plans with cache-first architecture
-    final allPlansAsync = ref.watch(explore_meal_plan_providers.publishedMealPlansProvider);
-    
+    final allPlansAsync = ref.watch(
+      explore_meal_plan_providers.publishedMealPlansProvider,
+    );
+
     // Filter by goal type if selected
     final AsyncValue<List<ExploreMealPlan>> plansAsync = allPlansAsync.when(
       data: (plans) {
         if (_selectedGoalFilter == null) {
           return AsyncValue.data(plans);
         }
-        final filtered = plans.where((p) => p.goalType == _selectedGoalFilter).toList();
+        final filtered = plans
+            .where((p) => p.goalType == _selectedGoalFilter)
+            .toList();
         return AsyncValue.data(filtered);
       },
       loading: () => const AsyncValue<List<ExploreMealPlan>>.loading(),
-      error: (error, stack) => AsyncValue<List<ExploreMealPlan>>.error(error, stack),
+      error: (error, stack) =>
+          AsyncValue<List<ExploreMealPlan>>.error(error, stack),
     );
 
     return Scaffold(
@@ -48,15 +57,16 @@ class _MealExplorePageState extends ConsumerState<MealExplorePage> {
                 children: [
                   IconButton(
                     icon: const Icon(Icons.arrow_back),
-                    onPressed: () => Navigator.pop(context),
+                    onPressed: widget.onBackPressed,
                   ),
                   Expanded(
                     child: Text(
                       'Khám phá thực đơn',
-                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.nearBlack,
-                      ),
+                      style: Theme.of(context).textTheme.headlineMedium
+                          ?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.nearBlack,
+                          ),
                     ),
                   ),
                 ],
@@ -119,16 +129,17 @@ class _MealExplorePageState extends ConsumerState<MealExplorePage> {
               ),
             ),
             const SizedBox(height: 24),
-            Expanded(
-              child: _buildContent(context, plansAsync),
-            ),
+            Expanded(child: _buildContent(context, plansAsync)),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildContent(BuildContext context, AsyncValue<List<ExploreMealPlan>> plansAsync) {
+  Widget _buildContent(
+    BuildContext context,
+    AsyncValue<List<ExploreMealPlan>> plansAsync,
+  ) {
     return plansAsync.when(
       data: (plans) {
         if (plans.isEmpty) {
@@ -186,10 +197,8 @@ class _MealExplorePageState extends ConsumerState<MealExplorePage> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => MealDetailPage(
-                      planId: plan.id,
-                      isTemplate: true,
-                    ),
+                    builder: (_) =>
+                        MealDetailPage(planId: plan.id, isTemplate: true),
                   ),
                 );
               },
@@ -211,7 +220,7 @@ class _MealExplorePageState extends ConsumerState<MealExplorePage> {
         } else {
           errorMessage = 'Lỗi: ${error.toString()}';
         }
-        
+
         return Center(
           child: Padding(
             padding: const EdgeInsets.all(32.0),
@@ -227,14 +236,16 @@ class _MealExplorePageState extends ConsumerState<MealExplorePage> {
                 Text(
                   errorMessage,
                   textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: AppColors.mediumGray,
-                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyLarge?.copyWith(color: AppColors.mediumGray),
                 ),
                 const SizedBox(height: 16),
                 ElevatedButton(
                   onPressed: () {
-                    ref.invalidate(explore_meal_plan_providers.publishedMealPlansProvider);
+                    ref.invalidate(
+                      explore_meal_plan_providers.publishedMealPlansProvider,
+                    );
                   },
                   child: const Text('Thử lại'),
                 ),
@@ -248,7 +259,10 @@ class _MealExplorePageState extends ConsumerState<MealExplorePage> {
 }
 
 /// Get color for a goal type chip
-Color _getGoalChipColorForGoalType(MealPlanGoalType? goalType, bool isSelected) {
+Color _getGoalChipColorForGoalType(
+  MealPlanGoalType? goalType,
+  bool isSelected,
+) {
   if (!isSelected) {
     return Colors.white;
   }
@@ -278,7 +292,10 @@ Color _getGoalChipColorForGoalType(MealPlanGoalType? goalType, bool isSelected) 
 }
 
 /// Get border color for a goal type chip
-Color _getGoalChipBorderColorForGoalType(MealPlanGoalType? goalType, bool isSelected) {
+Color _getGoalChipBorderColorForGoalType(
+  MealPlanGoalType? goalType,
+  bool isSelected,
+) {
   if (!isSelected) {
     return AppColors.charmingGreen.withValues(alpha: 0.4);
   }
@@ -323,7 +340,10 @@ class _GoalChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final backgroundColor = _getGoalChipColorForGoalType(goalValue, isSelected);
-    final borderColor = _getGoalChipBorderColorForGoalType(goalValue, isSelected);
+    final borderColor = _getGoalChipBorderColorForGoalType(
+      goalValue,
+      isSelected,
+    );
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
@@ -336,10 +356,7 @@ class _GoalChip extends StatelessWidget {
                 ? backgroundColor.withValues(alpha: 0.9)
                 : Colors.white,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: borderColor,
-              width: isSelected ? 1.5 : 1,
-            ),
+            border: Border.all(color: borderColor, width: isSelected ? 1.5 : 1),
           ),
           child: Text(
             label,
@@ -353,4 +370,3 @@ class _GoalChip extends StatelessWidget {
     );
   }
 }
-

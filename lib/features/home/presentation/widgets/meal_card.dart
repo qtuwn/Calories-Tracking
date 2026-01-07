@@ -95,21 +95,22 @@ class MealCard extends StatelessWidget {
           // Danh sách món ăn
           if (meal.items.isNotEmpty) ...[
             const Divider(height: 1),
-            ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: meal.items.length,
-              separatorBuilder: (context, index) => Divider(
-                height: 1,
-                indent: 16,
-                endIndent: 16,
-                color: Colors.grey[200],
-              ),
-              itemBuilder: (context, index) {
-                final item = meal.items[index];
-                return _buildMealItemTile(context, item);
-              },
-            ),
+            ...meal.items.asMap().entries.map((entry) {
+              final index = entry.key;
+              final item = entry.value;
+              return Column(
+                children: [
+                  _buildMealItemTile(context, item),
+                  if (index < meal.items.length - 1)
+                    Divider(
+                      height: 1,
+                      indent: 16,
+                      endIndent: 16,
+                      color: Colors.grey[200],
+                    ),
+                ],
+              );
+            }),
           ],
         ],
       ),
@@ -139,10 +140,7 @@ class MealCard extends StatelessWidget {
                   Text(
                     '${item.totalGrams.toStringAsFixed(0)}g • '
                     '${item.totalCalories.toStringAsFixed(0)} kcal',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[600],
-                    ),
+                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                   ),
                   const SizedBox(height: 4),
                   Row(
@@ -218,4 +216,3 @@ class MealCard extends StatelessWidget {
     );
   }
 }
-

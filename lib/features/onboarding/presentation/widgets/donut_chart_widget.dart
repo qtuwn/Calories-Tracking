@@ -8,28 +8,49 @@ class DonutChartWidget extends StatelessWidget {
   final double proteinPercent;
   final double carbPercent;
   final double fatPercent;
-  final double size;
+  final double? size;
 
   const DonutChartWidget({
     super.key,
     required this.proteinPercent,
     required this.carbPercent,
     required this.fatPercent,
-    this.size = 200,
+    this.size,
   });
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: size,
-      height: size,
-      child: CustomPaint(
-        painter: _DonutChartPainter(
-          proteinPercent: proteinPercent,
-          carbPercent: carbPercent,
-          fatPercent: fatPercent,
+    if (size != null) {
+      // Legacy fixed size support
+      return SizedBox(
+        width: size,
+        height: size,
+        child: CustomPaint(
+          painter: _DonutChartPainter(
+            proteinPercent: proteinPercent,
+            carbPercent: carbPercent,
+            fatPercent: fatPercent,
+          ),
         ),
-      ),
+      );
+    }
+
+    // Responsive sizing - fill available space
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final chartSize = constraints.biggest.shortestSide.clamp(120.0, 300.0);
+        return SizedBox(
+          width: chartSize,
+          height: chartSize,
+          child: CustomPaint(
+            painter: _DonutChartPainter(
+              proteinPercent: proteinPercent,
+              carbPercent: carbPercent,
+              fatPercent: fatPercent,
+            ),
+          ),
+        );
+      },
     );
   }
 }

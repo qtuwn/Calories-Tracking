@@ -34,7 +34,7 @@ class _HomeCalorieCardState extends ConsumerState<HomeCalorieCard> {
     // Show skeleton/placeholder until providers are ready
     if (!_initialized) {
       return Container(
-        height: 200,
+        constraints: const BoxConstraints(minHeight: 180),
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           gradient: LinearGradient(
@@ -63,69 +63,83 @@ class _HomeCalorieCardState extends ConsumerState<HomeCalorieCard> {
       );
     }
 
-    // Now safe to watch heavy providers
-    final summary = ref.watch(homeDailySummaryProvider);
-    final waterState = ref.watch(dailyWaterIntakeProvider);
-    final todayWaterMl = waterState.totalMl;
+    // Use selective watching to prevent unnecessary rebuilds
+    final calorieGoal = ref.watch(
+      homeDailySummaryProvider.select((s) => s.goal),
+    );
+    final caloriesConsumed = ref.watch(
+      homeDailySummaryProvider.select((s) => s.consumed),
+    );
+    final caloriesBurned = ref.watch(
+      homeDailySummaryProvider.select((s) => s.burned),
+    );
+    final todayWaterMl = ref.watch(
+      dailyWaterIntakeProvider.select((s) => s.totalMl),
+    );
+
+    // Reconstruct summary locally to maintain existing widget interface
+    final summary = DailySummary(
+      goal: calorieGoal,
+      consumed: caloriesConsumed,
+      burned: caloriesBurned,
+    );
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isCompact = constraints.maxWidth < 360;
-        final ringSize = isCompact ? 110.0 : 140.0;
+        // Responsive ring size: smaller on narrow screens
+        final availableWidth = constraints.maxWidth - 40; // Account for padding
+        // Ring takes ~35-40% of available width, clamped for visual balance
+        final ringSize = (availableWidth * 0.38).clamp(90.0, 140.0);
 
-        Widget content = Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: _CalorieTextBlock(
-                summary: summary,
-                todayWaterMl: todayWaterMl,
-              ),
-            ),
-            SizedBox(width: isCompact ? 12 : 16),
-            _CalorieProgressRing(summary: summary, diameter: ringSize),
-          ],
-        );
-
-        if (isCompact) {
-          content = Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+        // Always use Row layout - chart on right, info on left
+        // IntrinsicHeight ensures both children have same height
+        Widget content = IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _CalorieTextBlock(summary: summary, todayWaterMl: todayWaterMl),
-              const SizedBox(height: 16),
-              Align(
-                alignment: Alignment.center,
+              // Left side: Text info (flexible width)
+              Expanded(
+                child: _CalorieTextBlock(
+                  summary: summary,
+                  todayWaterMl: todayWaterMl,
+                ),
+              ),
+              const SizedBox(width: 12),
+              // Right side: Progress ring (centered vertically)
+              Center(
                 child: _CalorieProgressRing(
                   summary: summary,
                   diameter: ringSize,
                 ),
               ),
             ],
-          );
-        }
+          ),
+        );
 
-        return Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                const Color(0xFF1E2432),
-                const Color(0xFF2A3040),
-                AppColors.nearBlack.withValues(alpha: 0.85),
+        return RepaintBoundary(
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  const Color(0xFF1E2432),
+                  const Color(0xFF2A3040),
+                  AppColors.nearBlack.withValues(alpha: 0.85),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.15),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
+                ),
               ],
             ),
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.15),
-                blurRadius: 20,
-                offset: const Offset(0, 8),
-              ),
-            ],
+            child: content,
           ),
-          child: content,
         );
       },
     );
