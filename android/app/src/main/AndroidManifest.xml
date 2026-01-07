@@ -10,9 +10,9 @@
     <!-- Health Connect – Steps (READ and WRITE) -->
     <uses-permission android:name="android.permission.health.READ_STEPS" />
     <uses-permission android:name="android.permission.health.WRITE_STEPS" />
-    
-    <!-- Health Connect – MANAGE_HEALTH_DATA (required for Android 14+) -->
-    <uses-permission android:name="android.permission.health.MANAGE_HEALTH_DATA" />
+
+    <!-- Health Connect – Exercise (READ) - May be required for some Health Connect features -->
+    <uses-permission android:name="android.permission.health.READ_EXERCISE" />
     
     <!-- Required for flutter_local_notifications 19.5.0+ -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
@@ -20,7 +20,7 @@
     
     <!-- Required for speech recognition (voice input feature) -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
-    
+
     <application
         android:label="Ăn Khoẻ"
         android:name="${applicationName}"
@@ -47,21 +47,43 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
-            <!-- Health Connect permission rationale intent filter -->
+            
+            <!-- Health Connect permission rationale intent filter (Android 13 and below) -->
+            <!-- REQUIRED: Shows privacy policy when user clicks link in Health Connect permissions screen -->
             <intent-filter>
                 <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
             </intent-filter>
         </activity>
         
-        <!-- Mandatory activity-alias for Health Connect VIEW_PERMISSION_USAGE -->
-        <!-- This allows Health Connect to show permission usage details to users -->
+        <!-- ================================================================== -->
+        <!-- HEALTH CONNECT PERMISSION RATIONALE ACTIVITY-ALIAS                 -->
+        <!-- Required for Android 14+ (API 34+) - Health Connect Framework      -->
+        <!-- ================================================================== -->
+        <!-- This activity-alias handles VIEW_PERMISSION_USAGE intent for Android 14+ -->
+        <!-- Without this, Health Connect permission dialog will NOT open on Android 14+ -->
         <activity-alias
             android:name="ViewPermissionUsageActivity"
             android:exported="true"
             android:targetActivity=".MainActivity"
             android:permission="android.permission.START_VIEW_PERMISSION_USAGE">
             <intent-filter>
+                <action android:name="android.intent.action.VIEW_PERMISSION_USAGE" />
+                <category android:name="android.intent.category.HEALTH_PERMISSIONS" />
+            </intent-filter>
+        </activity-alias>
+        
+        <!-- ================================================================== -->
+        <!-- HEALTH CONNECT PERMISSION RATIONALE ACTIVITY (Android 13 APK)     -->
+        <!-- Required for Android 13 (API 33) with Health Connect APK version  -->
+        <!-- ================================================================== -->
+        <!-- This activity handles the older ACTION_SHOW_PERMISSIONS_RATIONALE -->
+        <activity-alias
+            android:name="PermissionsRationaleActivity"
+            android:exported="true"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
                 <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
+                <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity-alias>
         
@@ -85,18 +107,23 @@
         </receiver>
     </application>
     
-    <!-- Required to query activities that can process text, see:
-         https://developer.android.com/training/package-visibility and
-         https://developer.android.com/reference/android/content/Intent#ACTION_PROCESS_TEXT.
-
-         In particular, this is used by the Flutter engine in io.flutter.plugin.text.ProcessTextPlugin. -->
+    <!-- ================================================================== -->
+    <!-- QUERIES - Required for package visibility (Android 11+)           -->
+    <!-- ================================================================== -->
     <queries>
-        <!-- Health Connect package detection (required for Android 11+) -->
+        <!-- Health Connect package detection (required for Android 11+ package visibility) -->
         <package android:name="com.google.android.apps.healthdata" />
         
-        <!-- Health Connect intent actions -->
+        <!-- Health Connect intent actions - CRITICAL for permission dialog -->
+        <!-- Android 13 APK version -->
         <intent>
             <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
+        </intent>
+        
+        <!-- Android 14+ Framework version -->
+        <intent>
+            <action android:name="android.intent.action.VIEW_PERMISSION_USAGE" />
+            <category android:name="android.intent.category.HEALTH_PERMISSIONS" />
         </intent>
         
         <!-- Flutter text processing -->

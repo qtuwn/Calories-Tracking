@@ -5,6 +5,7 @@ import 'diary_repository.dart';
 import 'diary_cache.dart';
 import '../../features/diary/domain/services/meal_time_classifier.dart';
 import '../../domain/foods/food.dart';
+import '../../data/firebase/date_utils.dart';
 
 /// Service for managing diary entries with a hybrid cache-first, then network strategy.
 /// 
@@ -172,9 +173,9 @@ class DiaryService {
       // Classify meal type based on timestamp
       final mealType = MealTimeClassifier.classifyMealType(timestamp);
       debugPrint('[DiaryService] [Voice] 🔵 Meal type for ${food.name} at $timestamp: ${mealType.name}');
-      
-      // Format date as ISO string (yyyy-MM-dd)
-      final dateString = '${timestamp.year}-${timestamp.month.toString().padLeft(2, '0')}-${timestamp.day.toString().padLeft(2, '0')}';
+
+      // Use centralized date normalization for consistency
+      final dateString = DateUtils.normalizeToIsoString(timestamp);
       
       // Calculate nutrition for default portion
       final servingCount = 1.0;

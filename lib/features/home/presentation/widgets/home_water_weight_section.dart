@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:collection/collection.dart';
+
+import 'package:calories_app/features/home/domain/statistics_models.dart';
 
 import 'package:calories_app/core/theme/theme.dart';
 import 'package:calories_app/features/home/presentation/widgets/water_custom_amount_sheet.dart';
 import 'package:calories_app/features/home/presentation/widgets/update_weight_sheet.dart';
-import '../providers/home_dashboard_providers.dart';
 import '../providers/water_intake_provider.dart';
 import '../providers/weight_providers.dart';
 import 'package:calories_app/features/home/domain/weight_entry.dart';
@@ -22,11 +24,7 @@ class HomeWaterWeightSection extends StatelessWidget {
         if (isVertical) {
           return const Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _WaterCard(),
-              SizedBox(height: 16),
-              _WeightCard(),
-            ],
+            children: [_WaterCard(), SizedBox(height: 16), _WeightCard()],
           );
         }
 
@@ -107,7 +105,19 @@ class _WaterCardState extends ConsumerState<_WaterCard> {
 
   @override
   Widget build(BuildContext context) {
-    final waterState = ref.watch(dailyWaterIntakeProvider);
+    // Use selective watching to prevent unnecessary rebuilds
+    final totalMl = ref.watch(
+      dailyWaterIntakeProvider.select((s) => s.totalMl),
+    );
+    final goalMl = ref.watch(dailyWaterIntakeProvider.select((s) => s.goalMl));
+
+    // Reconstruct minimal water state locally
+    final waterState = DailyWaterIntakeState(
+      totalMl: totalMl,
+      goalMl: goalMl,
+      isLoading: false, // Not used in this widget
+      entries: [], // Not used in this widget
+    );
 
     return GestureDetector(
       onTap: _handleCustomAmount,
@@ -145,8 +155,8 @@ class _WaterCardState extends ConsumerState<_WaterCard> {
                   child: Text(
                     'Uống nước',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
                 IconButton(
@@ -169,14 +179,14 @@ class _WaterCardState extends ConsumerState<_WaterCard> {
               Text(
                 '${waterState.totalMl} ml',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
+                  fontWeight: FontWeight.w700,
+                ),
               ),
               Text(
                 'Mục tiêu ${waterState.goalMl} ml',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppColors.mediumGray,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(color: AppColors.mediumGray),
               ),
               const SizedBox(height: 16),
               ClipRRect(
@@ -232,22 +242,118 @@ class _WaterCardState extends ConsumerState<_WaterCard> {
   }
 }
 
-class _WeightCard extends ConsumerWidget {
-  const _WeightCard();
+/// Optimized weight chart widget with proper height separation.
+///
+/// LAYOUT FIX: Chart canvas and labels are in separate regions (Column),
+/// NOT overlaid (Stack). This ensures the CustomPainter receives ONLY
+/// the chart's drawable height, not the total height including labels.
+class _WeightChart extends StatelessWidget {
+  final List<WeightPoint> points;
+  final double height;
 
-  /// Convert WeightEntry to WeightPoint for chart compatibility
-  WeightPoint _entryToPoint(WeightEntry entry) {
-    return WeightPoint(
-      date: entry.date,
-      weight: entry.weightKg,
+  const _WeightChart({required this.points, required this.height});
+
+  // Fixed heights for proper layout separation
+  static const double _labelHeight = 20.0;
+  static const double _labelSpacing = 4.0;
+
+  // Cache expensive resources to prevent recreation
+  static final DateFormat _dateFormatter = DateFormat('E', 'vi');
+  static const TextStyle _cachedTextStyle = TextStyle(
+    color: AppColors.mediumGray,
+    fontSize: 12,
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    // Calculate the actual chart height (total height minus label region)
+    final chartHeight = height - _labelHeight - _labelSpacing;
+
+    return RepaintBoundary(
+      child: SizedBox(
+        height: height,
+        width: double.infinity,
+        // LAYOUT FIX: Use Column to separate chart and labels vertically
+        // This ensures CustomPainter only receives chartHeight, not total height
+        child: Column(
+          children: [
+            // Region 1: Chart canvas (receives ONLY chartHeight)
+            SizedBox(
+              height: chartHeight,
+              width: double.infinity,
+              child: CustomPaint(
+                painter: _WeightTrendPainter(points),
+                size: Size.infinite,
+              ),
+            ),
+            // Spacing between chart and labels
+            const SizedBox(height: _labelSpacing),
+            // Region 2: Labels (fixed height, separate from chart)
+            SizedBox(
+              height: _labelHeight,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: _buildLabels(),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
+  List<Widget> _buildLabels() {
+    return List.generate(points.length, (index) {
+      final point = points[index];
+      return Text(
+        _dateFormatter.format(point.date),
+        style: _cachedTextStyle,
+        textAlign: TextAlign.center,
+      );
+    });
+  }
+}
+
+class _WeightCard extends ConsumerStatefulWidget {
+  const _WeightCard();
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_WeightCard> createState() => _WeightCardState();
+}
+
+class _WeightCardState extends ConsumerState<_WeightCard> {
+  // Cache DateFormat to prevent recreation on every build
+  static final DateFormat _dateFormatter = DateFormat('dd/MM', 'vi');
+
+  /// Convert WeightEntry to WeightPoint for chart compatibility
+  WeightPoint _entryToPoint(WeightEntry entry) {
+    return WeightPoint(date: entry.date, weight: entry.weightKg);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Use selective watching to prevent unnecessary rebuilds
     final latestWeightAsync = ref.watch(latestWeightProvider);
-    final recentWeightsAsync = ref.watch(recentWeights7DaysProvider);
-    final formatter = DateFormat('dd/MM', 'vi');
+    final recentWeightsAsync = ref.watch(recentWeights30DaysProvider);
+
+    // Pre-convert chart data outside async builders to prevent rebuilds
+    final chartPoints = recentWeightsAsync.maybeWhen(
+      data: (entries) {
+        final validEntries = entries.where((entry) {
+          final weight = entry.weightKg;
+          return !weight.isNaN && !weight.isInfinite && weight > 0;
+        }).toList();
+
+        if (validEntries.isEmpty) return <WeightPoint>[];
+        return validEntries.map(_entryToPoint).toList();
+      },
+      orElse: () => <WeightPoint>[],
+    );
+
+    // Use cached DateFormat
 
     return Container(
       padding: const EdgeInsets.all(18),
@@ -270,9 +376,9 @@ class _WeightCard extends ConsumerWidget {
             children: [
               Text(
                 'Cân nặng gần nhất',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
               ),
               TextButton(
                 onPressed: () {
@@ -292,6 +398,7 @@ class _WeightCard extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 10),
+          const SizedBox(height: 10),
           // Display latest weight or empty state
           latestWeightAsync.when(
             data: (latestWeight) {
@@ -302,21 +409,21 @@ class _WeightCard extends ConsumerWidget {
                     Text(
                       'Chưa có cân nặng nào',
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                            color: AppColors.mediumGray,
-                          ),
+                        color: AppColors.mediumGray,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       'Nhấn "Cập nhật" để thêm cân nặng đầu tiên',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: AppColors.mediumGray,
-                          ),
+                        color: AppColors.mediumGray,
+                      ),
                     ),
                   ],
                 );
               }
 
-              final lastDateLabel = formatter.format(latestWeight.date);
+              final lastDateLabel = _dateFormatter.format(latestWeight.date);
 
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -326,16 +433,15 @@ class _WeightCard extends ConsumerWidget {
                     children: [
                       Text(
                         latestWeight.weightKg.toStringAsFixed(1),
-                        style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                              fontWeight: FontWeight.w700,
-                            ),
+                        style: Theme.of(context).textTheme.displaySmall
+                            ?.copyWith(fontWeight: FontWeight.w700),
                       ),
                       const SizedBox(width: 6),
                       Text(
                         'kg',
                         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                              color: AppColors.mediumGray,
-                            ),
+                          color: AppColors.mediumGray,
+                        ),
                       ),
                     ],
                   ),
@@ -343,8 +449,8 @@ class _WeightCard extends ConsumerWidget {
                   Text(
                     'Cập nhật $lastDateLabel',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppColors.mediumGray,
-                        ),
+                      color: AppColors.mediumGray,
+                    ),
                   ),
                 ],
               );
@@ -355,252 +461,174 @@ class _WeightCard extends ConsumerWidget {
             ),
             error: (error, stack) => Text(
               'Lỗi tải dữ liệu',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.red,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: Colors.red),
             ),
           ),
           const SizedBox(height: 20),
-          // Chart section
-          SizedBox(
-            height: 120,
-            child: recentWeightsAsync.when(
-              data: (entries) {
-                // Guard: Empty list - show placeholder
-                if (entries.isEmpty) {
-                  return Center(
-                    child: Text(
-                      'Chưa có dữ liệu biểu đồ',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: AppColors.mediumGray,
-                          ),
-                    ),
-                  );
-                }
-
-                // Convert WeightEntry to WeightPoint for chart
-                // Filter out any invalid entries (NaN or infinite weights)
-                final validEntries = entries.where((entry) {
-                  final weight = entry.weightKg;
-                  return !weight.isNaN && !weight.isInfinite && weight > 0;
-                }).toList();
-
-                // Guard: After filtering, check if we still have valid data
-                if (validEntries.isEmpty) {
-                  return Center(
-                    child: Text(
-                      'Dữ liệu không hợp lệ',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: AppColors.mediumGray,
-                          ),
-                    ),
-                  );
-                }
-
-                final points = validEntries.map(_entryToPoint).toList();
-
-                // Guard: Ensure we have at least one valid point before rendering
-                if (points.isEmpty) {
-                  return Center(
-                    child: Text(
-                      'Chưa có dữ liệu biểu đồ',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: AppColors.mediumGray,
-                          ),
-                    ),
-                  );
-                }
-
-                return CustomPaint(
-                  painter: _WeightTrendPainter(points),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: List.generate(points.length, (index) {
-                        final point = points[index];
-                        return Expanded(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              const SizedBox(height: 90),
-                              Text(
-                                DateFormat('E', 'vi').format(point.date),
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodySmall
-                                    ?.copyWith(
-                                      color: AppColors.mediumGray,
-                                    ),
-                              ),
-                            ],
-                          ),
-                        );
-                      }),
-                    ),
-                  ),
-                );
-              },
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (error, stack) => Center(
+          // Chart section - fixed height for performance
+          if (chartPoints.isEmpty)
+            const SizedBox(
+              height: 120,
+              child: Center(
                 child: Text(
-                  'Lỗi tải biểu đồ',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.red,
-                      ),
+                  'Chưa có dữ liệu biểu đồ',
+                  style: TextStyle(color: Color(0xFF666666), fontSize: 14),
                 ),
               ),
-            ),
-          ),
+            )
+          else
+            _WeightChart(points: chartPoints, height: 120),
         ],
       ),
     );
   }
 }
 
+/// CustomPainter for the weight trend chart.
+///
+/// GEOMETRY FIX: This painter no longer stores canvasSize via constructor.
+/// It uses ONLY the Size provided in paint(canvas, size) and calculates
+/// Y positions using explicit topPadding/bottomPadding within the drawable area.
 class _WeightTrendPainter extends CustomPainter {
-  _WeightTrendPainter(this.points);
-
   final List<WeightPoint> points;
+
+  // Padding for the drawable area within the canvas
+  static const double _topPadding = 8.0;
+  static const double _bottomPadding = 8.0;
+  static const double _leftPadding = 8.0;
+  static const double _rightPadding = 8.0;
+
+  // Paints (initialized once, reused)
+  final Paint _linePaint;
+  final Paint _fillPaint;
+  final Paint _pointPaint;
+
+  _WeightTrendPainter(this.points)
+    : _linePaint = Paint()
+        ..color = AppColors.mintGreen
+        ..strokeWidth = 3
+        ..style = PaintingStyle.stroke
+        ..strokeCap = StrokeCap.round
+        ..isAntiAlias = true,
+      _fillPaint = Paint()
+        ..color = AppColors.mintGreen.withValues(alpha: 0.2)
+        ..style = PaintingStyle.fill
+        ..isAntiAlias = true,
+      _pointPaint = Paint()
+        ..color = AppColors.mintGreen
+        ..style = PaintingStyle.fill
+        ..isAntiAlias = true;
 
   @override
   void paint(Canvas canvas, Size size) {
-    // Guard: Empty list - do not draw anything
-    if (points.isEmpty) {
+    // Guard: Empty list or invalid size
+    if (points.isEmpty || size.width <= 0 || size.height <= 0) {
       return;
     }
 
-    // Guard: Validate size to prevent NaN
-    if (size.width <= 0 || size.height <= 0 || size.width.isNaN || size.height.isNaN) {
-      return;
-    }
+    // Calculate drawable area (respecting padding)
+    final drawableWidth = size.width - _leftPadding - _rightPadding;
+    final drawableHeight = size.height - _topPadding - _bottomPadding;
 
-    final paint = Paint()
-      ..color = AppColors.mintGreen
-      ..strokeWidth = 3
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
+    if (drawableWidth <= 0 || drawableHeight <= 0) return;
 
-    final fillPaint = Paint()
-      ..color = AppColors.mintGreen.withValues(alpha: 0.2)
-      ..style = PaintingStyle.fill;
-
-    // Calculate min/max weights with safety checks
-    // First, collect all valid weights
+    // Collect valid weights
     final validWeights = <double>[];
-    
+    final validPoints = <WeightPoint>[];
+
     for (final point in points) {
       final weight = point.weight;
-      // Guard: Skip invalid weights
-      if (weight.isNaN || weight.isInfinite || weight <= 0) {
-        continue;
+      if (!weight.isNaN && !weight.isInfinite && weight > 0) {
+        validWeights.add(weight);
+        validPoints.add(point);
       }
-      validWeights.add(weight);
     }
 
-    // Guard: Ensure we found at least one valid weight
-    if (validWeights.isEmpty) {
-      return;
-    }
+    if (validWeights.isEmpty) return;
 
-    // Calculate min/max from valid weights
+    // Calculate min/max for normalization
     final minWeight = validWeights.reduce((a, b) => a < b ? a : b);
     final maxWeight = validWeights.reduce((a, b) => a > b ? a : b);
-
-    // Calculate range with protection against division by zero
-    // If all weights are identical, use a minimum range to avoid division by zero
     double range = maxWeight - minWeight;
-    if (range <= 0) {
-      // All weights are identical - draw a flat line at center
-      range = 0.5; // Use minimum range for normalization
-    }
+    if (range <= 0) range = 0.5; // Minimum range for identical weights
 
-    // Guard: Ensure range is valid and not zero
-    if (range.isNaN || range.isInfinite || range <= 0) {
-      range = 0.5;
-    }
-
-    final path = Path();
+    // Calculate point offsets
+    final pointOffsets = <Offset>[];
+    final linePath = Path();
     final fillPath = Path();
 
     // Handle single point case
-    if (points.length == 1) {
-      final point = points.first;
-      final weight = point.weight;
-      
-      // Guard: Skip invalid weight
-      if (weight.isNaN || weight.isInfinite) {
-        return;
-      }
-
-      // Draw single centered point
-      final x = size.width / 2;
+    if (validPoints.length == 1) {
+      final weight = validPoints.first.weight;
       final normalized = (weight - minWeight) / range;
-      final y = size.height - (normalized * size.height * 0.8) - size.height * 0.1;
+      final x = _leftPadding + drawableWidth / 2;
+      // GEOMETRY FIX: y = topPadding + (1 - normalized) * drawableHeight
+      // This ensures the chart is drawn within the drawable area only
+      final y = _topPadding + (1 - normalized) * drawableHeight;
 
-      // Guard: Ensure coordinates are valid before drawing
-      if (x.isNaN || y.isNaN || x.isInfinite || y.isInfinite) {
-        return;
+      if (!x.isNaN && !y.isNaN && !x.isInfinite && !y.isInfinite) {
+        pointOffsets.add(Offset(x, y));
+        // Draw horizontal line to indicate flat trend
+        linePath.moveTo(_leftPadding + drawableWidth * 0.2, y);
+        linePath.lineTo(_leftPadding + drawableWidth * 0.8, y);
+      }
+    } else {
+      // Handle multiple points
+      for (var i = 0; i < validPoints.length; i++) {
+        final weight = validPoints[i].weight;
+        final x = _leftPadding + drawableWidth * (i / (validPoints.length - 1));
+        final normalized = (weight - minWeight) / range;
+        // GEOMETRY FIX: Correct Y-axis calculation
+        // y = topPadding + (1 - normalized) * drawableHeight
+        // When normalized=1 (max weight): y = topPadding (top of drawable area)
+        // When normalized=0 (min weight): y = topPadding + drawableHeight (bottom)
+        final y = _topPadding + (1 - normalized) * drawableHeight;
+
+        if (!x.isNaN && !y.isNaN && !x.isInfinite && !y.isInfinite) {
+          pointOffsets.add(Offset(x, y));
+
+          if (i == 0) {
+            linePath.moveTo(x, y);
+            fillPath.moveTo(
+              x,
+              _topPadding + drawableHeight,
+            ); // Bottom of drawable area
+            fillPath.lineTo(x, y);
+          } else {
+            linePath.lineTo(x, y);
+            fillPath.lineTo(x, y);
+          }
+        }
       }
 
-      final offset = Offset(x, y);
-      canvas.drawCircle(offset, 4, Paint()..color = AppColors.mintGreen);
-      
-      // Draw a small horizontal line to indicate flat trend
-      path.moveTo(size.width * 0.2, y);
-      path.lineTo(size.width * 0.8, y);
-      canvas.drawPath(path, paint);
-      
-      return;
+      // Close fill path at the bottom of drawable area
+      if (linePath.computeMetrics().isNotEmpty && pointOffsets.isNotEmpty) {
+        fillPath.lineTo(pointOffsets.last.dx, _topPadding + drawableHeight);
+        fillPath.close();
+      }
     }
 
-    // Multiple points - draw line chart
-    for (var i = 0; i < points.length; i++) {
-      final point = points[i];
-      final weight = point.weight;
-      
-      // Guard: Skip invalid weights
-      if (weight.isNaN || weight.isInfinite) {
-        continue;
-      }
-
-      // Calculate x position - protect against division by zero
-      final x = size.width * (i / (points.length - 1));
-      
-      // Calculate normalized weight position
-      final normalized = (weight - minWeight) / range;
-      final y = size.height - (normalized * size.height * 0.8) - size.height * 0.1;
-
-      // Guard: Ensure coordinates are valid before using them
-      if (x.isNaN || y.isNaN || x.isInfinite || y.isInfinite) {
-        continue;
-      }
-
-      final offset = Offset(x, y);
-
-      if (i == 0) {
-        path.moveTo(x, y);
-        fillPath.moveTo(x, size.height);
-        fillPath.lineTo(x, y);
-      } else {
-        path.lineTo(x, y);
-        fillPath.lineTo(x, y);
-      }
-
-      // Draw point circle
-      canvas.drawCircle(offset, 4, Paint()..color = AppColors.mintGreen);
+    // Draw fill first (behind line)
+    if (fillPath.computeMetrics().isNotEmpty) {
+      canvas.drawPath(fillPath, _fillPaint);
     }
 
-    // Only draw paths if we have valid points
-    if (path.computeMetrics().isNotEmpty) {
-      fillPath.lineTo(size.width, size.height);
-      fillPath.close();
-      canvas.drawPath(fillPath, fillPaint);
-      canvas.drawPath(path, paint);
+    // Draw line
+    if (linePath.computeMetrics().isNotEmpty) {
+      canvas.drawPath(linePath, _linePaint);
+    }
+
+    // Draw points
+    for (final offset in pointOffsets) {
+      canvas.drawCircle(offset, 4, _pointPaint);
     }
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+  bool shouldRepaint(covariant _WeightTrendPainter oldDelegate) {
+    // Only repaint if the actual data changed
+    return !const DeepCollectionEquality().equals(oldDelegate.points, points);
+  }
 }
-

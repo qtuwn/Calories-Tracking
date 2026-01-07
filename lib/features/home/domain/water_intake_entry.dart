@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../../data/firebase/date_utils.dart';
 
 /// Model representing a single water intake entry.
 /// 
@@ -78,8 +79,8 @@ class WaterIntakeEntry {
 
   /// Normalize date to ISO string (yyyy-MM-dd)
   static String _normalizeDate(DateTime date) {
-    final normalized = DateTime(date.year, date.month, date.day);
-    return '${normalized.year}-${normalized.month.toString().padLeft(2, '0')}-${normalized.day.toString().padLeft(2, '0')}';
+    // Use centralized date normalization to ensure consistency
+    return DateUtils.normalizeToIsoString(date);
   }
 
   WaterIntakeEntry copyWith({

@@ -30,11 +30,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    
+
     // PHASE A: Mark first frame and start deferred initialization
     WidgetsBinding.instance.addPostFrameCallback((_) {
       StartupOrchestrator.markFirstFrame();
-      
+
       // OPTIMIZATION: Defer FCM token manager to after first frame
       // This prevents blocking the initial render
       if (!_fcmInitialized) {
@@ -42,7 +42,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ref.read(fcmTokenManagerProvider);
         debugPrint('[HomeScreen] ✅ FCM token manager initialized (post-frame)');
       }
-      
+
       // Delay background services by 5-10 seconds to allow UI to stabilize
       Future.delayed(const Duration(seconds: 5), () {
         StartupOrchestrator.ensureDeferredInitialized(ref);
@@ -65,7 +65,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       case 1:
         return const DiaryPage();
       case 2:
-        return const MenuPage();
+        return MenuPage(
+          onNavigateToHome: () {
+            setState(() {
+              _currentIndex = 0; // Home tab index
+            });
+          },
+        );
       case 3:
         return const AccountPage();
       default:
@@ -83,62 +89,64 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget build(BuildContext context) {
     // OPTIMIZATION: FCM token manager moved to postFrameCallback
     // No longer blocking initial build
-    
-    // Listen to voice controller state changes
-    ref.listen<VoiceState>(
-      voiceControllerProvider,
-      (previous, next) {
-        // Show bottom sheet when suggestions are ready
-        if (previous?.status != VoiceStatus.suggestionsReady &&
-            next.status == VoiceStatus.suggestionsReady) {
-          final transcript = next.transcript ?? '';
-          final suggestions = next.suggestions;
 
-          // Show bottom sheet with suggestions
-          _showVoiceSuggestionsBottomSheet(
+    // Listen to voice controller state changes
+    ref.listen<VoiceState>(voiceControllerProvider, (previous, next) {
+      // Show bottom sheet when suggestions are ready
+      if (previous?.status != VoiceStatus.suggestionsReady &&
+          next.status == VoiceStatus.suggestionsReady) {
+        final transcript = next.transcript ?? '';
+        final suggestions = next.suggestions;
+
+        // Show bottom sheet with suggestions
+        _showVoiceSuggestionsBottomSheet(context, transcript, suggestions);
+      }
+
+      // Handle errors
+      if (previous?.status != VoiceStatus.error &&
+          next.status == VoiceStatus.error &&
+          next.errorMessage != null) {
+        final errorMsg = next.errorMessage!;
+        // Check if it's a network-related error
+        if (errorMsg.contains('error_network') ||
+            errorMsg.contains('network')) {
+          showVoiceToast(
             context,
-            transcript,
-            suggestions,
+            message:
+                'Không thể nhận dạng giọng nói. Vui lòng kiểm tra kết nối mạng và thử lại.',
+            type: VoiceToastType.error,
+          );
+        } else if (errorMsg.contains('permission') ||
+            errorMsg.contains('microphone')) {
+          showVoiceToast(
+            context,
+            message: 'Cần quyền truy cập microphone để sử dụng tính năng này.',
+            type: VoiceToastType.error,
+          );
+        } else if (errorMsg.isNotEmpty &&
+            !errorMsg.contains('No speech detected')) {
+          // Only show generic error for non-empty, non-user-friendly errors
+          showVoiceToast(
+            context,
+            message: errorMsg.length > 50
+                ? '${errorMsg.substring(0, 50)}...'
+                : errorMsg,
+            type: VoiceToastType.error,
           );
         }
-        
-        // Handle errors
-        if (previous?.status != VoiceStatus.error &&
-            next.status == VoiceStatus.error &&
-            next.errorMessage != null) {
-          final errorMsg = next.errorMessage!;
-          // Check if it's a network-related error
-          if (errorMsg.contains('error_network') || errorMsg.contains('network')) {
-            showVoiceToast(
-              context,
-              message: 'Không thể nhận dạng giọng nói. Vui lòng kiểm tra kết nối mạng và thử lại.',
-              type: VoiceToastType.error,
-            );
-          } else if (errorMsg.contains('permission') || errorMsg.contains('microphone')) {
-            showVoiceToast(
-              context,
-              message: 'Cần quyền truy cập microphone để sử dụng tính năng này.',
-              type: VoiceToastType.error,
-            );
-          } else if (errorMsg.isNotEmpty && !errorMsg.contains('No speech detected')) {
-            // Only show generic error for non-empty, non-user-friendly errors
-            showVoiceToast(
-              context,
-              message: errorMsg.length > 50 ? '${errorMsg.substring(0, 50)}...' : errorMsg,
-              type: VoiceToastType.error,
-            );
-          }
-        }
-      },
-    );
+      }
+    });
 
     return Scaffold(
+      extendBody: true,
       body: _buildPage(_currentIndex),
       floatingActionButton: VoiceInputButton(
         onFoodRecognized: (RecognizedFood food) {
           // This callback is kept for backward compatibility
           // The new flow uses suggestions instead
-          debugPrint('[HomeScreen] 🎤 Food recognized: ${food.name}, ${food.calories} kcal, ${food.quantity}');
+          debugPrint(
+            '[HomeScreen] 🎤 Food recognized: ${food.name}, ${food.calories} kcal, ${food.quantity}',
+          );
         },
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
@@ -223,9 +231,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           children: [
             Icon(
               isSelected ? activeIcon : icon,
-              color: isSelected
-                  ? const Color(0xFFAAF0D1)
-                  : Colors.grey,
+              color: isSelected ? const Color(0xFFAAF0D1) : Colors.grey,
               size: 24,
             ),
             const SizedBox(height: 4),
@@ -233,9 +239,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               label,
               style: TextStyle(
                 fontSize: 12,
-                color: isSelected
-                    ? const Color(0xFFAAF0D1)
-                    : Colors.grey,
+                color: isSelected ? const Color(0xFFAAF0D1) : Colors.grey,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
               ),
             ),
@@ -283,7 +287,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
       // Get diary service
       final diaryService = ref.read(diaryServiceProvider);
-      
+
       // Add food entry with automatic meal type classification
       await diaryService.addFoodEntryFromVoice(
         userId: userId,
@@ -294,13 +298,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       // Determine meal type for display message
       final timestamp = DateTime.now();
       final mealType = MealTimeClassifier.classifyMealType(timestamp);
-      
-      debugPrint('[Voice→Diary] Adding ${food.name} as ${mealType.name} at $timestamp');
-      
+
+      debugPrint(
+        '[Voice→Diary] Adding ${food.name} as ${mealType.name} at $timestamp',
+      );
+
       // Close bottom sheet
       if (context.mounted) {
         Navigator.of(context).pop();
-        
+
         // Show success message with localized meal type
         showVoiceToast(
           context,
@@ -311,12 +317,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
       // Clear voice controller state
       ref.read(voiceControllerProvider.notifier).clearResult();
-      
-      debugPrint('[HomeScreen] ✅ Added ${food.name} to diary (${mealType.name})');
+
+      debugPrint(
+        '[HomeScreen] ✅ Added ${food.name} to diary (${mealType.name})',
+      );
     } catch (e, stackTrace) {
       debugPrint('[Voice→Diary] ❌ Failed to add food: $e');
       debugPrint('[Voice→Diary] Stack trace: $stackTrace');
-      
+
       if (context.mounted) {
         showVoiceToast(
           context,
@@ -327,4 +335,3 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
   }
 }
-

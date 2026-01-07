@@ -165,9 +165,24 @@ class WeightPoint {
   final DateTime date;
   final double weight;
 
-  WeightPoint({
+  const WeightPoint({
     required this.date,
     required this.weight,
   });
+
+  /// Override == to enable proper equality comparison for shouldRepaint()
+  /// This fixes continuous repainting by allowing DeepCollectionEquality to work correctly
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is WeightPoint &&
+          runtimeType == other.runtimeType &&
+          date == other.date &&
+          weight == other.weight;
+
+  /// Override hashCode to maintain contract with ==
+  /// Required for proper equality behavior in collections
+  @override
+  int get hashCode => date.hashCode ^ weight.hashCode;
 }
 

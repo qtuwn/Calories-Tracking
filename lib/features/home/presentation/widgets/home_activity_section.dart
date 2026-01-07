@@ -10,44 +10,49 @@ import 'package:calories_app/features/home/presentation/widgets/workout_quick_lo
 import '../providers/home_dashboard_providers.dart';
 import '../providers/diary_provider.dart';
 
-class HomeActivitySection extends ConsumerWidget {
+/// PERFORMANCE: Memoized categories list (static data, never changes)
+const _activityCategories = [
+  ActivityCategory(workoutType: WorkoutType.running),
+  ActivityCategory(workoutType: WorkoutType.cycling),
+  ActivityCategory(workoutType: WorkoutType.badminton),
+  ActivityCategory(workoutType: WorkoutType.yoga),
+  ActivityCategory(workoutType: WorkoutType.other),
+];
+
+/// PERFORMANCE: Container widget that doesn't watch any stream providers.
+/// Static data is used directly, stream providers are isolated to leaf widgets.
+class HomeActivitySection extends StatelessWidget {
   const HomeActivitySection({super.key});
 
   /// Handle tap on an activity chip.
-  /// 
-  /// For "Khác" (Other), navigates to the full exercise catalog.
-  /// For specific activities, shows a quick-log bottom sheet.
   void _handleActivityChipTap(BuildContext context, WorkoutType workoutType) {
     if (workoutType == WorkoutType.other) {
-      // Navigate to full exercise catalog for "Khác"
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => const ExerciseListScreen(),
-        ),
-      );
+      Navigator.of(
+        context,
+      ).push(MaterialPageRoute(builder: (_) => const ExerciseListScreen()));
     } else {
-      // Show quick-log bottom sheet for specific activities
       showModalBottomSheet(
         context: context,
         isScrollControlled: true,
         backgroundColor: Colors.transparent,
-        builder: (context) => WorkoutQuickLogSheet(
-          workoutType: workoutType,
-        ),
+        builder: (context) => WorkoutQuickLogSheet(workoutType: workoutType),
       );
     }
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final categories = ref.watch(homeActivityCategoriesProvider);
+  Widget build(BuildContext context) {
+    // PERFORMANCE: Use const categories directly, no provider needed
+    final categories = _activityCategories;
 
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: AppColors.nearBlack.withValues(alpha: 0.04),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.charmingGreen.withValues(alpha: 0.4)),
+        border: Border.all(
+          color: AppColors.charmingGreen.withValues(alpha: 0.4),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -57,13 +62,12 @@ class HomeActivitySection extends ConsumerWidget {
             children: [
               Text(
                 'Hoạt động tập luyện',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
               ),
               IconButton(
                 onPressed: () {
-                  // Navigate to manual exercise list screen
                   Navigator.of(context).push(
                     MaterialPageRoute(
                       builder: (_) => const ExerciseListScreen(),
@@ -82,10 +86,8 @@ class HomeActivitySection extends ConsumerWidget {
                 .map(
                   (category) => WorkoutActivityChip(
                     workoutType: category.workoutType,
-                    onTap: () => _handleActivityChipTap(
-                      context,
-                      category.workoutType,
-                    ),
+                    onTap: () =>
+                        _handleActivityChipTap(context, category.workoutType),
                   ),
                 )
                 .toList(),
@@ -95,8 +97,8 @@ class HomeActivitySection extends ConsumerWidget {
             builder: (context, constraints) {
               final isVertical = constraints.maxWidth < 420;
               if (isVertical) {
-                return Column(
-                  children: const [
+                return const Column(
+                  children: [
                     _StepsCard(),
                     SizedBox(height: 16),
                     _WorkoutCard(),
@@ -104,8 +106,8 @@ class HomeActivitySection extends ConsumerWidget {
                 );
               }
 
-              return Row(
-                children: const [
+              return const Row(
+                children: [
                   Expanded(child: _StepsCard()),
                   SizedBox(width: 16),
                   Expanded(child: _WorkoutCard()),
@@ -188,9 +190,9 @@ class _StepsCardState extends ConsumerState<_StepsCard> {
               const SizedBox(width: 12),
               Text(
                 'Bước chân',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
               ),
             ],
           ),
@@ -201,23 +203,23 @@ class _StepsCardState extends ConsumerState<_StepsCard> {
               children: [
                 Text(
                   'Đã kết nối Health Connect',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppColors.mediumGray,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: AppColors.mediumGray),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   '${activityState.steps}',
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.nearBlack,
-                      ),
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.nearBlack,
+                  ),
                 ),
                 Text(
                   'bước hôm nay',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppColors.mediumGray,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(color: AppColors.mediumGray),
                 ),
                 const SizedBox(height: 12),
                 TextButton.icon(
@@ -242,9 +244,9 @@ class _StepsCardState extends ConsumerState<_StepsCard> {
               children: [
                 Text(
                   'Kết nối Health Connect để tự động cập nhật',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppColors.mediumGray,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(color: AppColors.mediumGray),
                 ),
                 const SizedBox(height: 12),
                 OutlinedButton.icon(
@@ -278,9 +280,10 @@ class _WorkoutCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Get actual burned calories from diary entries
-    final diaryState = ref.watch(diaryProvider);
-    final calories = diaryState.totalCaloriesBurned;
+    // Use selective watching to prevent unnecessary rebuilds
+    final calories = ref.watch(
+      diaryProvider.select((s) => s.totalCaloriesBurned),
+    );
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -288,10 +291,7 @@ class _WorkoutCard extends ConsumerWidget {
         color: Colors.black,
         borderRadius: BorderRadius.circular(18),
         gradient: const LinearGradient(
-          colors: [
-            Color(0xFF212531),
-            Color(0xFF1B1F29),
-          ],
+          colors: [Color(0xFF212531), Color(0xFF1B1F29)],
         ),
       ),
       child: Column(
@@ -304,9 +304,9 @@ class _WorkoutCard extends ConsumerWidget {
               Text(
                 'Tập luyện',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                    ),
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
               IconButton(
                 onPressed: () {
@@ -327,19 +327,18 @@ class _WorkoutCard extends ConsumerWidget {
           Text(
             '${calories.toStringAsFixed(0)} kcal',
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                ),
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+            ),
           ),
           Text(
             'Đã đốt hôm nay',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.white70,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: Colors.white70),
           ),
         ],
       ),
     );
   }
 }
-

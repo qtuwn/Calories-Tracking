@@ -198,22 +198,33 @@ class DiaryNotifier extends Notifier<DiaryState> {
   void setSelectedDate(DateTime date) {
     final normalized = _normalizeDate(date);
     final dateKey = _getDateKey(normalized);
-    
+
+    // CRITICAL: Only recreate stream if the DATE actually changed
+    // Compare normalized dates to prevent unnecessary stream recreation
+    if (state.selectedDate.year == normalized.year &&
+        state.selectedDate.month == normalized.month &&
+        state.selectedDate.day == normalized.day) {
+      debugPrint('[DiaryNotifier] ℹ️ Same date selected (${normalized}), skipping stream recreation');
+      return; // Same date, no need to do anything
+    }
+
+    debugPrint('[DiaryNotifier] 🔄 Date changed from ${state.selectedDate} to ${normalized}, recreating stream');
+
     // Cancel previous subscription
     _entriesSubscription?.cancel();
-    
+
     // Update selected date
     final hasEntry = state.mealsByDate.containsKey(dateKey);
     final updatedMealsByDate = hasEntry
         ? state.mealsByDate
         : {...state.mealsByDate, dateKey: _createDefaultMeals()};
-    
+
     state = state.copyWith(
       selectedDate: normalized,
       mealsByDate: updatedMealsByDate,
       isLoading: _currentUid != null, // Only show loading if user is authenticated
     );
-    
+
     // Watch entries for new date (only if user is authenticated)
     if (_currentUid != null) {
       _watchEntriesForDate(normalized, uid: _currentUid!);
@@ -237,7 +248,8 @@ class DiaryNotifier extends Notifier<DiaryState> {
       DateTime(date.year, date.month, date.day);
 
   String _getDateKey(DateTime date) {
-    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+    // Use centralized date normalization for consistency
+    return DateUtils.normalizeToIsoString(date);
   }
 
   List<Meal> _createDefaultMeals() {

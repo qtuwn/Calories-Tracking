@@ -4,7 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:calories_app/shared/state/auth_providers.dart';
 
 /// Personal Info Screen
-/// 
+///
 /// Displays user's personal information from their profile:
 /// - Full name
 /// - Gender
@@ -12,7 +12,7 @@ import 'package:calories_app/shared/state/auth_providers.dart';
 /// - Height
 /// - Current weight
 /// - Activity level
-/// 
+///
 /// Navigation: Accessed from Settings page "Thông tin cá nhân"
 class PersonalInfoScreen extends ConsumerWidget {
   const PersonalInfoScreen({super.key});
@@ -44,10 +44,7 @@ class PersonalInfoScreen extends ConsumerWidget {
         body: const Center(
           child: Text(
             'Bạn chưa đăng nhập',
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.grey,
-            ),
+            style: TextStyle(fontSize: 16, color: Colors.grey),
           ),
         ),
       );
@@ -82,10 +79,7 @@ class PersonalInfoScreen extends ConsumerWidget {
                 padding: EdgeInsets.all(24.0),
                 child: Text(
                   'Chưa có hồ sơ cá nhân',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.grey,
-                  ),
+                  style: TextStyle(fontSize: 16, color: Colors.grey),
                 ),
               ),
             );
@@ -100,11 +94,7 @@ class PersonalInfoScreen extends ConsumerWidget {
                 value: profile.nickname ?? user.displayName ?? '-',
               ),
               const SizedBox(height: 8),
-              _buildInfoCard(
-                context,
-                label: 'Email',
-                value: user.email ?? '-',
-              ),
+              _buildInfoCard(context, label: 'Email', value: user.email ?? '-'),
               const SizedBox(height: 8),
               _buildInfoCard(
                 context,
@@ -142,20 +132,14 @@ class PersonalInfoScreen extends ConsumerWidget {
             ],
           );
         },
-        loading: () => const Center(
-          child: CircularProgressIndicator(),
-        ),
+        loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) => Center(
           child: Padding(
             padding: const EdgeInsets.all(24.0),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  Icons.error_outline,
-                  size: 48,
-                  color: Colors.red[400],
-                ),
+                Icon(Icons.error_outline, size: 48, color: Colors.red[400]),
                 const SizedBox(height: 16),
                 Text(
                   'Lỗi tải dữ liệu',
@@ -168,10 +152,7 @@ class PersonalInfoScreen extends ConsumerWidget {
                 const SizedBox(height: 8),
                 Text(
                   'Đã xảy ra lỗi, vui lòng thử lại sau.\nChi tiết: ${error.toString()}',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[600],
-                  ),
+                  style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                   textAlign: TextAlign.center,
                 ),
               ],
@@ -206,16 +187,22 @@ class PersonalInfoScreen extends ConsumerWidget {
           children: [
             Text(
               label,
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: Colors.grey[700],
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyLarge?.copyWith(color: Colors.grey[700]),
             ),
-            Text(
-              value,
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black87,
-                  ),
+            const SizedBox(width: 16),
+            Flexible(
+              child: Text(
+                value,
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+                textAlign: TextAlign.end,
+                overflow: TextOverflow.ellipsis,
+                maxLines: 2,
+              ),
             ),
           ],
         ),
@@ -223,4 +210,3 @@ class PersonalInfoScreen extends ConsumerWidget {
     );
   }
 }
-

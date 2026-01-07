@@ -23,7 +23,7 @@ class _DiaryPageState extends ConsumerState<DiaryPage> {
   Widget build(BuildContext context) {
     final diaryState = ref.watch(diaryProvider);
     final diaryNotifier = ref.read(diaryProvider.notifier);
-    
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
@@ -47,55 +47,65 @@ class _DiaryPageState extends ConsumerState<DiaryPage> {
       body: diaryState.isLoading
           ? const Center(child: CircularProgressIndicator())
           : diaryState.errorMessage != null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.error_outline, size: 48, color: Colors.red[300]),
-                      const SizedBox(height: 16),
-                      Text(
-                        diaryState.errorMessage!,
-                        style: const TextStyle(color: Colors.red),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: () {
-                          diaryNotifier.reload();
-                        },
-                        child: const Text('Thử lại'),
-                      ),
-                    ],
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.error_outline, size: 48, color: Colors.red[300]),
+                  const SizedBox(height: 16),
+                  Text(
+                    diaryState.errorMessage!,
+                    style: const TextStyle(color: Colors.red),
+                    textAlign: TextAlign.center,
                   ),
-                )
-              : SingleChildScrollView(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Date Selector
-                      _buildDateSelector(diaryNotifier, diaryState),
-                      const SizedBox(height: 20),
-
-                      // Daily Summary
-                      _buildDailySummary(diaryNotifier, diaryState),
-                      const SizedBox(height: 20),
-
-                      // Meal Type Buttons
-                      _buildMealTypeButtons(diaryNotifier),
-                      const SizedBox(height: 20),
-
-                      // Empty State or Meals Log
-                      if (diaryState.entriesForSelectedDate.isEmpty)
-                        _buildEmptyState()
-                      else ...[
-                        _buildMealsLog(diaryNotifier),
-                        const SizedBox(height: 20),
-                        _buildExerciseLog(diaryNotifier, diaryState.entriesForSelectedDate.where((e) => e.isExercise).toList()),
-                      ],
-                    ],
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () {
+                      diaryNotifier.reload();
+                    },
+                    child: const Text('Thử lại'),
                   ),
-                ),
+                ],
+              ),
+            )
+          : SingleChildScrollView(
+              padding: const EdgeInsets.only(
+                left: 16.0,
+                right: 16.0,
+                top: 16.0,
+                bottom: 120.0, // Extra padding for bottom nav + mic button
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Date Selector
+                  _buildDateSelector(diaryNotifier, diaryState),
+                  const SizedBox(height: 20),
+
+                  // Daily Summary
+                  _buildDailySummary(diaryNotifier, diaryState),
+                  const SizedBox(height: 20),
+
+                  // Meal Type Buttons
+                  _buildMealTypeButtons(diaryNotifier),
+                  const SizedBox(height: 20),
+
+                  // Empty State or Meals Log
+                  if (diaryState.entriesForSelectedDate.isEmpty)
+                    _buildEmptyState()
+                  else ...[
+                    _buildMealsLog(diaryNotifier),
+                    const SizedBox(height: 20),
+                    _buildExerciseLog(
+                      diaryNotifier,
+                      diaryState.entriesForSelectedDate
+                          .where((e) => e.isExercise)
+                          .toList(),
+                    ),
+                  ],
+                ],
+              ),
+            ),
     );
   }
 
@@ -192,10 +202,7 @@ class _DiaryPageState extends ConsumerState<DiaryPage> {
                   children: [
                     const Text(
                       'Năng lượng nạp vào',
-                      style: TextStyle(
-                        color: Colors.black87,
-                        fontSize: 14,
-                      ),
+                      style: TextStyle(color: Colors.black87, fontSize: 14),
                     ),
                     Text(
                       '+${diaryState.totalCaloriesConsumed.toStringAsFixed(0)} kcal',
@@ -213,10 +220,7 @@ class _DiaryPageState extends ConsumerState<DiaryPage> {
                   children: [
                     const Text(
                       'Năng lượng đốt cháy',
-                      style: TextStyle(
-                        color: Colors.black87,
-                        fontSize: 14,
-                      ),
+                      style: TextStyle(color: Colors.black87, fontSize: 14),
                     ),
                     Text(
                       '-${diaryState.totalCaloriesBurned.toStringAsFixed(0)} kcal',
@@ -274,6 +278,7 @@ class _DiaryPageState extends ConsumerState<DiaryPage> {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           const Text(
             'Thêm bữa ăn',
@@ -284,16 +289,22 @@ class _DiaryPageState extends ConsumerState<DiaryPage> {
             ),
           ),
           const SizedBox(height: 12),
-          GridView.count(
-            crossAxisCount: 2,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            mainAxisSpacing: 12,
-            crossAxisSpacing: 12,
-            childAspectRatio: 2.5,
-            children: _mealTypes.map((mealType) {
-              return _buildMealTypeButton(mealType, notifier);
-            }).toList(),
+          // Row 1: Bữa sáng, Bữa trưa
+          Row(
+            children: [
+              Expanded(child: _buildMealTypeButton(_mealTypes[0], notifier)),
+              const SizedBox(width: 12),
+              Expanded(child: _buildMealTypeButton(_mealTypes[1], notifier)),
+            ],
+          ),
+          const SizedBox(height: 12),
+          // Row 2: Bữa tối, Bữa phụ
+          Row(
+            children: [
+              Expanded(child: _buildMealTypeButton(_mealTypes[2], notifier)),
+              const SizedBox(width: 12),
+              Expanded(child: _buildMealTypeButton(_mealTypes[3], notifier)),
+            ],
           ),
         ],
       ),
@@ -317,11 +328,7 @@ class _DiaryPageState extends ConsumerState<DiaryPage> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              mealType.icon,
-              color: mealType.color,
-              size: 20,
-            ),
+            Icon(mealType.icon, color: mealType.color, size: 20),
             const SizedBox(width: 8),
             Flexible(
               child: Text(
@@ -345,11 +352,7 @@ class _DiaryPageState extends ConsumerState<DiaryPage> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.restaurant_menu,
-            size: 64,
-            color: Colors.grey[400],
-          ),
+          Icon(Icons.restaurant_menu, size: 64, color: Colors.grey[400]),
           const SizedBox(height: 16),
           Text(
             'Chưa có bữa ăn nào',
@@ -362,10 +365,7 @@ class _DiaryPageState extends ConsumerState<DiaryPage> {
           const SizedBox(height: 8),
           Text(
             'Thêm món ăn đầu tiên của bạn!',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey[500],
-            ),
+            style: TextStyle(fontSize: 14, color: Colors.grey[500]),
           ),
         ],
       ),
@@ -390,12 +390,8 @@ class _DiaryPageState extends ConsumerState<DiaryPage> {
           return MealCard(
             meal: meal,
             onAddItem: () => _showAddMealItemSheet(context, notifier, mealType),
-            onEditItem: (item) => _showEditMealItemSheet(
-              context,
-              notifier,
-              mealType,
-              item,
-            ),
+            onEditItem: (item) =>
+                _showEditMealItemSheet(context, notifier, mealType, item),
             onDeleteItem: (itemId) => notifier.deleteMealItem(mealType, itemId),
           );
         }),
@@ -436,16 +432,16 @@ class _DiaryPageState extends ConsumerState<DiaryPage> {
         padding: EdgeInsets.only(
           bottom: MediaQuery.of(context).viewInsets.bottom,
         ),
-        child: AddMealItemBottomSheet(
-          mealType: mealType,
-          existingItem: item,
-        ),
+        child: AddMealItemBottomSheet(mealType: mealType, existingItem: item),
       ),
     );
     // Note: AddMealItemBottomSheet now handles saving directly via DiaryNotifier
   }
 
-  Widget _buildExerciseLog(DiaryNotifier notifier, List<DiaryEntry> exerciseEntries) {
+  Widget _buildExerciseLog(
+    DiaryNotifier notifier,
+    List<DiaryEntry> exerciseEntries,
+  ) {
     if (exerciseEntries.isEmpty) {
       return const SizedBox.shrink();
     }
@@ -478,7 +474,10 @@ class _DiaryPageState extends ConsumerState<DiaryPage> {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.orange.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
@@ -495,15 +494,22 @@ class _DiaryPageState extends ConsumerState<DiaryPage> {
             ],
           ),
           const SizedBox(height: 16),
-          ...exerciseEntries.map((entry) => _buildExerciseItem(entry, notifier)),
+          ...exerciseEntries.asMap().entries.map((entry) {
+            final isLast = entry.key == exerciseEntries.length - 1;
+            return _buildExerciseItem(entry.value, notifier, isLast: isLast);
+          }),
         ],
       ),
     );
   }
 
-  Widget _buildExerciseItem(DiaryEntry entry, DiaryNotifier notifier) {
+  Widget _buildExerciseItem(
+    DiaryEntry entry,
+    DiaryNotifier notifier, {
+    bool isLast = false,
+  }) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: isLast ? EdgeInsets.zero : const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.orange.withValues(alpha: 0.05),
@@ -544,10 +550,7 @@ class _DiaryPageState extends ConsumerState<DiaryPage> {
                 const SizedBox(height: 4),
                 Text(
                   '${entry.durationMinutes?.toStringAsFixed(0) ?? 0} phút • ${entry.calories.toStringAsFixed(0)} kcal',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[600],
-                  ),
+                  style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                 ),
               ],
             ),
@@ -572,7 +575,9 @@ class _DiaryPageState extends ConsumerState<DiaryPage> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Xóa bài tập'),
-        content: Text('Bạn có chắc muốn xóa "${entry.exerciseName ?? 'bài tập này'}" khỏi nhật ký?'),
+        content: Text(
+          'Bạn có chắc muốn xóa "${entry.exerciseName ?? 'bài tập này'}" khỏi nhật ký?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
@@ -609,4 +614,3 @@ class _DiaryPageState extends ConsumerState<DiaryPage> {
     );
   }
 }
-

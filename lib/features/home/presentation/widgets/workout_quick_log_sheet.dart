@@ -6,7 +6,7 @@ import 'package:calories_app/features/home/domain/workout_type.dart';
 import 'package:calories_app/features/home/presentation/providers/quick_workout_log_provider.dart';
 
 /// A modal bottom sheet for quickly logging a manual workout session.
-/// 
+///
 /// Allows the user to:
 /// - View the selected workout activity name and icon
 /// - Input duration in minutes (required)
@@ -14,10 +14,7 @@ import 'package:calories_app/features/home/presentation/providers/quick_workout_
 /// - Add an optional note
 /// - Save or cancel the workout log
 class WorkoutQuickLogSheet extends ConsumerStatefulWidget {
-  const WorkoutQuickLogSheet({
-    super.key,
-    required this.workoutType,
-  });
+  const WorkoutQuickLogSheet({super.key, required this.workoutType});
 
   final WorkoutType workoutType;
 
@@ -31,7 +28,7 @@ class _WorkoutQuickLogSheetState extends ConsumerState<WorkoutQuickLogSheet> {
   final _durationController = TextEditingController();
   final _caloriesController = TextEditingController();
   final _noteController = TextEditingController();
-  
+
   bool _isLoading = false;
   String? _errorMessage;
 
@@ -63,7 +60,9 @@ class _WorkoutQuickLogSheetState extends ConsumerState<WorkoutQuickLogSheet> {
           ? double.parse(caloriesInput)
           : null;
 
-      await ref.read(quickWorkoutLogProvider.notifier).logQuickWorkout(
+      await ref
+          .read(quickWorkoutLogProvider.notifier)
+          .logQuickWorkout(
             workoutType: widget.workoutType,
             durationMinutes: durationMinutes,
             caloriesBurned: caloriesBurned,
@@ -124,22 +123,14 @@ class _WorkoutQuickLogSheetState extends ConsumerState<WorkoutQuickLogSheet> {
                         children: [
                           Text(
                             'Ghi nhanh bài tập',
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodySmall
-                                ?.copyWith(
-                                  color: AppColors.mediumGray,
-                                ),
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(color: AppColors.mediumGray),
                           ),
                           const SizedBox(height: 4),
                           Text(
                             widget.workoutType.displayName,
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleLarge
-                                ?.copyWith(
-                                  fontWeight: FontWeight.w700,
-                                ),
+                            style: Theme.of(context).textTheme.titleLarge
+                                ?.copyWith(fontWeight: FontWeight.w700),
                           ),
                         ],
                       ),
@@ -157,9 +148,9 @@ class _WorkoutQuickLogSheetState extends ConsumerState<WorkoutQuickLogSheet> {
                 Text(
                   'Thời lượng (phút) *',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.nearBlack,
-                      ),
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.nearBlack,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 TextFormField(
@@ -168,7 +159,9 @@ class _WorkoutQuickLogSheetState extends ConsumerState<WorkoutQuickLogSheet> {
                     decimal: true,
                   ),
                   inputFormatters: [
-                    FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,1}')),
+                    FilteringTextInputFormatter.allow(
+                      RegExp(r'^\d+\.?\d{0,1}'),
+                    ),
                   ],
                   decoration: InputDecoration(
                     hintText: 'Ví dụ: 30',
@@ -205,16 +198,16 @@ class _WorkoutQuickLogSheetState extends ConsumerState<WorkoutQuickLogSheet> {
                 Text(
                   'Calo đốt cháy (tùy chọn)',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.nearBlack,
-                      ),
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.nearBlack,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   'Để trống để tự động tính toán dựa trên cân nặng của bạn',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppColors.mediumGray,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: AppColors.mediumGray),
                 ),
                 const SizedBox(height: 8),
                 TextFormField(
@@ -223,7 +216,9 @@ class _WorkoutQuickLogSheetState extends ConsumerState<WorkoutQuickLogSheet> {
                     decimal: true,
                   ),
                   inputFormatters: [
-                    FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,1}')),
+                    FilteringTextInputFormatter.allow(
+                      RegExp(r'^\d+\.?\d{0,1}'),
+                    ),
                   ],
                   decoration: InputDecoration(
                     hintText: 'Ví dụ: 250',
@@ -258,9 +253,9 @@ class _WorkoutQuickLogSheetState extends ConsumerState<WorkoutQuickLogSheet> {
                 Text(
                   'Ghi chú (tùy chọn)',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.nearBlack,
-                      ),
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.nearBlack,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 TextFormField(
@@ -289,9 +284,9 @@ class _WorkoutQuickLogSheetState extends ConsumerState<WorkoutQuickLogSheet> {
                     padding: const EdgeInsets.only(bottom: 16),
                     child: Text(
                       _errorMessage!,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.red,
-                          ),
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodySmall?.copyWith(color: Colors.red),
                     ),
                   ),
 
@@ -320,8 +315,8 @@ class _WorkoutQuickLogSheetState extends ConsumerState<WorkoutQuickLogSheet> {
                       child: ElevatedButton(
                         onPressed: _isLoading ? null : _handleSave,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.charmingGreen,
-                          foregroundColor: Colors.white,
+                          backgroundColor: AppColors.mintGreen,
+                          foregroundColor: AppColors.nearBlack,
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14),
@@ -349,4 +344,3 @@ class _WorkoutQuickLogSheetState extends ConsumerState<WorkoutQuickLogSheet> {
     );
   }
 }
-

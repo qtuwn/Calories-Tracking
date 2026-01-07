@@ -4,18 +4,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:calories_app/core/theme/theme.dart';
 import '../providers/home_dashboard_providers.dart';
 
-class HomeRecentDiarySection extends ConsumerWidget {
+/// PERFORMANCE: Wrapper widget that doesn't watch any providers.
+/// Only passes down the navigation callback to the actual data consumer.
+class HomeRecentDiarySection extends StatelessWidget {
   final VoidCallback? onNavigateToDiary;
 
-  const HomeRecentDiarySection({
-    super.key,
-    this.onNavigateToDiary,
-  });
+  const HomeRecentDiarySection({super.key, this.onNavigateToDiary});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final entries = ref.watch(homeRecentDiaryEntriesProvider);
-
+  Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -24,9 +21,9 @@ class HomeRecentDiarySection extends ConsumerWidget {
           children: [
             Text(
               'Nhật ký gần đây',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
             ),
             TextButton(
               onPressed: onNavigateToDiary,
@@ -35,22 +32,41 @@ class HomeRecentDiarySection extends ConsumerWidget {
           ],
         ),
         const SizedBox(height: 12),
-        if (entries.isEmpty)
-          _DiaryEmptyState(onNavigateToDiary: onNavigateToDiary)
-        else
-          SizedBox(
-            height: 150,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: entries.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 16),
-              itemBuilder: (context, index) {
-                final entry = entries[index];
-                return _RecentDiaryCard(entry: entry);
-              },
-            ),
-          ),
+        // PERFORMANCE: Isolate provider watch to leaf widget only
+        _RecentDiaryEntriesList(onNavigateToDiary: onNavigateToDiary),
       ],
+    );
+  }
+}
+
+/// PERFORMANCE: Leaf widget that watches the provider.
+/// This isolates rebuilds to ONLY this widget when diary entries change.
+class _RecentDiaryEntriesList extends ConsumerWidget {
+  final VoidCallback? onNavigateToDiary;
+
+  const _RecentDiaryEntriesList({this.onNavigateToDiary});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final entries = ref.watch(homeRecentDiaryEntriesProvider);
+
+    if (entries.isEmpty) {
+      return _DiaryEmptyState(onNavigateToDiary: onNavigateToDiary);
+    }
+
+    return RepaintBoundary(
+      child: SizedBox(
+        height: 150,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          itemCount: entries.length,
+          separatorBuilder: (_, __) => const SizedBox(width: 16),
+          itemBuilder: (context, index) {
+            final entry = entries[index];
+            return _RecentDiaryCard(entry: entry);
+          },
+        ),
+      ),
     );
   }
 }
@@ -68,7 +84,9 @@ class _DiaryEmptyState extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.charmingGreen.withValues(alpha: 0.4)),
+        border: Border.all(
+          color: AppColors.charmingGreen.withValues(alpha: 0.4),
+        ),
       ),
       child: Column(
         children: [
@@ -80,17 +98,17 @@ class _DiaryEmptyState extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             'Chưa có dữ liệu',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
           Text(
             'Bắt đầu thêm bữa ăn để theo dõi dinh dưỡng mỗi ngày.',
             textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppColors.mediumGray,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: AppColors.mediumGray),
           ),
           const SizedBox(height: 16),
           SizedBox(
@@ -126,7 +144,7 @@ class _RecentDiaryCard extends StatelessWidget {
         : AppColors.mintGreen.withValues(alpha: 0.25);
     final iconColor = entry.isExercise ? Colors.orange : AppColors.nearBlack;
     final caloriesLabel = entry.isExercise ? 'Đốt cháy' : 'Calories';
-    
+
     return Container(
       width: 200,
       padding: const EdgeInsets.all(18),
@@ -154,10 +172,7 @@ class _RecentDiaryCard extends StatelessWidget {
                   color: iconBgColor,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(
-                  entry.icon,
-                  color: iconColor,
-                ),
+                child: Icon(entry.icon, color: iconColor),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -166,17 +181,16 @@ class _RecentDiaryCard extends StatelessWidget {
                   children: [
                     Text(
                       entry.title,
-                      style:
-                          Theme.of(context).textTheme.labelLarge?.copyWith(
-                                fontWeight: FontWeight.w600,
-                              ),
+                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
                       overflow: TextOverflow.ellipsis,
                     ),
                     Text(
                       entry.timeLabel,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: AppColors.mediumGray,
-                          ),
+                        color: AppColors.mediumGray,
+                      ),
                     ),
                   ],
                 ),
@@ -187,9 +201,9 @@ class _RecentDiaryCard extends StatelessWidget {
             entry.subtitle,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppColors.mediumGray,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: AppColors.mediumGray),
           ),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -204,9 +218,9 @@ class _RecentDiaryCard extends StatelessWidget {
               Text(
                 '${entry.calories} kcal',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: entry.isExercise ? Colors.orange : null,
-                    ),
+                  fontWeight: FontWeight.bold,
+                  color: entry.isExercise ? Colors.orange : null,
+                ),
               ),
             ],
           ),
@@ -215,4 +229,3 @@ class _RecentDiaryCard extends StatelessWidget {
     );
   }
 }
-

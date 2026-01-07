@@ -12,18 +12,14 @@ class ExerciseDetailScreen extends ConsumerStatefulWidget {
 
   final String exerciseId;
 
-  const ExerciseDetailScreen({
-    super.key,
-    required this.exerciseId,
-  });
+  const ExerciseDetailScreen({super.key, required this.exerciseId});
 
   @override
   ConsumerState<ExerciseDetailScreen> createState() =>
       _ExerciseDetailScreenState();
 }
 
-class _ExerciseDetailScreenState
-    extends ConsumerState<ExerciseDetailScreen> {
+class _ExerciseDetailScreenState extends ConsumerState<ExerciseDetailScreen> {
   double _inputValue = 0.0;
   int _selectedLevelIndex = 0;
   double _calculatedCalories = 0.0;
@@ -71,12 +67,11 @@ class _ExerciseDetailScreenState
       body: exerciseAsync.when(
         data: (exercise) {
           if (exercise == null) {
-            return const Center(
-              child: Text('Không tìm thấy bài tập'),
-            );
+            return const Center(child: Text('Không tìm thấy bài tập'));
           }
 
-          final userWeight = profileAsync.value?.weightKg ?? 70.0; // Default weight
+          final userWeight =
+              profileAsync.value?.weightKg ?? 70.0; // Default weight
 
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16),
@@ -99,18 +94,12 @@ class _ExerciseDetailScreenState
             ),
           );
         },
-        loading: () => const Center(
-          child: CircularProgressIndicator(),
-        ),
+        loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) => Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(
-                Icons.error_outline,
-                size: 48,
-                color: AppColors.error,
-              ),
+              const Icon(Icons.error_outline, size: 48, color: AppColors.error),
               const SizedBox(height: 16),
               Text(
                 'Có lỗi xảy ra: $error',
@@ -127,15 +116,11 @@ class _ExerciseDetailScreenState
   Widget _buildExerciseHeader(Exercise exercise) {
     return Card(
       elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: Column(
         children: [
           ClipRRect(
-            borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(20),
-            ),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
             child: Image.network(
               exercise.imageUrl.isNotEmpty
                   ? exercise.imageUrl
@@ -167,17 +152,17 @@ class _ExerciseDetailScreenState
                 Text(
                   exercise.name,
                   style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.nearBlack,
-                      ),
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.nearBlack,
+                  ),
                 ),
                 if (exercise.description != null) ...[
                   const SizedBox(height: 12),
                   Text(
                     exercise.description!,
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: AppColors.mediumGray,
-                        ),
+                      color: AppColors.mediumGray,
+                    ),
                   ),
                 ],
                 const SizedBox(height: 12),
@@ -193,9 +178,9 @@ class _ExerciseDetailScreenState
                   child: Text(
                     _getUnitLabel(exercise.unit),
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.nearBlack,
-                        ),
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.nearBlack,
+                    ),
                   ),
                 ),
               ],
@@ -209,9 +194,7 @@ class _ExerciseDetailScreenState
   Widget _buildInputSection(Exercise exercise, double userWeight) {
     return Card(
       elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -220,18 +203,18 @@ class _ExerciseDetailScreenState
             Text(
               _getInputTitle(exercise.unit),
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.nearBlack,
-                  ),
+                fontWeight: FontWeight.w600,
+                color: AppColors.nearBlack,
+              ),
             ),
             const SizedBox(height: 16),
             if (exercise.unit == ExerciseUnit.level) ...[
               // Level selector
               Text(
                 'Mức độ',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppColors.mediumGray,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(color: AppColors.mediumGray),
               ),
               const SizedBox(height: 8),
               Wrap(
@@ -257,8 +240,9 @@ class _ExerciseDetailScreenState
                       color: isSelected
                           ? AppColors.nearBlack
                           : AppColors.mediumGray,
-                      fontWeight:
-                          isSelected ? FontWeight.w600 : FontWeight.normal,
+                      fontWeight: isSelected
+                          ? FontWeight.w600
+                          : FontWeight.normal,
                     ),
                     side: BorderSide(
                       color: isSelected
@@ -272,7 +256,9 @@ class _ExerciseDetailScreenState
             ],
             // Input field
             TextField(
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               inputFormatters: [
                 FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
               ],
@@ -293,9 +279,11 @@ class _ExerciseDetailScreenState
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: _inputValue > 0 ? () {
-                  _calculateCalories(exercise, userWeight);
-                } : null,
+                onPressed: _inputValue > 0
+                    ? () {
+                        _calculateCalories(exercise, userWeight);
+                      }
+                    : null,
                 child: const Text('Tính toán'),
               ),
             ),
@@ -308,9 +296,7 @@ class _ExerciseDetailScreenState
   Widget _buildCaloriesCard() {
     return Card(
       elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       color: AppColors.mintGreen.withValues(alpha: 0.2),
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -318,23 +304,23 @@ class _ExerciseDetailScreenState
           children: [
             Text(
               'Lượng calo đốt cháy',
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: AppColors.mediumGray,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyLarge?.copyWith(color: AppColors.mediumGray),
             ),
             const SizedBox(height: 8),
             Text(
               _calculatedCalories.toStringAsFixed(0),
               style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.nearBlack,
-                  ),
+                fontWeight: FontWeight.bold,
+                color: AppColors.nearBlack,
+              ),
             ),
             Text(
               'kcal',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: AppColors.mediumGray,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(color: AppColors.mediumGray),
             ),
           ],
         ),
@@ -346,12 +332,16 @@ class _ExerciseDetailScreenState
     setState(() {
       switch (exercise.unit) {
         case ExerciseUnit.time:
-          _calculatedCalories =
-              exercise.calculateCaloriesTime(userWeight, _inputValue);
+          _calculatedCalories = exercise.calculateCaloriesTime(
+            userWeight,
+            _inputValue,
+          );
           break;
         case ExerciseUnit.distance:
-          _calculatedCalories =
-              exercise.calculateCaloriesDistance(userWeight, _inputValue);
+          _calculatedCalories = exercise.calculateCaloriesDistance(
+            userWeight,
+            _inputValue,
+          );
           break;
         case ExerciseUnit.level:
           if (exercise.levels.isNotEmpty &&
@@ -445,8 +435,8 @@ class _ExerciseDetailScreenState
             : const Icon(Icons.add_circle_outline),
         label: Text(_isSaving ? 'Đang lưu...' : 'Lưu vào nhật ký'),
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.charmingGreen,
-          foregroundColor: Colors.white,
+          backgroundColor: AppColors.mintGreen,
+          foregroundColor: AppColors.nearBlack,
           padding: const EdgeInsets.symmetric(vertical: 16),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
@@ -474,7 +464,7 @@ class _ExerciseDetailScreenState
       double? exerciseValue = _inputValue;
       String? levelName;
 
-      if (exercise.unit == ExerciseUnit.level && 
+      if (exercise.unit == ExerciseUnit.level &&
           _selectedLevelIndex < exercise.levels.length) {
         levelName = exercise.levels[_selectedLevelIndex].name;
       }
@@ -518,9 +508,7 @@ class _ExerciseDetailScreenState
         ),
         backgroundColor: AppColors.charmingGreen,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
     );
   }
@@ -537,9 +525,7 @@ class _ExerciseDetailScreenState
         ),
         backgroundColor: AppColors.error,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
     );
   }
@@ -550,4 +536,3 @@ final _exerciseProvider = FutureProvider.family<Exercise?, String>((ref, id) {
   final repository = ref.watch(exerciseRepositoryProvider);
   return repository.getExerciseById(id);
 });
-
