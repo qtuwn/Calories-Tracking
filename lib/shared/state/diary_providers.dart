@@ -50,7 +50,7 @@ class DiaryProviderKey {
 }
 
 /// Provider for DiaryCache implementation
-/// 
+///
 /// SharedPreferences is guaranteed to be available since it's preloaded in main.dart
 /// and provided via ProviderScope.overrides. No Dummy cache needed.
 final diaryCacheProvider = Provider<DiaryCache>((ref) {
@@ -88,20 +88,22 @@ final diaryServiceProvider = Provider<DiaryService>((ref) {
 /// ```
 final diaryEntriesForDayProvider = StreamProvider.autoDispose
     .family<List<DiaryEntry>, String>((ref, key) {
-  final params = DiaryProviderKey.parse(key);
-  debugPrint('[DiaryEntriesForDayProvider] 🔵 Setting up diary entries stream for uid=${params.uid}, day=${params.day}');
-  final service = ref.watch(diaryServiceProvider);
-  return service.watchEntriesForDayWithCache(params.uid, params.day);
-});
+      final params = DiaryProviderKey.parse(key);
+      debugPrint(
+        '[DiaryEntriesForDayProvider] 🔵 Setting up diary entries stream for uid=${params.uid}, day=${params.day}',
+      );
+      final service = ref.watch(diaryServiceProvider);
+      return service.watchEntriesForDayWithCache(params.uid, params.day);
+    });
 
 /// Future provider to load diary entries for a day once, prioritizing cache.
-/// 
+///
 /// Useful for one-time loads where you don't need a stream.
 final diaryLoadOnceProvider = FutureProvider.autoDispose
     .family<List<DiaryEntry>, ({String uid, DateTime day})>((ref, params) {
-  debugPrint('[DiaryLoadOnceProvider] 🔵 Loading diary entries once for uid=${params.uid}, day=${params.day}');
-  final service = ref.watch(diaryServiceProvider);
-  return service.loadEntriesForDayOnce(params.uid, params.day);
-});
-
-
+      debugPrint(
+        '[DiaryLoadOnceProvider] 🔵 Loading diary entries once for uid=${params.uid}, day=${params.day}',
+      );
+      final service = ref.watch(diaryServiceProvider);
+      return service.loadEntriesForDayOnce(params.uid, params.day);
+    });
