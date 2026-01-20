@@ -20,12 +20,14 @@ class AddMealItemBottomSheet extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<AddMealItemBottomSheet> createState() => _AddMealItemBottomSheetState();
+  ConsumerState<AddMealItemBottomSheet> createState() =>
+      _AddMealItemBottomSheetState();
 }
 
-class _AddMealItemBottomSheetState extends ConsumerState<AddMealItemBottomSheet> {
+class _AddMealItemBottomSheetState
+    extends ConsumerState<AddMealItemBottomSheet> {
   final _formKey = GlobalKey<FormState>();
-  
+
   late TextEditingController _searchController;
   late TextEditingController _nameController;
   late TextEditingController _servingSizeController;
@@ -41,7 +43,7 @@ class _AddMealItemBottomSheetState extends ConsumerState<AddMealItemBottomSheet>
   @override
   void initState() {
     super.initState();
-    
+
     final item = widget.existingItem;
     _searchController = TextEditingController();
     _nameController = TextEditingController(text: item?.name ?? '');
@@ -91,7 +93,9 @@ class _AddMealItemBottomSheetState extends ConsumerState<AddMealItemBottomSheet>
     // Pre-fill form with food data
     setState(() {
       _nameController.text = food.name;
-      _gramsPerServingController.text = food.defaultPortionGram.toStringAsFixed(1);
+      _gramsPerServingController.text = food.defaultPortionGram.toStringAsFixed(
+        1,
+      );
       _caloriesController.text = food.caloriesPer100g.toStringAsFixed(1);
       _proteinController.text = food.proteinPer100g.toStringAsFixed(1);
       _carbsController.text = food.carbsPer100g.toStringAsFixed(1);
@@ -99,10 +103,10 @@ class _AddMealItemBottomSheetState extends ConsumerState<AddMealItemBottomSheet>
       _searchController.text = '';
       _showSearchResults = false;
     });
-    
+
     // Set selected food in provider
     ref.read(selectedFoodProvider.notifier).setFood(food);
-    
+
     // Clear search query
     ref.read(foodSearchQueryProvider.notifier).clear();
   }
@@ -164,10 +168,7 @@ class _AddMealItemBottomSheetState extends ConsumerState<AddMealItemBottomSheet>
                       ),
                       Text(
                         widget.mealType.displayName,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.grey[600],
-                        ),
+                        style: TextStyle(fontSize: 13, color: Colors.grey[600]),
                       ),
                     ],
                   ),
@@ -204,8 +205,12 @@ class _AddMealItemBottomSheetState extends ConsumerState<AddMealItemBottomSheet>
                                   icon: const Icon(Icons.clear),
                                   onPressed: () {
                                     _searchController.clear();
-                                    ref.read(foodSearchQueryProvider.notifier).clear();
-                                    ref.read(selectedFoodProvider.notifier).clear();
+                                    ref
+                                        .read(foodSearchQueryProvider.notifier)
+                                        .clear();
+                                    ref
+                                        .read(selectedFoodProvider.notifier)
+                                        .clear();
                                     setState(() {
                                       _showSearchResults = false;
                                     });
@@ -220,7 +225,7 @@ class _AddMealItemBottomSheetState extends ConsumerState<AddMealItemBottomSheet>
                         ),
                       ),
                       const SizedBox(height: 8),
-                      
+
                       // Search Results
                       if (_showSearchResults)
                         searchResultsAsync.when(
@@ -239,7 +244,7 @@ class _AddMealItemBottomSheetState extends ConsumerState<AddMealItemBottomSheet>
                                 ),
                               );
                             }
-                            
+
                             return Container(
                               constraints: const BoxConstraints(maxHeight: 200),
                               decoration: BoxDecoration(
@@ -281,7 +286,7 @@ class _AddMealItemBottomSheetState extends ConsumerState<AddMealItemBottomSheet>
                             ),
                           ),
                         ),
-                      
+
                       const SizedBox(height: 16),
                       const Divider(),
                       const SizedBox(height: 16),
@@ -299,7 +304,11 @@ class _AddMealItemBottomSheetState extends ConsumerState<AddMealItemBottomSheet>
                         ),
                         child: Row(
                           children: [
-                            Icon(Icons.check_circle, color: Colors.green[700], size: 20),
+                            Icon(
+                              Icons.check_circle,
+                              color: Colors.green[700],
+                              size: 20,
+                            ),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
@@ -380,7 +389,11 @@ class _AddMealItemBottomSheetState extends ConsumerState<AddMealItemBottomSheet>
                         children: [
                           Row(
                             children: [
-                              Icon(Icons.info_outline, size: 16, color: Colors.grey[600]),
+                              Icon(
+                                Icons.info_outline,
+                                size: 16,
+                                color: Colors.grey[600],
+                              ),
                               const SizedBox(width: 6),
                               Text(
                                 'Thông tin dinh dưỡng (trên 100g)',
@@ -491,9 +504,7 @@ class _AddMealItemBottomSheetState extends ConsumerState<AddMealItemBottomSheet>
         labelText: label,
         hintText: hint,
         prefixIcon: Icon(icon, size: 20),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
         filled: true,
         fillColor: enabled ? Colors.white : Colors.grey[100],
       ),
@@ -521,12 +532,13 @@ class _AddMealItemBottomSheetState extends ConsumerState<AddMealItemBottomSheet>
         hintText: hint,
         suffixText: suffix,
         prefixIcon: Icon(icon, size: 18),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
         filled: true,
         fillColor: enabled ? Colors.white : Colors.grey[100],
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 12,
+        ),
       ),
       validator: (value) {
         if (value == null || value.trim().isEmpty) {
@@ -562,16 +574,16 @@ class _AddMealItemBottomSheetState extends ConsumerState<AddMealItemBottomSheet>
           carbsPer100g: double.parse(_carbsController.text),
           fatPer100g: double.parse(_fatController.text),
         );
-        
+
         await diaryNotifier.updateMealItem(widget.mealType, item.id, item);
-        
+
         if (mounted) {
           Navigator.pop(context);
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Cập nhật món ăn thành công'),
-              backgroundColor: Colors.green,
-            ),
+          showAppToast(
+            context,
+            message: 'Cập nhật món ăn thành công',
+            type: AppToastType.success,
+            extraBottomOffset: 12,
           );
         }
       } else if (selectedFood != null) {
@@ -582,7 +594,7 @@ class _AddMealItemBottomSheetState extends ConsumerState<AddMealItemBottomSheet>
           gramsPerServing: gramsPerServing,
           mealType: widget.mealType,
         );
-        
+
         if (mounted) {
           Navigator.pop(context);
           showAppToast(
@@ -604,9 +616,9 @@ class _AddMealItemBottomSheetState extends ConsumerState<AddMealItemBottomSheet>
           carbsPer100g: double.parse(_carbsController.text),
           fatPer100g: double.parse(_fatController.text),
         );
-        
+
         await diaryNotifier.addMealItem(widget.mealType, item);
-        
+
         if (mounted) {
           Navigator.pop(context);
           showAppToast(
