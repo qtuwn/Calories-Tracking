@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -23,10 +24,12 @@ void main() async {
   // Goal: Get to runApp() as fast as possible (target < 4s)
   // Everything else moved to DEFERRED phase after first frame
   // ========================================================================
-  
+
   StartupOrchestrator.markCriticalStart();
   WidgetsFlutterBinding.ensureInitialized();
-  
+
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+
   // Load environment variables (lightweight, needed for config)
   try {
     await dotenv.load(fileName: '.env');
@@ -34,17 +37,17 @@ void main() async {
   } catch (e) {
     debugPrint('[Main] ⚠️ Could not load .env file: $e');
   }
-  
+
   // Initialize Firebase (required for auth/routing)
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   debugPrint('[Main] ✅ Firebase initialized');
-  
+
   // Preload SharedPreferences (CRITICAL: required for routing providers)
   // IntroGate -> ProfileGate -> onboardingCacheProvider needs this synchronously
   debugPrint('[Main] 🔵 Preloading SharedPreferences...');
   final preloadedPrefs = await SharedPreferences.getInstance();
   debugPrint('[Main] ✅ SharedPreferences preloaded');
-  
+
   // ========================================================================
   // DEFERRED (moved to StartupOrchestrator after first frame):
   // - Intl locale & date formatting
@@ -53,7 +56,7 @@ void main() async {
   // - Local & Push notifications
   // - FCM token update
   // ========================================================================
-  
+
   StartupOrchestrator.markRunApp();
   runApp(
     ProviderScope(
