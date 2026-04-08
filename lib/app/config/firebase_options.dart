@@ -54,7 +54,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyDuoMQ9qk1D3DlN36SQTkQ_67a5zZw0I_I',
-    appId: '1:319980957517:android:a4e331d70fc3a1a4e6d104',
+    appId: '1:319980957517:android:b2602c208303f83ae6d104',
     messagingSenderId: '319980957517',
     projectId: 'calories-app-da7fb',
     storageBucket: 'calories-app-da7fb.firebasestorage.app',

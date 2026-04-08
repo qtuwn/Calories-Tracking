@@ -39,8 +39,24 @@ void main() async {
   }
 
   // Initialize Firebase (required for auth/routing)
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  debugPrint('[Main] ✅ Firebase initialized');
+  // Guard: on hot-restart / fast process reuse, native Firebase may already have
+  // a "[DEFAULT]" app while Dart-side Firebase.apps is not yet populated.
+  try {
+    if (Firebase.apps.isEmpty) {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+      debugPrint('[Main] ✅ Firebase initialized');
+    } else {
+      debugPrint('[Main] ⏭️ Firebase already initialized');
+    }
+  } on FirebaseException catch (e) {
+    if (e.code == 'duplicate-app') {
+      debugPrint('[Main] ⏭️ Firebase duplicate-app ignored');
+    } else {
+      rethrow;
+    }
+  }
 
   // Preload SharedPreferences (CRITICAL: required for routing providers)
   // IntroGate -> ProfileGate -> onboardingCacheProvider needs this synchronously
